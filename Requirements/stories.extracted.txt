@@ -1,0 +1,279 @@
+
+=== PAGE 1 ===
+Skrapo user stories
+Skrapo – App Overview
+Skrapo is a web-based platform that connects households and corporates with local scrap dealers
+("Scrap Champs") for scheduled scrap pickups. It streamlines the end-to-end process — from
+booking a pickup to confirming a dealer, completing the job, and collecting feedback — all via a
+mobile-friendly web app and SMS/OTP-triggered links.
+Three core interfaces:
+Customer Web App — Book, track, and review scrap pickups
+Admin App — Manage orders, dealers, and communications
+Scraper (Scrap Champ) App — Receive, accept, and complete pickup jobs
+Key communication touchpoints via SMS (all non-OTP messages link back to the web app):
+OTP for customer login
+Pickup request broadcast to Scrap Champs
+Confirmation message to customer once Scrap Champ is assigned
+2hr pre-pickup reminder to Scrap Champ
+Post-pickup feedback links to both customer and Scrap Champ
+1 Customer App First-time
+registration via
+OTP + Google
+Sign-in
+P0
+2 Customer App Schedule a
+pickup – scrap
+types, photo,
+date/time
+P0
+3 Customer App Returning
+customer –
+direct login to
+scheduling
+P0
+4 Customer App View previous
+orders
+P1
+5 Customer
+Notifications
+Confirmation
+SMS when Scrap
+P0
+# Section Story Priority
+
+=== PAGE 2 ===
+Champ is
+assigned
+6 Customer
+Notifications
+Post-pickup
+feedback SMS
+(2hrs after
+pickup)
+P0
+7 Admin App View and
+manage order
+status
+dashboard
+P0
+8 Admin App Broadcast
+pickup request
+SMS to Scrap
+Champs in area
+P0
+9 Admin App Track Scrap
+Champ link
+clicks vs
+acceptances
+P1
+10 Admin App Auto-trigger
+customer
+feedback SMS
+post-pickup
+P0
+11 Admin App Flag and manage
+problem orders
+P1
+12 Scrap Champ
+App
+Receive SMS
+and view pickup
+request details
+P0
+13 Scrap Champ
+App
+Accept or deny a
+pickup, handle
+already-
+accepted state
+P0
+14 Scrap Champ
+App
+2hr pre-pickup
+reminder SMS
+P0
+15 Scrap Champ
+App
+Post-pickup
+feedback
+P1
+
+=== PAGE 3 ===
+submission
+16 Scrap Champ
+App
+Dashboard –
+orders received,
+accepted,
+declined, avg
+rating
+P1
+
+
+=== PAGE 4 ===
+Section 1: Customer Web App
+
+
+=== PAGE 5 ===
+Story 1 – First-Time Registration & Login
+As a first-time customer, I want to register using my phone number and verify via OTP, So that I can
+access the Skrapo platform securely.
+Acceptance Criteria:
+Customer enters mobile number and receives an OTP via SMS
+OTP verified successfully to proceed to the app
+Option to sign in via Google as an alternative
+On first login, customer is prompted to complete their profile (name, address/pickup location)
+Address is saved for future pickups
+Priority: P0 – Must Have
+Story 2 – Schedule a Pickup
+As a customer, I want to log what scrap I have and schedule a pickup, So that a Scrap Champ can
+come collect it at a convenient time.
+Acceptance Criteria:
+Customer selects scrap type(s) from dropdown: Paper, Plastic Bottles, Milk Covers, Metal, Others
+Option to add additional scrap types not in the list
+Option to add estimated weight per item
+Customer can upload a photo of the scrap
+Customer selects a pickup date (minimum 24hrs from current time) and a 1hr time slot via calendar
+On submission, a thank you message is shown on screen: "Thank you for your order! We're finding
+your Scrap Champ and will confirm shortly."
+Priority: P0 – Must Have
+Story 3 – Returning Customer Login
+As a returning customer, I want to log in directly and land on the schedule pickup screen, So that I
+can book quickly without re-entering my details.
+Acceptance Criteria:
+Returning customers bypass the registration flow
+Lands directly on the pickup scheduling screen after login
+Saved address pre-populated from previous session
+
+=== PAGE 6 ===
+Priority: P0 – Must Have
+Story 4 – View Previous Orders
+As a customer, I want to view my past pickup orders, So that I can track my history and reference
+previous pickups.
+Acceptance Criteria:
+Customer can access an order history screen
+Each order shows: date, scrap types, status, and Scrap Champ assigned
+Orders sorted by most recent first
+Priority: P1 – Should Have
+Customer Notifications – Summary
+Story 5 – Pickup Confirmation SMS
+As a customer, I want to receive an SMS once a Scrap Champ accepts my pickup, So that I know
+who is coming and when.
+Acceptance Criteria:
+Triggered automatically when a Scrap Champ accepts the order
+Message includes Scrap Champ's name, date, time, and a link to Skrapo
+Link opens order details screen with Scrap Champ info
+Message copy: "Your Scrap Champ is confirmed! [Name] will arrive on [Date] at [Time]. View
+details: [link]"
+Priority: P0 – Must Have
+Story 6 – Post-Pickup Feedback SMS
+As a customer, I want to receive a feedback request after my pickup, So that I can rate my
+experience.
+Acceptance Criteria:
+Triggered 2hrs after scheduled pickup time
+Link opens feedback screen in Skrapo capturing: star rating, weight & price, Scrap Champ
+behaviour, free text comments
+Message copy: "How was your Skrapo pickup? Share your feedback here: [link]"
+Priority: P0 – Must Have
+
+=== PAGE 7 ===
+Section 3: Admin App
+
+
+=== PAGE 8 ===
+Story 7 – View & Manage Order Status
+As an admin, I want to view all orders and their current status, So that I can monitor pickups and
+intervene when needed.
+Acceptance Criteria:
+Order dashboard shows all orders with status: New, Requested, Accepted, Completed, Problem
+Each order shows: customer name, area, scrap types, scheduled date/time, assigned Scrap
+Champ
+Admin can manually change order status if needed
+Orders filterable by status and date
+Priority: P0 – Must Have
+Story 8 – Broadcast Pickup Request to Scrap Champs
+As an admin, I want to automatically trigger a bulk SMS to all Scrap Champs in the area when a new
+order comes in, So that available Scrap Champs can claim the job quickly.
+Acceptance Criteria:
+On new order submission, SMS is auto-triggered to all Scrap Champs in the relevant area
+Message includes a link to the order details in Skrapo
+Message copy: "New pickup request in your area! Click to view and accept: [link]"
+Admin can see how many Scrap Champs received the message
+Priority: P0 – Must Have
+Story 9 – Track Scrap Champ Responses
+As an admin, I want to see how many Scrap Champs clicked the link but didn't accept the order, So
+that I can understand demand and coverage gaps.
+
+
+=== PAGE 9 ===
+Acceptance Criteria:
+Admin dashboard shows link click count vs acceptance count per order
+Order status updates automatically once a Scrap Champ accepts
+Admin notified if no Scrap Champ accepts within a defined time window
+Priority: P1 – Should Have
+Story 10 – Auto-Trigger Post-Pickup Customer Feedback
+As an admin, I want to automatically trigger a feedback SMS to the customer 2hrs after pickup, So
+that feedback collection is consistent without manual effort.
+Acceptance Criteria:
+System triggers feedback SMS automatically 2hrs after scheduled pickup time
+Order status changes to "Completed" at this point
+Admin can see feedback responses against each order
+Priority: P0 – Must Have
+Story 11 – Flag Orders with Problems
+As an admin, I want to flag and track orders that had pickup issues, So that I can follow up and
+resolve them.
+Acceptance Criteria:
+Admin can manually set an order status to "Problem"
+Problem orders surfaced prominently on the dashboard
+Admin can add notes to problem orders for follow-up
+Priority: P1 – Should Have
+Section 4: Scrap Champ (Scraper) App
+
+=== PAGE 10 ===
+
+
+=== PAGE 11 ===
+Story 12 – Receive & View Pickup Request
+As a Scrap Champ, I want to receive an SMS with a pickup request and view the order details, So
+that I can decide whether to accept the job.
+Acceptance Criteria:
+SMS received with link to order details in Skrapo
+Order details screen shows: scrap types, estimated weight, photo, general area, date and time
+Exact address is only revealed after acceptance
+Scrap Champ can Accept or Deny the order
+Priority: P0 – Must Have
+Story 13 – Accept or Deny a Pickup
+As a Scrap Champ, I want to accept or deny a pickup request, So that I can manage my schedule.
+Acceptance Criteria:
+On acceptance: exact pickup address revealed, order status updates to Accepted in admin
+On denial: order remains open for other Scrap Champs
+If order already accepted by another Scrap Champ when link is opened, screen shows: "This order
+has already been accepted. We'll send you the next one!"
+Priority: P0 – Must Have
+Story 14 – 2hr Pre-Pickup Reminder
+As a Scrap Champ, I want to receive a reminder 2hrs before my scheduled pickup, So that I can
+plan and be on time.
+Acceptance Criteria:
+SMS triggered automatically 2hrs before pickup time
+Message includes general area, time, and link to order details in Skrapo
+Message copy: "Reminder: You have a pickup at [Area] today at [Time]. View details: [link]"
+Priority: P0 – Must Have
+Story 15 – Post-Pickup Feedback
+As a Scrap Champ, I want to submit feedback after completing a pickup, So that I can log the
+outcome and share any notes.
+
+=== PAGE 12 ===
+Acceptance Criteria:
+SMS triggered 2hrs after scheduled pickup time with link to feedback screen
+Feedback screen captures: pickup rating, actual weight and price paid (optional), additional
+comments
+Message copy: "Pickup done? Let us know how it went: [link]"
+Priority: P1 – Should Have
+Story 16 – Scrap Champ Dashboard
+As a Scrap Champ, I want to view a summary of my activity on Skrapo, So that I can track my
+performance and earnings potential.
+Acceptance Criteria:
+Dashboard shows: total orders received, accepted, declined
+Average customer rating displayed
+Orders listed by most recent with status
+Priority: P1 – Should Have
