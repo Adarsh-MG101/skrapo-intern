@@ -65,3 +65,4 @@ apps/*/.env.*
 
 # TypeScript build cache
 *.tsbuildinfo
+RENDER_DEPLOYMENT_INFO.txt

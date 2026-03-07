@@ -22,11 +22,8 @@ export const SchedulePickupFlow: React.FC = () => {
   const router = useRouter();
   const { user, apiFetch } = useAuth();
   const [step, setStep] = useState(1);
-  const [isMobile, setIsMobile] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [customScrapTypes, setCustomScrapTypes] = useState('');
   const [formData, setFormData] = useState({
@@ -46,12 +43,7 @@ export const SchedulePickupFlow: React.FC = () => {
     }
   }, [user, formData.address]);
 
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+
 
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -112,7 +104,7 @@ export const SchedulePickupFlow: React.FC = () => {
           };
           reader.readAsDataURL(file);
         }
-        setShowPhotoOptions(false);
+
       } catch (err) {
         showToast('Failed to process image', 'error');
       } finally {
@@ -243,13 +235,7 @@ export const SchedulePickupFlow: React.FC = () => {
                   <h2 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Show us what you're recycling</h2>
                   
                   <div 
-                    onClick={() => {
-                      if (isMobile) {
-                        setShowPhotoOptions(true);
-                      } else {
-                        fileInputRef.current?.click();
-                      }
-                    }}
+                    onClick={() => fileInputRef.current?.click()}
                     className="w-full max-w-sm mx-auto aspect-square bg-gray-50 rounded-[3rem] border-4 border-dashed border-gray-200 flex flex-col items-center justify-center p-8 group hover:bg-gray-100 hover:border-brand-200 hover:shadow-xl transition-all cursor-pointer shadow-sm relative overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -260,36 +246,13 @@ export const SchedulePickupFlow: React.FC = () => {
                     <p className="text-gray-400 text-sm font-medium relative z-10 transition-colors group-hover:text-brand-500">Tap to choose an option</p>
                   </div>
 
-                  <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleFileUpload} className="hidden" />
-                  <input type="file" accept="image/*, application/pdf" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
-
-                  {/* Photo Options Bottom Sheet */}
-                  {showPhotoOptions && (
-                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-                      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowPhotoOptions(false)} />
-                      <div className="bg-white w-full sm:w-[400px] rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 relative z-10 animate-slide-up shadow-2xl">
-                        <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-8 sm:hidden" />
-                        <h3 className="text-2xl font-black text-center mb-6 tracking-tight">Upload Photo</h3>
-                        <div className="flex flex-col gap-3">
-                          <button onClick={() => { cameraInputRef.current?.click(); }} className="w-full flex items-center justify-between p-4 rounded-2xl bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold transition-colors group">
-                            <span className="flex items-center gap-4"><span className="text-2xl">📸</span> Take Photo</span>
-                            <svg className="w-5 h-5 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
-                          </button>
-                          <button onClick={() => { fileInputRef.current?.click(); }} className="w-full flex items-center justify-between p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold transition-colors group">
-                            <span className="flex items-center gap-4"><span className="text-2xl">🖼️</span> Photo Library</span>
-                            <svg className="w-5 h-5 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
-                          </button>
-                          <button onClick={() => { fileInputRef.current?.click(); }} className="w-full flex items-center justify-between p-4 rounded-2xl bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold transition-colors group">
-                            <span className="flex items-center gap-4"><span className="text-2xl">📁</span> Choose File</span>
-                            <svg className="w-5 h-5 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" /></svg>
-                          </button>
-                        </div>
-                        <button onClick={() => setShowPhotoOptions(false)} className="w-full mt-6 py-4 text-center text-gray-400 hover:text-gray-900 transition-colors uppercase tracking-widest text-sm font-black">
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    ref={fileInputRef} 
+                    onChange={handleFileUpload} 
+                    className="hidden" 
+                  />
                 </>
               ) : (
                 <div className="w-full max-w-md animate-scale-in">

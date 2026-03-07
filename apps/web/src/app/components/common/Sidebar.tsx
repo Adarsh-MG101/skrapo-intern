@@ -96,6 +96,20 @@ const NAV_CONFIG = {
   ],
 };
 
+export function SidebarTrigger({ className = "" }: { className?: string }) {
+  const open = () => window.dispatchEvent(new CustomEvent('open-mobile-sidebar'));
+  return (
+    <button 
+      onClick={open} 
+      className={`lg:hidden p-3 rounded-2xl bg-white shadow-xl shadow-brand-500/10 border border-gray-100 text-gray-600 hover:text-brand-600 transition-all active:scale-90 ${className}`}
+      aria-label="Open Sidebar"
+    >
+       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
+       </svg>
+    </button>
+  );
+}
 export default function Sidebar({ onCollapse }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -138,6 +152,12 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
     };
   }, [socket, pathname]);
 
+  useEffect(() => {
+    const handleOpen = () => setIsMobileOpen(true);
+    window.addEventListener('open-mobile-sidebar', handleOpen);
+    return () => window.removeEventListener('open-mobile-sidebar', handleOpen);
+  }, []);
+
   // Initial load logic for fetching actual unread numbers
   useEffect(() => {
     if (!user || !apiFetch) return;
@@ -171,7 +191,6 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
   }, [pathname]);
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
-  const toggleMobile = () => setIsMobileOpen(!isMobileOpen);
 
   const handleLogout = () => {
     logout();
@@ -180,17 +199,7 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Toggle Button */}
-      {!isMobileOpen && (
-        <button
-          onClick={toggleMobile}
-          className="lg:hidden fixed top-5 left-5 z-[70] p-3 rounded-2xl bg-white shadow-xl shadow-brand-500/10 border border-gray-100 text-gray-600 hover:text-brand-600 transition-all active:scale-90"
-        >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
-      )}
+
 
       {/* Mobile Overlay */}
       {isMobileOpen && (

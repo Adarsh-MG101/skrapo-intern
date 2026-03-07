@@ -44,16 +44,16 @@ export default function LandingPage() {
             </div>
             <span className="text-2xl font-bold text-gray-800">Skrapo</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link
               href="/login"
-              className="px-5 py-2.5 text-brand-700 font-semibold hover:text-brand-800 transition-colors"
+              className="px-4 py-2 sm:px-5 sm:py-2.5 text-brand-700 font-bold hover:bg-brand-50 rounded-full transition-all text-sm sm:text-base border border-brand-100/50 sm:border-transparent"
             >
               Sign In
             </Link>
             <Link
               href="/register"
-              className="px-6 py-2.5 bg-brand-500 text-white font-semibold rounded-full hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5"
+              className="px-4 py-2 sm:px-6 sm:py-2.5 bg-brand-500 text-white font-bold rounded-full hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20 hover:-translate-y-0.5 text-sm sm:text-base"
             >
               Get Started
             </Link>

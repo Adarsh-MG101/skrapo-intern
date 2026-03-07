@@ -50,12 +50,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       const savedUser = localStorage.getItem('skrapo_user');
+      const savedToken = localStorage.getItem('skrapo_token');
+      
       if (savedUser) {
         setUser(JSON.parse(savedUser));
       }
+      if (savedToken) {
+        setToken(savedToken);
+      }
 
       try {
+        const headers: Record<string, string> = {};
+        if (savedToken) {
+          headers['Authorization'] = `Bearer ${savedToken}`;
+        }
+
         const res = await fetch(`${API_URL}/auth/me`, {
+          headers,
           credentials: 'include',
         });
         
@@ -63,13 +74,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = await res.json();
           setUser(data.user);
           localStorage.setItem('skrapo_user', JSON.stringify(data.user));
-          // We set a dummy true value for 'token' just to signal we are authenticated in the FE
-          // Alternatively, we can use the token from the body if the server still sends it
-          if (data.token) setToken(data.token);
-          else setToken('session_active'); 
+          // Store token in localStorage as fallback for mobile browsers that block cookies
+          if (data.token) {
+            setToken(data.token);
+            localStorage.setItem('skrapo_token', data.token);
+          } else {
+            setToken('session_active'); 
+          }
         } else {
-          // If /auth/me fails, we are definitely logged out
+          // If /auth/me fails AND we didn't have a saved session, clear everything
+          // If we HAD a saved session but network failed, maybe don't clear immediately 
+          // to allow offline/slow mobile access? Actually, 401 means definitely invalid.
           localStorage.removeItem('skrapo_user');
+          localStorage.removeItem('skrapo_token');
           setUser(null);
           setToken(null);
         }
@@ -99,7 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       localStorage.setItem('skrapo_user', JSON.stringify(data.user));
-      setToken(data.token || 'session_active');
+      const newToken = data.token || 'session_active';
+      setToken(newToken);
+      localStorage.setItem('skrapo_token', newToken);
       setUser(data.user);
 
       return { success: true, defaultRoute: data.user.defaultRoute };
@@ -134,7 +153,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       localStorage.setItem('skrapo_user', JSON.stringify(data.user));
-      setToken(data.token || 'session_active');
+      const newToken = data.token || 'session_active';
+      setToken(newToken);
+      localStorage.setItem('skrapo_token', newToken);
       setUser(data.user);
 
       return { success: true, defaultRoute: data.user.defaultRoute };
@@ -175,7 +196,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       localStorage.setItem('skrapo_user', JSON.stringify(data.user));
-      setToken(data.token || 'session_active');
+      const newToken = data.token || 'session_active';
+      setToken(newToken);
+      localStorage.setItem('skrapo_token', newToken);
       setUser(data.user);
       return { success: true, defaultRoute: data.user.defaultRoute };
     } catch {
@@ -209,7 +232,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       localStorage.setItem('skrapo_user', JSON.stringify(data.user));
-      setToken(data.token || 'session_active');
+      const newToken = data.token || 'session_active';
+      setToken(newToken);
+      localStorage.setItem('skrapo_token', newToken);
       setUser(data.user);
       return { success: true, defaultRoute: data.user.defaultRoute };
     } catch {
@@ -223,6 +248,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .catch(err => console.error('Logout error:', err));
       
     localStorage.removeItem('skrapo_user');
+    localStorage.removeItem('skrapo_token');
     setToken(null);
     setUser(null);
   }, []);
