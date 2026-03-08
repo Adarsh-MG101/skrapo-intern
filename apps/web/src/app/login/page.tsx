@@ -345,63 +345,78 @@ function LoginContent() {
                     <label htmlFor="mobile" className="block text-sm font-semibold text-gray-700 mb-2">
                        Mobile Number
                     </label>
-                    <div className="flex gap-2">
-                      <select
-                        value={countryCode}
-                        onChange={(e) => setCountryCode(e.target.value)}
-                        className="px-3 py-3 border-2 border-gray-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-gray-900 bg-white"
-                        disabled={otpSent}
-                      >
-                        <option value="+91">+91 (IN)</option>
-                        <option value="+92">+92 (PK)</option>
-                      </select>
-                      <div className="relative flex-1">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                          </svg>
-                        </span>
-                        <input
-                          id="mobile"
-                          type="tel"
-                          value={mobileNumber}
-                          onChange={(e) => {
-                            setMobileNumber(e.target.value);
-                            if (fieldErrors.mobileNumber) setFieldErrors(prev => ({ ...prev, mobileNumber: '' }));
-                          }}
-                          onBlur={() => {
-                            if (!mobileNumber && loginType === 'mobile') {
-                              setFieldErrors(prev => ({ ...prev, mobileNumber: 'This field is required!' }));
-                            } else if (mobileNumber && !validatePhone(mobileNumber) && loginType === 'mobile') {
-                              setFieldErrors(prev => ({ ...prev, mobileNumber: 'Please enter a valid phone number (min 10 digits)' }));
-                            }
-                          }}
-                          className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-all placeholder-gray-400 ${
-                            fieldErrors.mobileNumber 
-                              ? 'border-red-500 bg-red-50 text-red-900 focus:ring-2 focus:ring-red-100' 
-                              : 'border-gray-200 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-gray-900'
-                          }`}
-                          placeholder="9876543210"
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex gap-2 flex-1">
+                        <select
+                          value={countryCode}
+                          onChange={(e) => setCountryCode(e.target.value)}
+                          className="px-3 py-3 border-2 border-gray-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-gray-900 bg-white"
                           disabled={otpSent}
-                        />
+                        >
+                          <option value="+91">+91 (IN)</option>
+                          <option value="+92">+92 (PK)</option>
+                        </select>
+                        <div className="relative flex-1">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                          </span>
+                          <input
+                            id="mobile"
+                            type="tel"
+                            value={mobileNumber}
+                            onChange={(e) => {
+                              setMobileNumber(e.target.value);
+                              if (fieldErrors.mobileNumber) setFieldErrors(prev => ({ ...prev, mobileNumber: '' }));
+                            }}
+                            onBlur={() => {
+                              if (!mobileNumber && loginType === 'mobile') {
+                                setFieldErrors(prev => ({ ...prev, mobileNumber: 'This field is required!' }));
+                              } else if (mobileNumber && !validatePhone(mobileNumber) && loginType === 'mobile') {
+                                setFieldErrors(prev => ({ ...prev, mobileNumber: 'Please enter a valid phone number (min 10 digits)' }));
+                              }
+                            }}
+                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-all placeholder-gray-400 ${
+                              fieldErrors.mobileNumber 
+                                ? 'border-red-500 bg-red-50 text-red-900 focus:ring-2 focus:ring-red-100' 
+                                : 'border-gray-200 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-gray-900'
+                            }`}
+                            placeholder="9876543210"
+                            disabled={otpSent}
+                          />
+                        </div>
                       </div>
                       <button
                         type="button"
                         onClick={handleRequestOTP}
                         disabled={loading || otpSent}
-                        className="px-4 py-3 bg-brand-50 text-brand-600 font-bold rounded-xl hover:bg-brand-100 transition-all border-2 border-brand-200 disabled:opacity-50"
+                        className={`px-6 py-3 font-bold rounded-xl transition-all border-2 w-full sm:w-auto ${
+                          otpSent 
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                            : 'bg-brand-50 text-brand-600 border-brand-100 hover:bg-brand-100'
+                        } disabled:opacity-50`}
                       >
-                        {otpSent ? 'Sent ✓' : 'Get OTP'}
+                        {otpSent ? 'Code Sent ✓' : 'Get OTP'}
                       </button>
                     </div>
                     {fieldErrors.mobileNumber && <p className="text-red-500 text-xs mt-1">{fieldErrors.mobileNumber}</p>}
                   </div>
 
                   {otpSent && (
-                    <div className="animate-fade-in">
-                      <label htmlFor="otp" className="block text-sm font-semibold text-gray-700 mb-2">
-                        Enter 6-digit OTP
-                      </label>
+                    <div className="animate-fade-in py-2">
+                      <div className="flex justify-between items-center mb-2 px-1">
+                        <label htmlFor="otp" className="block text-sm font-semibold text-gray-700">
+                          Enter 6-digit OTP
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => { setOtpSent(false); setOtp(''); }}
+                          className="text-xs text-brand-600 hover:text-brand-700 font-bold underline"
+                        >
+                          Edit Number
+                        </button>
+                      </div>
                       <input
                         id="otp"
                         type="text"
@@ -416,7 +431,7 @@ function LoginContent() {
                             setFieldErrors(prev => ({ ...prev, otp: 'This field is required!' }));
                           }
                         }}
-                        className={`w-full px-4 py-3 border-2 rounded-xl text-center text-2xl tracking-widest font-bold outline-none transition-all ${
+                        className={`w-full px-4 py-4 border-2 rounded-xl text-center text-3xl tracking-[0.5em] font-black outline-none transition-all ${
                           fieldErrors.otp 
                             ? 'border-red-500 bg-red-50 text-red-900 focus:ring-2 focus:ring-red-100' 
                             : 'border-gray-200 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-gray-900'
@@ -424,14 +439,7 @@ function LoginContent() {
                         placeholder="••••••"
                         disabled={loading}
                       />
-                      {fieldErrors.otp && <p className="text-red-500 text-xs mt-1 text-center">{fieldErrors.otp}</p>}
-                      <button
-                        type="button"
-                        onClick={() => { setOtpSent(false); setOtp(''); }}
-                        className="mt-2 text-xs text-brand-600 hover:text-brand-700 font-semibold"
-                      >
-                        Change Number
-                      </button>
+                      {fieldErrors.otp && <p className="text-red-500 text-xs mt-1 text-center font-medium">{fieldErrors.otp}</p>}
                     </div>
                   )}
                 </>

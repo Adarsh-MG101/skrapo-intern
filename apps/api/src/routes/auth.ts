@@ -36,9 +36,6 @@ const clearAuthCookie = (res: Response) => {
   });
 };
 
-// Helper to generate OTP
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
-
 // POST /auth/otp/request
 router.post('/otp/request', async (req: Request, res: Response) => {
   try {
@@ -49,12 +46,28 @@ router.post('/otp/request', async (req: Request, res: Response) => {
     }
 
     const db = getDb();
-    const otp = generateOTP();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     // Determine recipient userId if they exist
     const user = await db.collection('users').findOne({ mobileNumber });
     const userId = user ? user._id : null;
+
+    // DEV OTP LOGIC: Admin is always 1111, everyone else is 2222
+    let otp;
+    if (user && user.role === 'admin') {
+      otp = '1111';
+      console.log(`\n👑 [DEV OTP] Admin Match Found! -> ${mobileNumber}`);
+    } else {
+      otp = '2222';
+      if (user) {
+        console.log(`\n👤 [DEV OTP] Existing User (${user.role}) -> ${mobileNumber}`);
+      } else {
+        console.log(`\n🆕 [DEV OTP] New Number -> ${mobileNumber}`);
+      }
+    }
+
+    console.log(`🔑 [DEV OTP] Generated: ${otp}\n`);
+
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     // Send SMS via service
     const smsMessage = `Your Skrapo OTP is ${otp}. Valid for 5 minutes.`;
@@ -74,7 +87,7 @@ router.post('/otp/request', async (req: Request, res: Response) => {
       createdAt: new Date(),
     });
 
-    res.json({ message: 'OTP sent successfully', mobileNumber, testingNote: 'Check SMS_BOX.log in project root' });
+    res.json({ message: 'OTP sent successfully', mobileNumber, testingNote: 'Check Terminal or SMS_BOX.log' });
   } catch (error: any) {
     console.error('[auth/otp/request] Error:', error);
     res.status(500).json({ error: 'Failed to request OTP. ' + (error.message || '') });
@@ -237,6 +250,8 @@ router.post('/register', async (req: Request, res: Response) => {
     if (serviceRadiusKm) userDoc.serviceRadiusKm = Number(serviceRadiusKm);
 
     const userResult = await usersCol.insertOne(userDoc);
+
+    console.log(`\n🆕 [DEV] User Created: ${roleCode.toUpperCase()} | Name: ${name} | Mobile: ${mobileNumber}\n`);
 
     const roleDoc = await rolesCol.findOne({ code: roleCode });
     if (roleDoc) {
