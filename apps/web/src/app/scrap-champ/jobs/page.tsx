@@ -9,16 +9,13 @@ import { StatusBadge, Loader, Button, EmptyState } from '../../components/common
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
 import { 
-  Search, 
   MapPin, 
   Clock, 
   Zap, 
   Navigation, 
   XSquare, 
-  CheckCircle2, 
   ArrowRight, 
   Target, 
-  ShieldCheck,
   Ban
 } from 'lucide-react';
 
