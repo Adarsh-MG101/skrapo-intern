@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { StatusBadge, Loader, DateTimePicker } from '../../components/common';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
+import { Search, Printer, RefreshCw, User, Phone, Calendar, Clock, Inbox, ArrowRight } from 'lucide-react';
 
 interface Order {
   _id: string;
@@ -90,15 +91,17 @@ export default function AdminHistoryPage() {
           <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-2">Order Records</h1>
-              <p className="text-gray-500 font-medium">Manage and review all historical pickup data.</p>
+              <p className="text-gray-500 font-medium whitespace-nowrap">Manage and review all historical pickup data.</p>
             </div>
             
             <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                <div className="relative group w-full md:w-80">
-                  <div className="absolute left-6 top-1/2 -translate-y-1/2 text-xl opacity-40 group-focus-within:opacity-100 transition-opacity">🔍</div>
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 opacity-40 group-focus-within:opacity-100 transition-opacity">
+                     <Search size={20} />
+                  </div>
                   <input 
                     type="text" 
-                    placeholder="Search customer, address, types..."
+                    placeholder="Search records..."
                     className="pl-14 pr-6 py-4 bg-white border border-gray-100 rounded-[2rem] text-sm font-bold shadow-sm focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all outline-none w-full"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -106,9 +109,9 @@ export default function AdminHistoryPage() {
                </div>
                <button 
                   onClick={() => window.print()}
-                  className="hidden sm:flex items-center gap-2 px-8 py-4 bg-gray-900 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-widest shadow-xl shadow-gray-200 transition-all active:scale-95"
+                  className="hidden sm:flex items-center gap-3 px-8 py-4 bg-gray-900 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-widest shadow-xl shadow-gray-200 transition-all active:scale-95"
                >
-                  <span>🖨️</span> Export PDF
+                  <Printer size={16} /> Export PDF
                </button>
             </div>
           </div>
@@ -150,7 +153,7 @@ export default function AdminHistoryPage() {
                       className="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:bg-gray-100 hover:text-gray-700 transition-all flex items-center justify-center shadow-sm border border-transparent hover:border-gray-200 active:scale-95"
                       title="Clear All Filters"
                    >
-                      🔄
+                      <RefreshCw size={18} />
                    </button>
                 </div>
              </div>
@@ -182,11 +185,13 @@ export default function AdminHistoryPage() {
                         <tr key={order._id} className="hover:bg-gray-50/30 transition-all group">
                           <td className="px-10 py-8 min-w-[280px] text-left">
                             <div className="flex items-center gap-4">
-                               <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-xl shadow-inner border border-white">👤</div>
+                               <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 shadow-inner border border-white">
+                                  <User size={24} />
+                               </div>
                                <div>
                                   <p className="font-black text-gray-900 mb-0.5 text-lg">{order.customerDetails?.name || 'Deleted User'}</p>
-                                  <p className="text-[11px] text-brand-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-                                     <span>📱</span> {order.customerDetails?.mobileNumber || 'N/A'}
+                                  <p className="text-[11px] text-brand-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                     <Phone size={12} className="text-brand-500" /> {order.customerDetails?.mobileNumber || 'N/A'}
                                   </p>
                                   <p className="text-[11px] text-gray-400 font-bold leading-tight max-w-[240px] truncate group-hover:text-gray-600 transition-colors" title={order.exactAddress}>
                                      {order.exactAddress}
@@ -196,12 +201,12 @@ export default function AdminHistoryPage() {
                           </td>
                           <td className="px-10 py-8 whitespace-nowrap text-left">
                              <div className="space-y-1.5 p-4 bg-gray-50/50 rounded-2xl border border-gray-50 group-hover:bg-white group-hover:border-gray-100 transition-all">
-                                <p className="text-xs font-black text-gray-900 flex items-center gap-2">
-                                   <span className="text-base">📅</span>
+                                <p className="text-[11px] font-black text-gray-900 flex items-center gap-2">
+                                   <Calendar size={14} className="text-gray-400" />
                                    {new Date(order.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </p>
                                  <p className="text-[10px] text-brand-600 font-black uppercase tracking-widest flex items-center gap-2">
-                                    <span className="text-base">⏰</span>
+                                    <Clock size={14} className="text-brand-500" />
                                     {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                  </p>
                               </div>
@@ -230,12 +235,12 @@ export default function AdminHistoryPage() {
                           </td>
                           <td className="px-10 py-8 text-center">
                              <Link href={`/admin/orders/${order._id}`}>
-                                <button className="px-6 py-3 bg-gray-900 text-white hover:bg-black text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-gray-200 transition-all active:scale-95 whitespace-nowrap">
-                                   View Record
+                                <button className="px-6 py-3 bg-gray-900 text-white hover:bg-black text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-gray-200 transition-all active:scale-95 whitespace-nowrap flex items-center gap-2 mx-auto">
+                                   View Record <ArrowRight size={12} />
                                 </button>
                              </Link>
                           </td>
-                          <td className="px-10 py-8 text-center">
+                          <td className="px-10 py-8 text-center text-left">
                             <StatusBadge status={order.status} />
                           </td>
                         </tr>
@@ -262,20 +267,24 @@ export default function AdminHistoryPage() {
 
                     <div className="p-6 bg-gray-50/50 rounded-3xl border border-gray-50 space-y-4">
                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-lg shadow-sm">👤</div>
+                          <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-gray-400 shadow-sm">
+                             <User size={20} />
+                          </div>
                           <div>
                              <p className="text-sm font-black text-gray-900">{order.customerDetails?.name || 'Deleted User'}</p>
                              <p className="text-[10px] font-bold text-gray-500">{order.customerDetails?.mobileNumber || 'N/A'}</p>
                           </div>
                        </div>
                        <div className="flex items-center gap-4 border-t border-white pt-4">
-                          <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-lg shadow-sm">📅</div>
+                          <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-brand-500 shadow-sm">
+                             <Calendar size={20} />
+                          </div>
                           <div>
                              <p className="text-sm font-black text-gray-900">
                                 {new Date(order.scheduledAt).toLocaleDateString()}
                              </p>
                              <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest">
-                                {new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                              </p>
                           </div>
                        </div>
@@ -284,9 +293,9 @@ export default function AdminHistoryPage() {
                     <div className="pt-2">
                        <Link 
                           href={`/admin/orders/${order._id}`}
-                          className="flex items-center justify-center w-full py-5 bg-gray-900 text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-[1.5rem] shadow-2xl shadow-gray-200 active:scale-[0.98] transition-all"
+                          className="flex items-center justify-center gap-3 w-full py-5 bg-gray-900 text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-[1.5rem] shadow-2xl shadow-gray-200 active:scale-[0.98] transition-all"
                        >
-                          View Full Details
+                          View Full Details <ArrowRight size={14} />
                        </Link>
                     </div>
                   </div>
@@ -295,7 +304,9 @@ export default function AdminHistoryPage() {
 
               {filteredOrders.length === 0 && (
                 <div className="bg-white rounded-[3rem] py-24 text-center border border-gray-100 shadow-xl shadow-gray-100/50 flex flex-col items-center">
-                   <div className="w-24 h-24 bg-gray-50 rounded-[2.5rem] flex items-center justify-center text-5xl mb-8 grayscale opacity-50 border border-white">📭</div>
+                   <div className="w-24 h-24 bg-gray-50 rounded-[2.5rem] flex items-center justify-center text-gray-300 mb-8 border border-white">
+                      <Inbox size={48} />
+                   </div>
                    <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Zero Matches Found</h3>
                    <p className="text-gray-400 font-bold max-w-xs mx-auto">Try adjusting your filters or date range to find what you're looking for.</p>
                    <button 

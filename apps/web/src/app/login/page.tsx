@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
 import { validatePhone, validateEmail } from '../utils/validators';
+import { Package, Trophy, Recycle } from 'lucide-react';
 
 function LoginContent() {
   const [email, setEmail] = useState('');
@@ -19,6 +20,7 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { login, requestOTP, verifyOTP, googleLogin, isAuthenticated, user } = useAuth();
   const router = useRouter();
@@ -50,14 +52,14 @@ function LoginContent() {
     }
 
     setError('');
-    setLoading(true);
+    setOtpLoading(true);
     const result = await requestOTP(countryCode + mobileNumber.replace(/\D/g, ''));
     if (result.success) {
       setOtpSent(true);
     } else {
       setError(result.error || 'Failed to send OTP');
     }
-    setLoading(false);
+    setOtpLoading(false);
   };
 
   const handleGoogleLoginSuccess = async (credential: string) => {
@@ -165,13 +167,17 @@ function LoginContent() {
             Sign in to continue managing your scrap pickups and contribute to a greener planet.
           </p>
           <div className="mt-12 flex justify-center gap-8">
-            {['📦', '🏆', '♻️'].map((emoji, i) => (
+            {[
+              { Icon: Package, delay: 200 },
+              { Icon: Trophy, delay: 400 },
+              { Icon: Recycle, delay: 600 }
+            ].map(({ Icon, delay }, i) => (
               <div
                 key={i}
-                className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-2xl backdrop-blur-sm animate-fade-in"
-                style={{ animationDelay: `${(i + 1) * 200}ms` }}
+                className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-white backdrop-blur-sm animate-fade-in shadow-lg border border-white/10"
+                style={{ animationDelay: `${delay}ms` }}
               >
-                {emoji}
+                <Icon size={28} />
               </div>
             ))}
           </div>
@@ -343,14 +349,14 @@ function LoginContent() {
                 <>
                   <div>
                     <label htmlFor="mobile" className="block text-sm font-semibold text-gray-700 mb-2">
-                       Mobile Number
+                       Mobile Number <span className="text-red-500">*</span>
                     </label>
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex flex-col gap-3">
                       <div className="flex gap-2 flex-1">
                         <select
                           value={countryCode}
                           onChange={(e) => setCountryCode(e.target.value)}
-                          className="px-3 py-3 border-2 border-gray-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-gray-900 bg-white"
+                          className="w-[80px] px-1 py-3 border-2 border-gray-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-gray-900 bg-white text-xs"
                           disabled={otpSent}
                         >
                           <option value="+91">+91 (IN)</option>
@@ -365,9 +371,11 @@ function LoginContent() {
                           <input
                             id="mobile"
                             type="tel"
+                            maxLength={10}
                             value={mobileNumber}
                             onChange={(e) => {
-                              setMobileNumber(e.target.value);
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              setMobileNumber(value);
                               if (fieldErrors.mobileNumber) setFieldErrors(prev => ({ ...prev, mobileNumber: '' }));
                             }}
                             onBlur={() => {
@@ -377,7 +385,7 @@ function LoginContent() {
                                 setFieldErrors(prev => ({ ...prev, mobileNumber: 'Please enter a valid phone number (min 10 digits)' }));
                               }
                             }}
-                            className={`w-full pl-12 pr-4 py-3 border-2 rounded-xl outline-none transition-all placeholder-gray-400 ${
+                            className={`w-full pl-10 pr-4 py-3 border-2 rounded-xl outline-none transition-all placeholder-gray-400 text-sm font-semibold ${
                               fieldErrors.mobileNumber 
                                 ? 'border-red-500 bg-red-50 text-red-900 focus:ring-2 focus:ring-red-100' 
                                 : 'border-gray-200 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-gray-900'
@@ -390,14 +398,14 @@ function LoginContent() {
                       <button
                         type="button"
                         onClick={handleRequestOTP}
-                        disabled={loading || otpSent}
-                        className={`px-6 py-3 font-bold rounded-xl transition-all border-2 w-full sm:w-auto ${
+                        disabled={loading || otpLoading || otpSent || mobileNumber.length !== 10}
+                        className={`px-6 py-3.5 font-black uppercase tracking-widest text-xs rounded-xl transition-all border-2 w-full flex items-center justify-center gap-2 ${
                           otpSent 
                             ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
                             : 'bg-brand-50 text-brand-600 border-brand-100 hover:bg-brand-100'
                         } disabled:opacity-50`}
                       >
-                        {otpSent ? 'Code Sent ✓' : 'Get OTP'}
+                        {otpLoading ? 'Sending...' : (otpSent ? 'Code Sent ✓' : 'Get OTP')}
                       </button>
                     </div>
                     {fieldErrors.mobileNumber && <p className="text-red-500 text-xs mt-1">{fieldErrors.mobileNumber}</p>}
@@ -407,23 +415,34 @@ function LoginContent() {
                     <div className="animate-fade-in py-2">
                       <div className="flex justify-between items-center mb-2 px-1">
                         <label htmlFor="otp" className="block text-sm font-semibold text-gray-700">
-                          Enter 6-digit OTP
+                          Enter 4-digit OTP
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => { setOtpSent(false); setOtp(''); }}
-                          className="text-xs text-brand-600 hover:text-brand-700 font-bold underline"
-                        >
-                          Edit Number
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={handleRequestOTP}
+                            disabled={otpLoading}
+                            className="px-3 py-1.5 bg-brand-50 text-brand-600 hover:bg-brand-100 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors disabled:opacity-50"
+                          >
+                            Resend
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setOtpSent(false); setOtp(''); }}
+                            className="px-3 py-1.5 bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-full text-[10px] font-black uppercase tracking-wider transition-colors"
+                          >
+                            Edit
+                          </button>
+                        </div>
                       </div>
                       <input
                         id="otp"
                         type="text"
-                        maxLength={6}
+                        maxLength={4}
                         value={otp}
                         onChange={(e) => {
-                          setOtp(e.target.value.replace(/\D/g, ''));
+                          const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                          setOtp(value);
                           if (fieldErrors.otp) setFieldErrors(prev => ({ ...prev, otp: '' }));
                         }}
                         onBlur={() => {
@@ -436,7 +455,7 @@ function LoginContent() {
                             ? 'border-red-500 bg-red-50 text-red-900 focus:ring-2 focus:ring-red-100' 
                             : 'border-gray-200 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-gray-900'
                         }`}
-                        placeholder="••••••"
+                        placeholder="••••"
                         disabled={loading}
                       />
                       {fieldErrors.otp && <p className="text-red-500 text-xs mt-1 text-center font-medium">{fieldErrors.otp}</p>}
@@ -447,7 +466,7 @@ function LoginContent() {
 
               <button
                 type="submit"
-                disabled={loading || (loginType === 'mobile' && !otpSent)}
+                disabled={loading || otpLoading || (loginType === 'mobile' && !otpSent)}
                 className="w-full py-3.5 bg-brand-500 text-white font-bold rounded-xl hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (

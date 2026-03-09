@@ -10,5 +10,5 @@ export * from './Pagination';
 export * from './Loader';
 export * from './EmptyState';
 export * from './Toast';
-export * from './ProtectedRoute';
+export { default as ProtectedRoute } from './ProtectedRoute';
 export * from './Sidebar';

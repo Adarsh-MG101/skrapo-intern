@@ -9,6 +9,22 @@ import { useToast } from '../../../components/common/Toast';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { 
+  ArrowLeft, 
+  MapPin, 
+  Clock, 
+  Recycle, 
+  Truck, 
+  CheckCircle2, 
+  FileText, 
+  ShieldCheck, 
+  AlertTriangle, 
+  Zap, 
+  HelpCircle,
+  Scale,
+  Navigation,
+  Check
+} from 'lucide-react';
 
 const CustomerMap = dynamic(() => import('../../../components/customer/CustomerMap'), { 
   ssr: false,
@@ -106,7 +122,7 @@ function OrderDetails() {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast('Pickup Completed! Great job! ♻️', 'success');
+        showToast('Pickup Completed! Great job!', 'success');
         setOrder(prev => prev ? { ...prev, status: 'Completed' } : null);
       } else if (res.status !== 401) {
         showToast(data.error || 'Failed to complete', 'error');
@@ -124,19 +140,18 @@ function OrderDetails() {
   if (errorStatus === 410) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-xl text-center border-t-8 border-blue-500 animate-scale-in">
-           <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-8 text-4xl shadow-inner">
-             🤝
+        <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-xl text-center border-t-8 border-brand-500 animate-scale-in">
+           <div className="w-20 h-20 bg-brand-50 text-brand-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner border border-brand-100">
+              <Zap size={40} className="fill-current" />
            </div>
           <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight leading-tight">Already Claimed!</h2>
           <p className="text-gray-500 mb-10 font-medium text-lg leading-relaxed px-2">
-            This order has already been accepted by another champion. <b>We'll notify you as soon as the next one arrives!</b>
+            This mission has already been claimed by another Scrap Champ. <b>Watch for new alerts in your area!</b>
           </p>
           <div className="space-y-4">
-            <Button fullWidth size="lg" className="bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/20" onClick={() => router.push('/scrap-champ/jobs')}>
-              Back to Jobs Board
+            <Button fullWidth size="lg" className="bg-brand-600 hover:bg-brand-700 shadow-xl shadow-brand-500/20 py-6 rounded-2xl" onClick={() => router.push('/scrap-champ/jobs')}>
+              Back to Missions
             </Button>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4">Pincode: Regional Pooled Request</p>
           </div>
         </div>
       </div>
@@ -146,18 +161,20 @@ function OrderDetails() {
   if (errorStatus === 403) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl text-center border-t-4 border-amber-500">
-           <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl font-bold">!</div>
-          <h2 className="text-2xl font-black text-gray-900 mb-2">Champ Account Required</h2>
-          <p className="text-gray-500 mb-8 font-medium">
-            You are currently logged in as <b>{user?.name}</b> (Customer). This link is for Scrap Champions only.
+        <div className="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-xl text-center border-t-8 border-amber-500">
+           <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner border border-amber-100">
+              <AlertTriangle size={40} />
+           </div>
+          <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">Access Restricted</h2>
+          <p className="text-gray-500 mb-8 font-medium leading-relaxed">
+            You are logged in as <b className="text-gray-900">{user?.name}</b> (Customer). This panel is reserved for verified Scrap Champions and requires specific partner credentials.
           </p>
-          <div className="space-y-3">
-            <Button fullWidth onClick={() => { logout(); router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`); }}>
-              Login as Scrap Champ
+          <div className="space-y-4">
+            <Button fullWidth size="lg" className="rounded-2xl py-6" onClick={() => { logout(); router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`); }}>
+              Partner Login
             </Button>
-            <Button variant="outline" fullWidth onClick={() => router.push(user?.defaultRoute || '/')}>
-              Go to Dashboard
+            <Button variant="ghost" fullWidth onClick={() => router.push(user?.defaultRoute || '/')} className="rounded-2xl">
+              Exit to Dashboard
             </Button>
           </div>
         </div>
@@ -167,88 +184,106 @@ function OrderDetails() {
 
   if (!order) return (
     <div className="p-10 text-center min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <p className="text-gray-400 font-bold mb-4">Order not found.</p>
-      <Link href="/scrap-champ/jobs"><Button variant="ghost">Back to Jobs</Button></Link>
+      <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-gray-200 mb-6 shadow-sm border border-gray-100">
+        <HelpCircle size={40} />
+      </div>
+      <p className="text-gray-400 font-black mb-8">Mission file not found.</p>
+      <Link href="/scrap-champ/jobs">
+        <Button variant="ghost" className="rounded-xl px-8">Back to Missions</Button>
+      </Link>
     </div>
   );
 
   return (
     <div className="p-4 md:p-8 lg:p-10 bg-gray-50/30 min-h-screen">
-      <div className="max-w-4xl mx-auto flex flex-col items-center">
+      <div className="max-w-4xl mx-auto">
         
         <div className="w-full flex justify-between items-center mb-10">
-          <button onClick={() => router.back()} className="text-sm font-bold text-gray-400 hover:text-gray-900 flex items-center gap-1.5 transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+          <button onClick={() => router.back()} className="px-5 py-2.5 bg-white rounded-xl shadow-sm border border-gray-100 text-sm font-black text-gray-400 hover:text-brand-600 flex items-center gap-2 transition-all">
+            <ArrowLeft size={18} />
             Go Back
           </button>
           <StatusBadge status={order.status} />
         </div>
 
-        <div className="bg-white rounded-[2rem] p-6 sm:p-10 shadow-xl border border-gray-100 w-full animate-fade-in">
-            <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+        <div className="bg-white rounded-[2.5rem] p-6 sm:p-10 shadow-xl border border-gray-100 w-full animate-fade-in relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-5 text-brand-600 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
+                <Truck size={140} />
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 relative z-10">
               
               {/* Image Section */}
               <div className="w-full lg:flex-1">
-                  <div className="aspect-[4/3] bg-gray-50 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden border-4 border-white shadow-lg relative group">
+                  <div className="aspect-[4/3] bg-gray-50 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-[6px] border-white shadow-2xl relative group">
                     {order.photoUrl ? (
-                        <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover" />
+                        <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-200">
-                            <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c0 1.1.9 2 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                            </svg>
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                            <Truck size={64} strokeWidth={1} />
                         </div>
                     )}
-                    <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/30 text-white font-black text-[10px] uppercase tracking-widest">
-                      Preview
+                    <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
+                      Pickup Preview
                     </div>
                   </div>
               </div>
 
               {/* Details Section */}
               <div className="flex-1 flex flex-col justify-center">
-                  <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
-                    {order.scrapTypes.join(', ')}
-                  </h1>
-                  <div className="flex items-center gap-2 mb-8">
-                    <span className="text-xs font-black bg-brand-50 text-brand-600 px-3 py-1 rounded-full uppercase tracking-widest">Estimated Weight</span>
-                    <span className="font-bold text-gray-900">
-                      {order.estimatedWeight?.total ? `${order.estimatedWeight.total}kg` : 'Not specified'}
-                    </span>
+                  <div className="mb-8">
+                     <p className="text-[10px] font-black text-brand-600 uppercase tracking-[0.2em] mb-2">Category Manifest</p>
+                     <h1 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">
+                        {order.scrapTypes.join(', ')}
+                     </h1>
                   </div>
 
-                  <div className="space-y-6 mb-10">
-                    <div className="flex gap-4">
-                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">📍</div>
-                        <div>
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pickup Location</p>
-                          <p className="font-bold text-gray-900 leading-tight">
+                  <div className="flex items-center gap-3 mb-10">
+                    <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 border border-brand-100 shadow-inner">
+                        <Scale size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Expected Payload</p>
+                        <p className="font-black text-gray-900 text-xl tracking-tight">
+                        {order.estimatedWeight?.total ? `${order.estimatedWeight.total} kg` : 'Weight Variable'}
+                        </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8 mb-12">
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-brand-600 flex-shrink-0 border border-white shadow-sm">
+                            <MapPin size={24} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">Collection Address</p>
+                          <p className="font-black text-gray-800 leading-relaxed text-sm">
                               {order.status === 'Accepted' || order.status === 'Completed' 
                                 ? order.exactAddress 
-                                : order.generalArea + ' (Restricted)'}
+                                : order.generalArea + ' (Regional Pooled Request)'}
                           </p>
                           {order.status === 'Assigned' || order.status === 'Requested' ? (
-                              <p className={`text-xs font-bold mt-1 ${order.status === 'Requested' ? 'text-blue-600' : 'text-brand-600'}`}>
-                                {order.status === 'Requested' ? 'Claim mission to reveal exact address' : 'Accept job to reveal exact address'}
+                              <p className={`text-[10px] font-black mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${order.status === 'Requested' ? 'bg-blue-50 text-blue-600' : 'bg-brand-50 text-brand-600'} border border-current opacity-70`}>
+                                <Zap size={10} fill="currentColor" /> {order.status === 'Requested' ? 'CLAIM TO REVEAL EXACT LOCATION' : 'ACCEPT TO REVEAL EXACT LOCATION'}
                               </p>
                           ) : null}
                         </div>
                     </div>
 
                     {(order.status === 'Accepted' || order.status === 'Completed') && order.location && (
-                        <div className="-mt-2 mb-6 animate-fade-in">
+                        <div className="-mt-2 mb-4 animate-fade-in">
                           <CustomerMap location={order.location} />
                         </div>
                     )}
 
-                    <div className="flex gap-4">
-                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">⏰</div>
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-brand-600 flex-shrink-0 border border-white shadow-sm">
+                           <Clock size={24} />
+                        </div>
                         <div>
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Scheduled Time</p>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">Mission Window</p>
                           <p className="font-bold text-gray-900 leading-tight">
-                              {new Date(order.scheduledAt).toLocaleDateString([], { dateStyle: 'long' })} at {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { timeStyle: 'short' })}
+                              {new Date(order.scheduledAt).toLocaleDateString([], { dateStyle: 'long' })} · {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { timeStyle: 'short' })}
                           </p>
                         </div>
                     </div>
@@ -258,16 +293,19 @@ function OrderDetails() {
                     <div className="flex gap-4">
                       <Button 
                           variant="primary" 
-                          className={order.status === 'Requested' ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20' : ''}
+                          className={`py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-2xl flex-1 flex items-center justify-center gap-3 ${order.status === 'Requested' ? 'bg-brand-600 hover:bg-brand-700 shadow-brand-500/20' : ''}`}
                           fullWidth 
                           onClick={() => handleDecision('accept')}
                           disabled={processing}
                           size="lg"
                       >
-                          {processing ? 'Processing...' : order.status === 'Requested' ? '⚡ Claim This Mission' : 'Accept Job'}
+                          {processing ? 'Processing...' : (
+                            <> {order.status === 'Requested' ? '⚡ Claim This Mission' : 'Accept Job'} <CheckCircle2 size={18} /> </>
+                          )}
                       </Button>
                       <Button 
                           variant="ghost" 
+                          className="py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest flex-1 border border-gray-100 hover:bg-red-50 hover:text-red-600"
                           fullWidth 
                           onClick={() => handleDecision('deny')}
                           disabled={processing}
@@ -279,49 +317,65 @@ function OrderDetails() {
                   )}
 
                   {order.status === 'Accepted' && (
-                    <div className="space-y-4">
-                      <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] text-center">
-                          <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xl mx-auto mb-4 border-4 border-emerald-100 shadow-lg animate-bounce">✅</div>
-                          <h3 className="font-black text-emerald-900 mb-1">Job Accepted!</h3>
-                          <p className="text-sm text-emerald-700 font-medium mb-6">Reach the pickup location to finish this job.</p>
-                          
-                          <Button 
-                            variant="ghost" 
-                            fullWidth 
-                            className="mb-4 bg-white border-emerald-200 text-emerald-600 hover:bg-emerald-100 font-black shadow-sm"
-                            onClick={() => {
-                              const dest = order.location 
-                                ? `${order.location.lat},${order.location.lng}` 
-                                : encodeURIComponent(order.exactAddress || '');
-                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
-                            }}
-                            leftIcon={<span className="mr-1">📍</span>}
-                          >
-                            Navigate to Pickup
-                          </Button>
+                    <div className="space-y-4 animate-slide-up">
+                      <div className="bg-white border-2 border-emerald-500/10 p-8 rounded-[2.5rem] text-center shadow-xl shadow-emerald-500/5 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 p-6 opacity-5 text-emerald-500 pointer-events-none">
+                             <CheckCircle2 size={80} />
+                          </div>
 
-                          <Button 
-                            variant="primary" 
-                            fullWidth 
-                            size="lg"
-                            onClick={() => setShowCompleteModal(true)}
-                            disabled={processing}
-                            className="bg-emerald-600 hover:bg-emerald-700 border-none shadow-lg shadow-emerald-500/20"
-                          >
-                            {processing ? 'Finishing...' : 'Mark as Completed! ♻️'}
-                          </Button>
+                          <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-lg shadow-emerald-500/30 animate-pulse relative z-10 border-4 border-white">
+                             <Check size={32} strokeWidth={3} />
+                          </div>
+                          
+                          <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Mission Engaged</h3>
+                          <p className="text-sm text-gray-500 font-medium mb-8 max-w-[240px] mx-auto leading-relaxed">Exact coordinates have been revealed. Route to the customer to collect items.</p>
+                          
+                          <div className="flex flex-col gap-4">
+                            <Button 
+                              variant="ghost" 
+                              fullWidth 
+                              className="py-5 rounded-2xl bg-gray-50 border-gray-100 text-gray-900 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 font-black flex gap-3 text-xs uppercase tracking-[0.1em]"
+                              onClick={() => {
+                                const dest = order.location 
+                                  ? `${order.location.lat},${order.location.lng}` 
+                                  : encodeURIComponent(order.exactAddress || '');
+                                window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
+                              }}
+                            >
+                              Open Navigation <Navigation size={18} />
+                            </Button>
+
+                            <Button 
+                              variant="primary" 
+                              fullWidth 
+                              size="lg"
+                              onClick={() => setShowCompleteModal(true)}
+                              disabled={processing}
+                              className="bg-emerald-600 hover:bg-emerald-700 border-none shadow-xl shadow-emerald-500/30 py-6 rounded-2xl text-lg flex gap-3"
+                            >
+                              {processing ? 'Processing...' : 'Mark as Completed!'} <Recycle size={22} className="group-hover:rotate-180 transition-transform duration-700" />
+                            </Button>
+                          </div>
                       </div>
                     </div>
                   )}
 
                   {order.status === 'Completed' && (
-                    <div className="bg-blue-50 border border-blue-100 p-8 rounded-[2rem] text-center">
-                        <div className="text-4xl mb-4">📜</div>
-                        <h3 className="text-xl font-black text-blue-900 mb-1 tracking-tight">Receipt Generated</h3>
-                        <p className="text-sm text-blue-700 font-medium mb-6">Great mission! You can now see this in your job history.</p>
+                    <div className="bg-brand-50 border-2 border-brand-100 p-10 rounded-[2.5rem] text-center shadow-xl shadow-brand-500/5 relative overflow-hidden group">
+                        <div className="absolute -left-4 -bottom-4 p-8 opacity-10 text-brand-600 group-hover:scale-125 transition-transform duration-700 pointer-events-none">
+                           <FileText size={100} />
+                        </div>
+                        
+                        <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center text-brand-600 mx-auto mb-6 shadow-sm border border-brand-100 relative z-10">
+                           <FileText size={32} />
+                        </div>
+                        
+                        <h3 className="text-2xl font-black text-brand-900 mb-2 tracking-tight">Session Finalized</h3>
+                        <p className="text-sm text-brand-700 font-medium mb-10 max-w-[280px] mx-auto leading-relaxed">Mission completed successfully. Assessment and receipt have been archived.</p>
+                        
                         <Link href="/scrap-champ/history">
-                          <Button variant="ghost" fullWidth className="border-blue-200 text-blue-600 hover:bg-blue-100">
-                            View in History
+                          <Button variant="ghost" fullWidth className="py-5 rounded-2xl bg-white border-brand-200 text-brand-600 hover:bg-brand-600 hover:text-white font-black text-xs uppercase tracking-widest shadow-sm">
+                            View Earnings Log
                           </Button>
                         </Link>
                     </div>
@@ -330,32 +384,47 @@ function OrderDetails() {
             </div>
         </div>
 
-        <div className="mt-12 text-center text-gray-400 text-sm font-medium">
-            Need help? Contact <span className="text-brand-500 font-bold hover:underline cursor-pointer">Support</span>
+        <div className="mt-12 text-center text-gray-400 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
+            System Issue? <span className="text-brand-500 hover:text-brand-700 cursor-pointer transition-colors border-b-2 border-brand-100 pb-0.5">Contact Support</span>
         </div>
       </div>
 
       <Modal
         isOpen={showCompleteModal}
         onClose={() => setShowCompleteModal(false)}
-        title="Complete Pickup"
+        title="Finalize Pickup"
         footer={
-          <>
-            <Button variant="ghost" onClick={() => setShowCompleteModal(false)}>Cancel</Button>
-            <Button variant="primary" onClick={confirmComplete} disabled={processing}>
-              {processing ? 'Finishing...' : 'Yes, Complete Pickup'}
+          <div className="flex gap-4 w-full">
+            <Button variant="ghost" fullWidth className="rounded-xl py-4" onClick={() => setShowCompleteModal(false)}>Cancel</Button>
+            <Button variant="primary" fullWidth className="rounded-xl py-4 shadow-xl shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700" onClick={confirmComplete} disabled={processing}>
+              {processing ? '...' : (
+                <span className="flex items-center gap-2 justify-center">Confirm Complete <Check size={18} strokeWidth={3} /></span>
+              )}
             </Button>
-          </>
+          </div>
         }
       >
-        <div className="text-center py-4">
-          <div className="w-16 h-16 bg-emerald-50 rounded-full flex flex-col items-center justify-center text-emerald-600 border border-emerald-100 mx-auto mb-4 text-2xl">
-            ♻️
+        <div className="text-center py-8">
+          <div className="w-20 h-20 bg-emerald-50 rounded-[2rem] flex items-center justify-center text-emerald-600 border-4 border-white shadow-xl mx-auto mb-8 relative">
+            <Recycle size={40} className="animate-spin-slow" />
+            <div className="absolute -top-2 -right-2 w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center text-white border-4 border-white shadow-md">
+               <ShieldCheck size={16} />
+            </div>
           </div>
-          <h3 className="text-xl font-black text-gray-900 mb-2">Are you sure?</h3>
-          <p className="text-gray-500 font-medium">Please confirm that you have successfully collected the scrap and completed this pickup mission.</p>
+          <h3 className="text-3xl font-black text-gray-900 mb-3 tracking-tighter">Are you sure?</h3>
+          <p className="text-gray-500 font-medium leading-relaxed max-w-[280px] mx-auto">Please confirm that you have successfully collected the scrap items and finalized the transaction at the doorstep.</p>
         </div>
       </Modal>
+
+      <style jsx global>{`
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
+        }
+      `}</style>
     </div>
   );
 }

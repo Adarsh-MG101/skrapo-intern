@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Loader, Button, EmptyState } from '../../components/common';
 import { useToast } from '../../components/common/Toast';
 import Link from 'next/link';
+import { Plus, User, ArrowRight, Phone, Mail, Search } from 'lucide-react';
 
 interface Champ {
   _id: string;
@@ -57,8 +58,8 @@ export default function AdminChampsPage() {
               <p className="text-gray-500 font-medium">View and monitor your network of Scrap Champions.</p>
             </div>
             <Link href="/admin/champs/create">
-              <Button size="lg" className="rounded-2xl shadow-lg shadow-brand-500/20 px-8">
-                <span className="mr-2">➕</span> New Champion
+              <Button size="lg" className="rounded-2xl shadow-lg shadow-brand-500/20 px-8 flex items-center gap-2">
+                <Plus size={18} strokeWidth={3} /> New Champion
               </Button>
             </Link>
           </div>
@@ -72,6 +73,7 @@ export default function AdminChampsPage() {
                 <EmptyState 
                     title="No Champions Found" 
                     description="You haven't registered any scrap champions yet." 
+                    icon={User}
                 />
             </div>
           ) : (
@@ -86,19 +88,19 @@ export default function AdminChampsPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300">
-                          👤
+                        <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:scale-110 transition-transform duration-300">
+                          <User size={28} />
                         </div>
                         <div>
                           <h3 className="text-lg font-black text-gray-900 leading-tight">{champ.name}</h3>
                           <p className="text-xs font-bold text-brand-600 uppercase tracking-widest mt-1">Partner</p>
                         </div>
                       </div>
-                      <button 
+                      <div 
                          className="text-[11px] font-black text-gray-400 group-hover:text-brand-600 uppercase tracking-widest flex items-center gap-1 transition-colors"
                       >
-                         Details <span>→</span>
-                      </button>
+                         Details <ArrowRight size={12} />
+                      </div>
                     </div>
 
                     <div className="mt-6 grid grid-cols-2 gap-4">
@@ -132,12 +134,12 @@ export default function AdminChampsPage() {
                            <label className="block text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-2 px-1">Contact Details</label>
                            <div className="space-y-3">
                               <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-2xl border border-gray-100/50">
-                                 <span className="text-lg">📱</span>
+                                 <Phone size={16} className="text-gray-400" />
                                  <p className="text-sm font-bold text-gray-800">{selectedChamp.mobileNumber}</p>
                               </div>
                               {selectedChamp.email && (
                                 <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-2xl border border-gray-100/50">
-                                   <span className="text-lg">📧</span>
+                                   <Mail size={16} className="text-gray-400" />
                                    <p className="text-sm font-bold text-gray-800">{selectedChamp.email}</p>
                                 </div>
                               )}
@@ -166,8 +168,8 @@ export default function AdminChampsPage() {
                   </div>
                 ) : (
                   <div className="bg-white rounded-[2.5rem] p-10 border-2 border-dashed border-gray-100 text-center flex flex-col items-center justify-center min-h-[400px] sticky top-10">
-                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-3xl mb-4 grayscale">
-                        🔭
+                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4 border border-gray-100">
+                        <Search size={24} />
                      </div>
                      <p className="text-gray-400 font-bold max-w-[150px]">Select a champion to view deep insights.</p>
                   </div>

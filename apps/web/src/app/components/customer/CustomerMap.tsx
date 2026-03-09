@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Crosshair, MapPin, Loader2 } from 'lucide-react';
 
 // Fix typical leaflet marker icon issues in React
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -15,7 +16,7 @@ L.Icon.Default.mergeOptions({
 
 interface CustomerMapProps {
   location: { lat: number; lng: number } | null;
-  onChange?: (loc: { lat: number; lng: number }) => void;
+  onChange?: (loc: { lat: number; lng: number }, address?: string) => void;
   addressQuery?: string;
 }
 
@@ -62,14 +63,37 @@ export default function CustomerMap({ location, onChange, addressQuery }: Custom
     }
   }, []);
 
+  const fetchAddress = async (lat: number, lng: number) => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+      const res = await fetch(url, {
+        headers: {
+          'Accept-Language': 'en-US,en;q=0.5',
+          'User-Agent': 'Skrapo-App-v1'
+        }
+      });
+      const data = await res.json();
+      if (data && data.display_name) {
+        return data.display_name;
+      }
+    } catch (err) {
+      console.error('❌ Reverse geocoding failed:', err);
+    }
+    return undefined;
+  };
+
   const handleLocateMe = () => {
     if (!navigator.geolocation) return;
     setIsSearching(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const newLoc = { lat: position.coords.latitude, lng: position.coords.longitude };
         setCenter([newLoc.lat, newLoc.lng]);
-        if (onChange) onChange(newLoc);
+        if (onChange) {
+           onChange(newLoc);
+           const address = await fetchAddress(newLoc.lat, newLoc.lng);
+           if (address) onChange(newLoc, address);
+        }
         setIsSearching(false);
       },
       (err) => {
@@ -102,7 +126,6 @@ export default function CustomerMap({ location, onChange, addressQuery }: Custom
         
         if (data && data.length > 0) {
           const newLoc = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-          console.log('📍 Geocoding success:', newLoc);
           onChange(newLoc);
         }
       } catch (err) {
@@ -116,15 +139,21 @@ export default function CustomerMap({ location, onChange, addressQuery }: Custom
   }, [addressQuery]);
 
   return (
-    <div className="w-full h-48 md:h-64 rounded-2xl overflow-hidden border-2 border-gray-100 mt-4 relative z-0 shadow-inner group">
+    <div className="w-full h-48 md:h-64 rounded-[2.5rem] overflow-hidden border-4 border-white mt-4 relative z-0 shadow-xl group">
       <MapContainer center={center} zoom={zoom} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <LocationPicker location={location} onChange={(loc) => {
+        <LocationPicker location={location} onChange={async (loc) => {
           hasManuallySet.current = true;
-          if (onChange) onChange(loc);
+          if (onChange) {
+            onChange(loc);
+            setIsSearching(true);
+            const address = await fetchAddress(loc.lat, loc.lng);
+            if (address) onChange(loc, address);
+            setIsSearching(false);
+          }
         }} />
         {location && <MapRecenter location={[location.lat, location.lng]} />}
       </MapContainer>
@@ -133,23 +162,23 @@ export default function CustomerMap({ location, onChange, addressQuery }: Custom
       <button 
         type="button"
         onClick={handleLocateMe}
-        className="absolute top-4 right-4 z-[1000] bg-white p-2 rounded-xl shadow-lg border border-gray-100 hover:bg-gray-50 transition-all active:scale-95 group/btn"
+        className="absolute bottom-4 right-4 z-[1000] bg-white text-brand-600 p-4 rounded-2xl shadow-xl border border-gray-100 hover:bg-brand-50 transition-all active:scale-95 group/btn"
         title="Use current location"
       >
-        <span className="text-xl group-hover/btn:scale-110 transition-transform inline-block">🎯</span>
+        <Crosshair size={24} strokeWidth={2.5} className="group-hover/btn:scale-110 transition-transform" />
       </button>
       
       {isSearching && (
         <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-[1001] flex items-center justify-center">
-          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-100 animate-fade-in">
-            <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-[10px] font-black uppercase text-gray-600 tracking-widest">Updating Map...</span>
+          <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-2xl shadow-xl border border-gray-100 animate-fade-in">
+            <Loader2 className="w-5 h-5 text-brand-500 animate-spin" />
+            <span className="text-[10px] font-black uppercase text-gray-900 tracking-widest">Pinpointing Address</span>
           </div>
         </div>
       )}
 
-      <div className="absolute bottom-2 left-2 z-[1000] bg-white/80 backdrop-blur-sm px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg shadow-md pointer-events-none transition-opacity duration-300 group-hover:opacity-0 text-gray-500">
-        Tap to pinpoint exact location
+      <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur-md px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md pointer-events-none transition-opacity duration-300 group-hover:opacity-0 text-brand-600 border border-brand-50 flex items-center gap-2">
+        <MapPin size={14} fill="currentColor" /> Tap to Adjust
       </div>
     </div>
   );

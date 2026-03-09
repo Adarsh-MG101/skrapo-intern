@@ -7,6 +7,7 @@ import { useSocket } from '../../context/SocketContext';
 import { StatusBadge, Loader } from '../../components/common';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
+import { User, MapPin, Inbox, Zap, ArrowRight, Radio } from 'lucide-react';
 
 interface Order {
   _id: string;
@@ -58,7 +59,6 @@ export default function AdminOrdersPage() {
     if (!socket) return;
 
     const handleRefresh = () => {
-      console.log('🔄 [Allocation Center] Refreshing data via socket event');
       fetchData();
     };
 
@@ -81,9 +81,13 @@ export default function AdminOrdersPage() {
     <ProtectedRoute allowedRoles={['admin']}>
       <div className="p-4 md:p-8 lg:p-10 bg-gray-50/30 min-h-screen">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-10">
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Allocation Center</h1>
-            <p className="text-gray-500 font-medium">Monitor real-time pickup broadcasts and champion engagement.</p>
+          <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                 Allocation Center <Zap className="text-brand-500 fill-brand-500" size={28} />
+              </h1>
+              <p className="text-gray-500 font-medium">Monitor real-time pickup broadcasts and champion engagement.</p>
+            </div>
           </div>
 
           {loading ? (
@@ -107,7 +111,7 @@ export default function AdminOrdersPage() {
                     </div>
 
                     <div className="flex items-center gap-3 py-3 border-y border-gray-50">
-                       <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-lg">👤</div>
+                       <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold border border-white"><User size={20} /></div>
                         <div>
                            <p className="text-xs font-black text-gray-900">{order.customerDetails?.name || 'Deleted User'}</p>
                            <p className="text-[10px] font-bold text-brand-600">{order.customerDetails?.mobileNumber || 'N/A'}</p>
@@ -115,7 +119,7 @@ export default function AdminOrdersPage() {
                     </div>
 
                     <div className="flex items-start gap-3">
-                       <div className="w-5 h-5 flex-shrink-0 mt-0.5">📍</div>
+                       <MapPin size={16} className="text-gray-300 flex-shrink-0 mt-0.5" />
                        <p className="text-xs text-gray-500 font-medium leading-relaxed">{order.exactAddress}</p>
                     </div>
 
@@ -124,8 +128,8 @@ export default function AdminOrdersPage() {
                         {order.assignedScrapChampId ? (
                           <div className="flex items-center justify-between bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100">
                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs">
-                                   {order.champDetails?.name?.charAt(0) || '?'}
+                                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs border border-white">
+                                   {order.champDetails?.name?.charAt(0) || <User size={12} />}
                                 </div>
                                 <p className="text-xs font-bold text-gray-800">{order.champDetails?.name || 'Partner'}</p>
                              </div>
@@ -161,84 +165,98 @@ export default function AdminOrdersPage() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-gray-50/50 border-b border-gray-100">
-                        <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Order Info</th>
-                        <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Customer</th>
-                        <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Address</th>
-                        <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
-                        <th className="px-6 py-5 text-xs font-black text-gray-400 uppercase tracking-widest">Allocation</th>
+                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Order Info</th>
+                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Customer</th>
+                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Address</th>
+                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Engagement</th>
+                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status / Allocation</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {orders.map((order) => (
-                        <tr key={order._id} className="hover:bg-gray-50/30 transition-colors">
-                          <td className="px-6 py-6">
-                             <Link href={`/admin/orders/${order._id}`} className="group/link">
-                               <p className="font-bold text-gray-900 group-hover/link:text-brand-600 transition-colors">{order.scrapTypes.join(', ')}</p>
-                               <p className="text-xs text-gray-400 font-bold mt-1 uppercase">
-                                 {new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                               </p>
-                             </Link>
-                          </td>
-                          <td className="px-6 py-6">
-                            <p className="font-bold text-gray-900">{order.customerDetails?.name || 'Deleted User'}</p>
-                            <p className="text-xs text-brand-600 font-bold">{order.customerDetails?.mobileNumber || 'N/A'}</p>
-                          </td>
-                          <td className="px-6 py-6 overflow-hidden max-w-[200px]">
-                            <p className="text-sm text-gray-500 font-medium truncate" title={order.exactAddress}>
-                              {order.exactAddress}
-                            </p>
-                          </td>
-                          <td className="px-6 py-6">
-                            <StatusBadge status={order.status} />
-                          </td>
-                          <td className="px-6 py-6">
-                            {order.assignedScrapChampId ? (
-                              <div className="flex items-center gap-2">
-                                 <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs ring-2 ring-white shadow-sm">
-                                   {order.champDetails?.name?.charAt(0) || '?'}
-                                 </div>
-                                 <div>
-                                   <p className="text-xs font-bold text-gray-800">{order.champDetails?.name || 'Partner'}</p>
-                                   <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest">Confirmed</p>
+                       {orders.length === 0 ? (
+                         <tr>
+                           <td colSpan={5} className="py-20 text-center">
+                              <div className="flex flex-col items-center">
+                                <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
+                                  <Inbox size={40} />
+                                </div>
+                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Queue Clear</p>
+                              </div>
+                           </td>
+                         </tr>
+                       ) : (
+                         orders.map((order) => (
+                          <tr key={order._id} className="hover:bg-gray-50/30 transition-colors group">
+                            <td className="px-10 py-8">
+                               <Link href={`/admin/orders/${order._id}`} className="group/link block">
+                                 <p className="font-black text-gray-900 group-hover/link:text-brand-600 transition-colors tracking-tight text-base mb-1">{order.scrapTypes.join(', ')}</p>
+                                 <p className="text-[10px] text-gray-400 font-black flex items-center gap-1.5 uppercase tracking-widest">
+                                   <ArrowRight size={10} className="text-brand-500" />
+                                   {new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                 </p>
+                               </Link>
+                            </td>
+                            <td className="px-10 py-8">
+                              <div className="flex items-center gap-3">
+                                 <div className="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 border border-brand-100"><User size={18} /></div>
+                                 <div className="min-w-0">
+                                   <p className="font-black text-gray-900 leading-tight truncate">{order.customerDetails?.name || 'Deleted User'}</p>
+                                   <p className="text-[10px] text-brand-600 font-bold tracking-wider mt-0.5">{order.customerDetails?.mobileNumber || 'N/A'}</p>
                                  </div>
                               </div>
-                            ) : (
-                              <div className="flex gap-4 items-center">
-                                 <div className="flex -space-x-2">
-                                    <div className="w-8 h-8 bg-blue-50 border-2 border-white rounded-full flex items-center justify-center text-[10px] font-black text-blue-500 shadow-sm" title="Notified Partners">
-                                       {order.notifiedChampsCount || 0}
-                                    </div>
-                                    <div className="w-8 h-8 bg-amber-50 border-2 border-white rounded-full flex items-center justify-center text-[10px] font-black text-amber-500 shadow-sm" title="Total Views">
-                                       {order.viewCount || 0}
-                                    </div>
-                                    <div className="w-8 h-8 bg-red-50 border-2 border-white rounded-full flex items-center justify-center text-[10px] font-black text-red-500 shadow-sm" title="Declined">
-                                       {order.declinedChampIds?.length || 0}
-                                    </div>
-                                 </div>
-                                 <div className="flex flex-col">
-                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none">Broadcasting</span>
-                                    <span className="text-[10px] font-bold text-blue-600 mt-1 flex items-center gap-1">
-                                       Live <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-                                    </span>
-                                 </div>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-10 py-8 max-w-[240px]">
+                              <p className="text-[13px] text-gray-500 font-medium truncate group-hover:text-gray-900 transition-colors" title={order.exactAddress}>
+                                {order.exactAddress}
+                              </p>
+                            </td>
+                            <td className="px-10 py-8">
+                               <div className="flex justify-center gap-3">
+                                  <div className="px-3 py-1.5 bg-blue-50 rounded-lg text-blue-600 text-[10px] font-black uppercase tracking-tight shadow-sm border border-blue-100" title="Notified">
+                                     {order.notifiedChampsCount || 0}N
+                                  </div>
+                                  <div className="px-3 py-1.5 bg-amber-50 rounded-lg text-amber-600 text-[10px] font-black uppercase tracking-tight shadow-sm border border-amber-100" title="Views">
+                                     {order.viewCount || 0}V
+                                  </div>
+                                  <div className="px-3 py-1.5 bg-red-50 rounded-lg text-red-600 text-[10px] font-black uppercase tracking-tight shadow-sm border border-red-100" title="Declined">
+                                     {order.declinedChampIds?.length || 0}D
+                                  </div>
+                               </div>
+                            </td>
+                            <td className="px-10 py-8">
+                              {order.assignedScrapChampId ? (
+                                <div className="flex items-center gap-3">
+                                   <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-700 font-black text-xs border border-emerald-100 shadow-sm">
+                                     {order.champDetails?.name?.charAt(0) || <User size={16} />}
+                                   </div>
+                                   <div>
+                                     <p className="text-xs font-black text-gray-900 leading-none mb-1.5">{order.champDetails?.name || 'Partner'}</p>
+                                     <StatusBadge status={order.status} />
+                                   </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-4">
+                                   <div className="relative">
+                                      <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-blue-500 border border-gray-100 shadow-inner">
+                                         <Radio size={20} className="animate-pulse" />
+                                      </div>
+                                   </div>
+                                   <div className="flex flex-col">
+                                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Broadcasting</span>
+                                      <span className="text-[10px] font-bold text-blue-600 mt-1.5 flex items-center gap-1.5">
+                                         Live Now <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                                      </span>
+                                   </div>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                       )}
                     </tbody>
                   </table>
                 </div>
               </div>
-
-              {orders.length === 0 && (
-                <div className="bg-white rounded-[2.5rem] py-20 text-center border border-gray-100">
-                  <div className="flex flex-col items-center">
-                    <span className="text-4xl mb-4">📬</span>
-                    <p className="text-gray-400 font-bold">No orders found in the queue.</p>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

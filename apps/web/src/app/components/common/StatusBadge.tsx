@@ -10,11 +10,19 @@ interface StatusBadgeProps {
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const getTheme = (s: string) => {
     const low = s.toLowerCase();
-    if (['completed', 'success', 'accepted'].includes(low)) return { bg: 'bg-emerald-50 text-emerald-700 border-emerald-100', dot: 'bg-emerald-500' };
-    if (['assigned', 'requested', 'picking'].includes(low)) return { bg: 'bg-brand-50 text-brand-700 border-brand-100', dot: 'bg-brand-500' };
-    if (['problem', 'declined', 'denied', 'cancelled'].includes(low)) return { bg: 'bg-red-50 text-red-700 border-red-100', dot: 'bg-red-500' };
-    if (['new', 'arrived'].includes(low)) return { bg: 'bg-blue-50 text-blue-700 border-blue-100', dot: 'bg-blue-500' };
-    return { bg: 'bg-gray-50 text-gray-500 border-gray-100', dot: 'bg-gray-300' };
+    
+    // Most important/distinctive statuses
+    if (low === 'requested') return { bg: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500' };
+    if (low === 'accepted') return { bg: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' };
+    if (low === 'assigned') return { bg: 'bg-brand-50 text-brand-700 border-brand-200', dot: 'bg-brand-500' };
+    if (low === 'completed' || low === 'success') return { bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' };
+    
+    // Secondary statuses
+    if (['picking', 'arrived'].includes(low)) return { bg: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' };
+    if (['problem', 'declined', 'denied', 'cancelled'].includes(low)) return { bg: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-500' };
+    if (low === 'new') return { bg: 'bg-sky-50 text-sky-700 border-sky-200', dot: 'bg-sky-500' };
+    
+    return { bg: 'bg-gray-50 text-gray-500 border-gray-200', dot: 'bg-gray-300' };
   };
 
   const theme = getTheme(status);

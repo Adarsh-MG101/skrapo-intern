@@ -8,6 +8,20 @@ import { useToast } from '../../../components/common/Toast';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { API_URL } from '../../../config/env';
+import { 
+  ArrowLeft, 
+  MapPin, 
+  Clock, 
+  Calendar, 
+  User, 
+  Phone, 
+  Scale, 
+  ImageIcon, 
+  ShieldCheck, 
+  Star,
+  Zap,
+  HelpCircle
+} from 'lucide-react';
 
 interface Order {
   _id: string;
@@ -57,79 +71,104 @@ export default function CustomerOrderDetailsPage() {
   }, [token, id]);
 
   if (loading) return <div className="flex justify-center items-center min-h-screen"><Loader size="lg" /></div>;
-  if (!order) return <div className="p-10 text-center"><p className="text-gray-400">Order not found.</p><Link href="/customer/pickups"><Button variant="ghost">Back to My Pickups</Button></Link></div>;
+  if (!order) return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-10 text-center bg-gray-50">
+      <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center text-gray-200 mb-6 shadow-sm border border-gray-100">
+        <HelpCircle size={40} />
+      </div>
+      <p className="text-gray-400 font-bold mb-8">Order not found.</p>
+      <Link href="/customer/pickups">
+        <Button variant="ghost" className="rounded-xl px-8">Back to My Pickups</Button>
+      </Link>
+    </div>
+  );
 
   return (
     <ProtectedRoute allowedRoles={['customer']}>
       <div className="p-4 md:p-8 lg:p-10 bg-gray-50/30 min-h-screen">
-        <div className="max-w-4xl mx-auto flex flex-col items-center">
+        <div className="max-w-4xl mx-auto">
           
           <div className="w-full flex justify-between items-center mb-10">
-            <Link href="/customer/pickups" className="text-sm font-bold text-gray-400 hover:text-gray-900 flex items-center gap-1.5 transition-colors">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
+            <Link href="/customer/pickups" className="px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100 text-sm font-black text-gray-400 hover:text-brand-600 flex items-center gap-2 transition-all">
+              <ArrowLeft size={18} />
               My Pickups
             </Link>
             <StatusBadge status={order.status} />
           </div>
 
-          <div className="bg-white rounded-[2rem] p-6 sm:p-10 shadow-xl border border-gray-100 w-full animate-fade-in">
-             <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+          <div className="bg-white rounded-[2.5rem] p-6 sm:p-10 shadow-xl border border-gray-100 w-full animate-fade-in relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-5 text-brand-600 pointer-events-none">
+                <Zap size={140} />
+             </div>
+
+             <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 relative z-10">
                 
                 {/* Image Section */}
                 <div className="w-full lg:flex-1">
-                   <div className="aspect-[4/3] bg-gray-50 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden border-4 border-white shadow-lg relative group">
+                   <div className="aspect-square sm:aspect-[4/3] bg-gray-50 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-[6px] border-white shadow-2xl relative group">
                       {order.photoUrl ? (
-                         <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover" />
+                         <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                       ) : (
-                         <div className="w-full h-full flex items-center justify-center text-gray-200">
-                             <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24">
-                               <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c0 1.1.9 2 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                             </svg>
+                         <div className="w-full h-full flex items-center justify-center text-gray-200 bg-gray-50">
+                             <ImageIcon size={64} strokeWidth={1} />
                          </div>
                       )}
-                      <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/30 text-white font-black text-[10px] uppercase tracking-widest">
-                        Captured Image
+                      <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
+                        Verification Image
                       </div>
                    </div>
                 </div>
 
                 {/* Details Section */}
                 <div className="flex-1 flex flex-col justify-center">
-                   <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">
-                     {order.scrapTypes.join(', ')}
-                   </h1>
-                   <div className="flex items-center gap-2 mb-8">
-                     <span className="text-xs font-black bg-brand-50 text-brand-600 px-3 py-1 rounded-full uppercase tracking-widest">Est. Weight</span>
-                     <span className="font-bold text-gray-900">
-                        {order.estimatedWeight?.total ? `${order.estimatedWeight.total}kg` : 'Not specified'}
-                     </span>
+                   <div className="mb-8">
+                     <p className="text-[10px] font-black text-brand-600 uppercase tracking-[0.2em] mb-3">Recycling Session</p>
+                     <h1 className="text-4xl font-black text-gray-900 tracking-tight leading-tight">
+                       {order.scrapTypes.join(', ')}
+                     </h1>
                    </div>
 
-                   <div className="space-y-6">
-                      <div className="flex gap-4">
-                         <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">📍</div>
+                   <div className="flex items-center gap-3 mb-10">
+                     <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 border border-brand-100 shadow-inner">
+                        <Scale size={20} />
+                     </div>
+                     <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Estimated Weight</p>
+                        <p className="font-black text-gray-900 text-lg">
+                           {order.estimatedWeight?.total ? `${order.estimatedWeight.total} kg` : 'Not specified'}
+                        </p>
+                     </div>
+                   </div>
+
+                   <div className="space-y-8">
+                      <div className="flex items-start gap-4">
+                         <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-brand-600 flex-shrink-0 border border-white shadow-sm">
+                            <MapPin size={22} />
+                         </div>
                          <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pickup Address</p>
-                            <p className="font-bold text-gray-800 leading-tight">{order.exactAddress}</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">Pickup Location</p>
+                            <p className="font-bold text-gray-800 leading-relaxed text-sm">{order.exactAddress}</p>
                          </div>
                       </div>
 
-                      <div className="flex gap-4">
-                         <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">⏰</div>
+                      <div className="flex items-start gap-4">
+                         <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-brand-600 flex-shrink-0 border border-white shadow-sm">
+                            <Clock size={22} />
+                         </div>
                          <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Scheduled For</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">Scheduled Window</p>
                             <p className="font-bold text-gray-800 leading-tight">
                                {new Date(order.scheduledAt).toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}
                             </p>
                          </div>
                       </div>
 
-                      <div className="flex gap-4">
-                         <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0">📅</div>
+                      <div className="flex items-start gap-4">
+                         <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-brand-600 flex-shrink-0 border border-white shadow-sm">
+                            <Calendar size={22} />
+                         </div>
                          <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Requested On</p>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">Requested Date</p>
                             <p className="font-bold text-gray-800 leading-tight">
                                {new Date(order.createdAt).toLocaleString([], { dateStyle: 'long' })}
                             </p>
@@ -138,53 +177,59 @@ export default function CustomerOrderDetailsPage() {
                    </div>
 
                    {order.champDetails && (
-                     <div className="mt-10 pt-8 border-t border-gray-100">
-                        <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-4">Your Scrap Champion</p>
-                        <div className="flex items-center justify-between bg-brand-50 rounded-2xl p-5 border border-brand-100 shadow-sm">
-                           <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm border border-brand-100">
-                                 🤵
+                     <div className="mt-12 pt-10 border-t border-gray-100 animate-slide-up">
+                        <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-5">Allocated Scrap Champion</p>
+                        <div className="flex items-center justify-between bg-white rounded-3xl p-6 border border-gray-100 shadow-xl shadow-brand-500/5 group/champ hover:border-brand-100 transition-all">
+                           <div className="flex items-center gap-5">
+                              <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 shadow-inner border border-brand-100 group-hover/champ:scale-105 transition-transform">
+                                 <User size={28} />
                               </div>
                               <div>
-                                 <p className="font-black text-gray-900 leading-none mb-1">{order.champDetails.name}</p>
-                                 <p className="text-xs font-bold text-gray-500">Verified Professional</p>
+                                 <p className="font-black text-gray-900 text-lg leading-none mb-1.5">{order.champDetails.name}</p>
+                                 <div className="flex items-center gap-1.5">
+                                    <ShieldCheck size={14} className="text-emerald-500" />
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Verified Partner</p>
+                                 </div>
                               </div>
                            </div>
-                           <a href={`tel:${order.champDetails.mobileNumber}`} className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-brand-600 shadow-md hover:scale-110 transition-transform border border-brand-100">
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                              </svg>
+                           <a href={`tel:${order.champDetails.mobileNumber}`} className="w-12 h-12 bg-brand-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/30 hover:bg-brand-700 hover:rotate-12 transition-all">
+                              <Phone size={22} />
                            </a>
                         </div>
                      </div>
                    )}
 
                    {order.status === 'Requested' && !order.champDetails && (
-                     <div className="mt-10 p-4 bg-brand-50/50 rounded-2xl border border-dashed border-brand-200">
-                        <p className="text-xs text-brand-700 font-bold text-center">Finding a Scrap Champion for you...</p>
+                     <div className="mt-12 p-6 bg-brand-50/50 rounded-3xl border border-dashed border-brand-200 text-center flex flex-col items-center gap-3">
+                        <div className="w-8 h-8 rounded-full border-2 border-brand-200 border-t-brand-600 animate-spin" />
+                        <p className="text-xs text-brand-700 font-black uppercase tracking-widest">Broadcasting for Partner...</p>
                      </div>
                    )}
 
                    {order.status === 'Completed' && !order.hasFeedback && (
-                     <div className="mt-10">
+                     <div className="mt-12 group">
                         <Link href={`/customer/feedback/${order._id}`}>
-                           <Button variant="success" fullWidth size="lg">Rate & Review Your Experience</Button>
+                           <Button variant="success" fullWidth size="lg" className="rounded-2xl py-6 shadow-xl shadow-emerald-500/20 text-lg flex gap-3">
+                              Rate & Review Experience <Star size={20} fill="currentColor" />
+                           </Button>
                         </Link>
                      </div>
                    )}
 
                    {order.hasFeedback && (
-                     <div className="mt-10 p-6 bg-emerald-50 rounded-[2rem] border-2 border-emerald-100 flex items-center justify-center gap-3">
-                        <span className="text-2xl">🌟</span>
-                        <p className="font-black text-emerald-700 uppercase tracking-widest text-sm">Feedback Submitted! Thank you.</p>
+                     <div className="mt-12 p-8 bg-emerald-50/50 rounded-[2.5rem] border border-emerald-100 flex flex-col items-center gap-4 text-center group">
+                        <div className="w-14 h-14 bg-white rounded-3xl flex items-center justify-center text-emerald-500 shadow-sm border border-emerald-100 group-hover:scale-110 transition-transform">
+                           <Star size={28} fill="currentColor" />
+                        </div>
+                        <p className="font-black text-emerald-700 uppercase tracking-widest text-xs">Feedback Submitted Successfully</p>
                      </div>
                    )}
                 </div>
              </div>
           </div>
 
-          <div className="mt-12 text-center text-gray-400 text-sm font-medium">
-             Need to change something? Contact <span className="text-brand-500 font-bold hover:underline cursor-pointer">Support</span>
+          <div className="mt-12 text-center text-gray-400 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
+             Need Assistance? <span className="text-brand-500 hover:text-brand-700 cursor-pointer transition-colors border-b-2 border-brand-100 pb-0.5">Contact Support</span>
           </div>
         </div>
       </div>

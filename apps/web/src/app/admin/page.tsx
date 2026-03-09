@@ -6,6 +6,18 @@ import { useAuth } from '../context/AuthContext';
 import { Loader, StatusBadge } from '../components/common';
 import Link from 'next/link';
 import { API_URL } from '../config/env';
+import { 
+  LayoutDashboard, 
+  ClipboardList, 
+  Clock, 
+  Truck, 
+  Trophy, 
+  Zap, 
+  MessageSquare, 
+  Settings2, 
+  Search, 
+  Package
+} from 'lucide-react';
 
 interface AdminStats {
   total: number;
@@ -47,11 +59,11 @@ function AdminDashboardContent() {
         <div className="mb-12 animate-fade-in flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">
-              Control Center <span className="text-brand-500">⚙️</span>
+              Control Center <LayoutDashboard className="inline-block text-brand-500 ml-2" size={36} strokeWidth={3} />
             </h1>
             <p className="text-gray-500 mt-2 text-lg font-medium">Monitoring Skrapo operations and scrap ecosystem.</p>
           </div>
-          <div className="flex items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-gray-100 pr-6">
+          <div className="md:hidden flex items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-gray-100 pr-6">
             <div className="w-12 h-12 bg-brand-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-500/20">
               {user?.name?.charAt(0).toUpperCase()}
             </div>
@@ -65,10 +77,10 @@ function AdminDashboardContent() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
           {[
-            { label: 'Total Orders', value: stats?.total, icon: '📋', color: 'text-brand-600', bg: 'bg-brand-50' },
-            { label: 'Unallocated', value: stats?.pending, icon: '⏳', color: 'text-amber-600', bg: 'bg-amber-50' },
-            { label: 'Active Jobs', value: stats?.active, icon: '🚛', color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: 'Champ Network', value: stats?.champs, icon: '🏆', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+            { label: 'Total Orders', value: stats?.total, icon: <ClipboardList size={22} />, color: 'text-brand-600', bg: 'bg-brand-50' },
+            { label: 'Unallocated', value: stats?.pending, icon: <Clock size={22} />, color: 'text-amber-600', bg: 'bg-amber-50' },
+            { label: 'Active Jobs', value: stats?.active, icon: <Truck size={22} />, color: 'text-blue-600', bg: 'bg-blue-50' },
+            { label: 'Champ Network', value: stats?.champs, icon: <Trophy size={22} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           ].map((stat, index) => (
             <div key={stat.label} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
               <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center text-xl mb-4 font-bold`}>
@@ -84,7 +96,9 @@ function AdminDashboardContent() {
         <div className="grid md:grid-cols-3 gap-8 mb-12">
           <Link href="/admin/orders" className="group">
              <div className="h-full bg-brand-600 rounded-[2.5rem] p-10 text-white shadow-xl shadow-brand-500/20 hover:shadow-brand-500/40 transition-all hover:-translate-y-2 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform text-6xl rotate-12 text-white">⚡</div>
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform">
+                   <Zap size={80} strokeWidth={2.5} />
+                </div>
                 <h3 className="text-2xl font-black mb-2">Allocation Center</h3>
                 <p className="text-brand-100 font-medium mb-8">Match pending pickups with Scrap Champions.</p>
                 <div className="inline-flex items-center px-6 py-2 bg-white/10 rounded-xl border border-white/20 text-white font-bold text-xs uppercase tracking-widest group-hover:bg-white group-hover:text-brand-600 transition-colors">
@@ -95,7 +109,9 @@ function AdminDashboardContent() {
 
           <Link href="/admin/feedback" className="group">
              <div className="h-full bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform text-6xl">💬</div>
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform text-gray-400">
+                   <MessageSquare size={80} strokeWidth={2.5} />
+                </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-2">Feedback Reports</h3>
                 <p className="text-gray-500 font-medium mb-8">Review customer ratings and agent performance.</p>
                 <div className="inline-flex items-center px-6 py-2 bg-brand-50 rounded-xl border border-brand-100 text-brand-600 font-bold text-xs uppercase tracking-widest hover:bg-brand-100 transition-colors">
@@ -106,7 +122,9 @@ function AdminDashboardContent() {
 
           <Link href="/admin/settings" className="group">
              <div className="h-full bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform text-6xl">🛠️</div>
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform text-gray-400">
+                   <Settings2 size={80} strokeWidth={2.5} />
+                </div>
                 <h3 className="text-2xl font-black text-gray-900 mb-2">System Config</h3>
                 <p className="text-gray-500 font-medium mb-8">Manage app roles, areas, and SMS templates.</p>
                 <div className="inline-flex items-center px-6 py-2 bg-gray-50 rounded-xl border border-gray-100 text-gray-600 font-bold text-xs uppercase tracking-widest hover:bg-gray-100 transition-colors">
@@ -130,7 +148,9 @@ function AdminDashboardContent() {
 
           {!stats?.recentActivity || stats.recentActivity.length === 0 ? (
             <div className="text-center py-20 bg-gray-50/50 rounded-[2rem] border-2 border-dashed border-gray-100">
-               <div className="text-4xl mb-4">🥽</div>
+               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-gray-300 mx-auto mb-4 border border-gray-100 shadow-sm">
+                  <Search size={32} />
+               </div>
                <h3 className="text-xl font-black text-gray-900 mb-2">Awaiting the First Move</h3>
                <p className="text-gray-400 font-medium max-w-sm mx-auto">Once customers start recycling, their footprint will appear here globally.</p>
             </div>
@@ -139,7 +159,9 @@ function AdminDashboardContent() {
               {stats.recentActivity.map((order: any, idx) => (
                 <div key={order._id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-6 bg-gray-50/50 rounded-3xl border border-gray-100 hover:bg-white transition-all group hover:shadow-md animate-fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
                    <div className="flex items-center gap-6 mb-4 md:mb-0">
-                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-xl shadow-sm border border-gray-100 group-hover:border-brand-100 group-hover:bg-brand-50 transition-colors flex-shrink-0">📦</div>
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-400 shadow-sm border border-gray-100 group-hover:border-brand-100 group-hover:bg-brand-50 transition-colors flex-shrink-0">
+                        <Package size={22} />
+                      </div>
                       <div>
                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h4 className="font-black text-gray-900 tracking-tight uppercase text-sm">{order.scrapTypes.slice(0, 2).join(', ')}{order.scrapTypes.length > 2 && '...'}</h4>

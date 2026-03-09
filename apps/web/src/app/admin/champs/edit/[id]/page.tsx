@@ -6,6 +6,7 @@ import { useAuth } from '../../../../context/AuthContext';
 import ProtectedRoute from '../../../../components/common/ProtectedRoute';
 import { Button, Input, Loader } from '../../../../components/common';
 import { validatePhone, validateEmail, validatePincode } from '../../../../utils/validators';
+import { AlertCircle, CheckCircle2, Eye, EyeOff, UserCircle, ArrowLeft, Save } from 'lucide-react';
 
 const CITIES = [
   { label: 'Select City', value: '' },
@@ -205,26 +206,28 @@ function EditChampContent() {
       <div className="max-w-2xl mx-auto">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Edit Scrap Champion</h1>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+              <UserCircle className="text-brand-500" /> Edit Champion
+            </h1>
             <p className="text-gray-500 mt-2 font-medium">Update partner details and service area</p>
           </div>
           <button 
             onClick={() => router.back()}
-            className="p-3 bg-white rounded-2xl border border-gray-100 text-gray-500 hover:text-brand-600 transition-all shadow-sm"
+            className="p-3 bg-white rounded-2xl border border-gray-100 text-gray-500 hover:text-brand-600 transition-all shadow-sm flex items-center gap-2 px-6 font-bold text-sm"
           >
-            Back
+            <ArrowLeft size={18} /> Back
           </button>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 font-bold text-sm flex items-center gap-3 animate-fade-in">
-            <span className="text-xl">⚠️</span> {error}
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 font-bold text-sm flex items-center gap-3 animate-fade-in shadow-sm">
+            <AlertCircle size={20} /> {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-700 font-bold text-sm flex items-center gap-3 animate-fade-in">
-            <span className="text-xl">✅</span> {success}
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-700 font-bold text-sm flex items-center gap-3 animate-fade-in shadow-sm">
+            <CheckCircle2 size={20} /> {success}
           </div>
         )}
 
@@ -286,23 +289,14 @@ function EditChampContent() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="text-gray-400 hover:text-brand-500 transition-colors p-1"
                 >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               }
             />
           </div>
 
           <div className="pt-4 border-t border-gray-100">
-            <h2 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Service Area Details</h2>
+            <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 px-1">Logistics & Coverage</h2>
             <div className="space-y-6">
               <Input 
                 label="Preferred Local Area"
@@ -317,7 +311,7 @@ function EditChampContent() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">City *</label>
                   <select
-                    className={`w-full bg-white border-2 rounded-2xl px-4 py-3.5 outline-none transition-all duration-200 cursor-pointer hover:border-brand-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-gray-900 ${fieldErrors.city ? 'border-red-500 focus:ring-red-500/10' : 'border-gray-100'}`}
+                    className={`w-full bg-white border-2 rounded-2xl px-4 py-3.5 outline-none transition-all duration-200 cursor-pointer hover:border-brand-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-gray-900 font-bold ${fieldErrors.city ? 'border-red-500 focus:ring-red-500/10' : 'border-gray-100 shadow-sm'}`}
                     value={formData.city}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({...formData, city: e.target.value})}
                     required
@@ -339,9 +333,9 @@ function EditChampContent() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">
-                  Service Radius: <span className="text-brand-600">{formData.serviceRadiusKm} km</span>
+              <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 shadow-inner">
+                <label className="block text-sm font-bold text-gray-700 mb-4 ml-1">
+                  Service Radius: <span className="text-brand-600 font-black">{formData.serviceRadiusKm} km</span>
                 </label>
                 <input 
                   type="range"
@@ -351,7 +345,7 @@ function EditChampContent() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, serviceRadiusKm: e.target.value})}
                   className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-500"
                 />
-                <div className="flex justify-between text-[10px] text-gray-400 font-bold uppercase mt-2">
+                <div className="flex justify-between text-[10px] text-gray-400 font-black uppercase mt-3 px-1">
                   <span>1 km</span>
                   <span>50 km</span>
                 </div>
@@ -364,9 +358,9 @@ function EditChampContent() {
             fullWidth 
             size="lg" 
             isLoading={saving}
-            className="py-5 rounded-2xl shadow-xl shadow-brand-500/20 active:scale-95 transition-transform"
+            className="py-5 rounded-[1.5rem] shadow-xl shadow-brand-500/20 active:scale-95 transition-transform flex items-center justify-center gap-3"
           >
-            Save Changes
+            <Save size={20} /> Save Changes
           </Button>
         </form>
       </div>

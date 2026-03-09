@@ -9,6 +9,7 @@ import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/common/Toast';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
+import { Recycle, Trash2, MapPin, Calendar, Clock, ArrowRight, MessageSquare, ListTodo, X, ShieldCheck } from 'lucide-react';
 import { API_URL } from '../../config/env';
 
 interface Order {
@@ -95,7 +96,6 @@ export default function CustomerPickupsPage() {
     if (!socket) return;
 
     const handleRefresh = () => {
-      console.log('🔄 [Customer Pickups] Refreshing list via socket');
       const fetchOrders = async () => {
         try {
           const res = await fetch(`${API_URL}/orders/history`, {
@@ -125,13 +125,15 @@ export default function CustomerPickupsPage() {
     <ProtectedRoute allowedRoles={['customer']}>
       <div className="p-4 md:p-8 lg:p-10 bg-gray-50/30 min-h-screen">
         <div className="max-w-6xl mx-auto">
-          <div className="flex justify-between items-center mb-10">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
             <div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight">My Pickups</h1>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+                My Pickups <ListTodo className="text-brand-500" />
+              </h1>
               <p className="text-gray-500 font-medium">Track and manage your scheduled recycling services.</p>
             </div>
             <Link href="/customer/schedule">
-              <Button variant="primary">Schedule New</Button>
+              <Button variant="primary" className="rounded-2xl px-8 shadow-lg shadow-brand-500/20">Schedule New</Button>
             </Link>
           </div>
 
@@ -143,67 +145,73 @@ export default function CustomerPickupsPage() {
             <EmptyState 
               title="No Pickups Found" 
               description="You haven't scheduled any scrap pickups yet. Start recycling today!"
-              icon="♻️"
+              icon={Recycle}
               action={
                 <Link href="/customer/schedule">
-                  <Button variant="primary">Schedule Your First Pickup</Button>
+                  <Button variant="primary" className="rounded-2xl px-10">Schedule Your First Pickup</Button>
                 </Link>
               }
             />
           ) : (
             <div className="grid gap-6">
               {orders.map((order) => (
-                <div key={order._id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow animate-fade-in">
-                  <div className="flex flex-col md:flex-row justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 bg-brand-50 rounded-2xl flex flex-col items-center justify-center text-brand-600 border border-brand-100">
-                        <span className="text-[10px] font-black uppercase leading-none">
+                <div key={order._id} className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-sm border border-gray-100 hover:shadow-xl hover:border-brand-100 transition-all animate-fade-in group">
+                  <div className="flex flex-col lg:flex-row justify-between gap-6">
+                    <div className="flex items-start gap-6">
+                      <div className="w-20 h-20 bg-brand-50 rounded-3xl flex flex-col items-center justify-center text-brand-600 border border-brand-100 shadow-inner group-hover:scale-105 transition-transform">
+                        <span className="text-[10px] font-black uppercase tracking-widest leading-none mb-1 text-brand-400">
                           {new Date(order.scheduledAt).toLocaleString('default', { month: 'short' })}
                         </span>
-                        <span className="text-2xl font-black leading-none mt-0.5">
+                        <span className="text-3xl font-black leading-none">
                           {new Date(order.scheduledAt).getDate()}
                         </span>
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-bold text-gray-900">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <h3 className="text-xl font-black text-gray-900 group-hover:text-brand-600 transition-colors">
                             {order.scrapTypes.join(', ')}
                           </h3>
                           <StatusBadge status={order.status} />
                         </div>
-                        <p className="text-sm text-gray-400 font-medium flex items-center gap-1.5">
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          {order.exactAddress}
-                        </p>
-                        <p className="text-xs text-gray-300 mt-2 font-bold uppercase tracking-wider">
-                          {new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                        <div className="space-y-2">
+                           <p className="text-sm text-gray-400 font-bold flex items-center gap-2">
+                             <MapPin size={16} className="text-brand-500" />
+                             <span className="truncate">{order.exactAddress}</span>
+                           </p>
+                           <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.1em] flex items-center gap-2">
+                             <Calendar size={14} className="text-gray-300" />
+                             {new Date(order.scheduledAt).toLocaleDateString()} 
+                             <span className="w-1 h-1 bg-gray-200 rounded-full" />
+                             <Clock size={14} className="text-gray-300" />
+                             {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                           </p>
+                        </div>
                       </div>
                     </div>
-                     <div className="flex flex-wrap items-center gap-3 mt-4 md:mt-0">
-                        {/* Contextual actions */}
+                     <div className="flex flex-wrap items-center gap-3 lg:self-center">
                         {order.status === 'Completed' && !order.hasFeedback && (
                           <Link href={`/customer/feedback/${order._id}`}>
-                             <Button variant="success" size="sm">Rate & Review</Button>
+                             <Button variant="success" size="sm" className="rounded-xl flex items-center gap-2">
+                                <MessageSquare size={16} /> Rate & Review
+                             </Button>
                           </Link>
                         )}
                         {order.hasFeedback && (
-                          <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl uppercase tracking-widest border border-emerald-100">
-                             Feedback Submitted
+                          <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl uppercase tracking-widest border border-emerald-100 flex items-center gap-2">
+                             <ShieldCheck size={14} /> Feedback Submitted
                           </span>
                         )}
                         <Link href={`/customer/pickups/${order._id}`}>
-                           <Button variant="ghost" size="sm">Details</Button>
+                           <Button variant="ghost" size="sm" className="rounded-xl flex items-center gap-2">
+                             Details <ArrowRight size={16} />
+                           </Button>
                         </Link>
                         {!['Accepted', 'Completed'].includes(order.status) && (
                           <button 
                             onClick={() => triggerCancel(order._id, order.status)}
-                            className="text-xs font-bold text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg transition-colors border border-red-100 hover:bg-red-50"
+                            className="text-xs font-black text-gray-400 hover:text-red-500 px-4 py-2 rounded-xl transition-all border border-gray-100 hover:border-red-100 hover:bg-red-50 flex items-center gap-2"
                           >
-                            Cancel
+                            <Trash2 size={16} /> Cancel
                           </button>
                         )}
                      </div>
@@ -220,20 +228,27 @@ export default function CustomerPickupsPage() {
         onClose={() => setCancelModal({ isOpen: false, orderId: null })}
         title="Cancel Pickup"
         footer={
-          <>
-            <Button variant="ghost" onClick={() => setCancelModal({ isOpen: false, orderId: null })}>Keep the order</Button>
-            <Button variant="primary" onClick={confirmDelete} disabled={processing} className="bg-red-600 hover:bg-red-700 border-none">
-              {processing ? 'Cancelling...' : 'Yes, Cancel Pickup'}
+          <div className="flex w-full gap-3">
+            <Button variant="ghost" fullWidth onClick={() => setCancelModal({ isOpen: false, orderId: null })} className="rounded-xl">
+               Keep Order
             </Button>
-          </>
+            <Button variant="primary" fullWidth onClick={confirmDelete} disabled={processing} className="bg-red-500 hover:bg-red-600 border-none rounded-xl shadow-lg shadow-red-500/20">
+               {processing ? 'Cancelling...' : 'Confirm Cancel'}
+            </Button>
+          </div>
         }
       >
-        <div className="text-center py-4">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex flex-col items-center justify-center text-red-600 border border-red-100 mx-auto mb-4 text-2xl">
-            🗑️
+        <div className="text-center py-6">
+          <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center text-red-500 border border-red-100 mx-auto mb-6 shadow-inner relative">
+            <Trash2 size={32} />
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center border border-red-100">
+               <X size={14} />
+            </div>
           </div>
-          <h3 className="text-xl font-black text-gray-900 mb-2">Cancel Pickup?</h3>
-          <p className="text-gray-500 font-medium">Are you sure you want to cancel this recycling request? A Scrap Champ may have been ready to pick it up.</p>
+          <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Cancel this pickup?</h3>
+          <p className="text-gray-500 font-medium px-4">
+            Are you sure you want to stop this recycling request? A Scrap Champ might already be on their way.
+          </p>
         </div>
       </Modal>
     </ProtectedRoute>
