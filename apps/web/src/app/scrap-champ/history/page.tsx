@@ -13,7 +13,6 @@ import {
   Star, 
   History as HistoryIcon, 
   ArrowRight,
-  ChevronRight,
   FileCheck
 } from 'lucide-react';
 
