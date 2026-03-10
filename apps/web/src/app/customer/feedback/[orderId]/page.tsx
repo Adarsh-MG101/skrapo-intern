@@ -119,8 +119,8 @@ function FeedbackContent() {
   if (!order) return <div className="min-h-screen flex items-center justify-center text-gray-500 font-bold bg-gray-50">Session not found</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-4 sm:p-6 lg:p-10">
-      <div className="max-w-2xl w-full bg-white rounded-[3rem] p-8 sm:p-12 shadow-2xl shadow-brand-500/10 border border-gray-100 animate-fade-in text-center relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-3 sm:p-6 lg:p-10">
+      <div className="max-w-2xl w-full bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-12 shadow-2xl shadow-brand-500/10 border border-gray-100 animate-fade-in text-center relative overflow-hidden">
         <div className="absolute -left-10 -top-10 opacity-5">
            <Recycle size={200} />
         </div>
@@ -129,14 +129,14 @@ function FeedbackContent() {
             <Recycle size={48} strokeWidth={2.5} />
         </div>
         
-        <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-3">Rate Your Pickup</h1>
-        <p className="text-gray-500 font-medium mb-12 max-w-sm mx-auto">Your feedback ensures our Scrap Champs maintain professional service and accuracy.</p>
+        <h1 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight mb-2 sm:mb-3">Rate Your Pickup</h1>
+        <p className="text-sm sm:text-base text-gray-500 font-medium mb-8 sm:mb-12 max-w-sm mx-auto">Your feedback ensures our Scrap Champs maintain professional service and accuracy.</p>
 
         <form onSubmit={handleSubmit} className="space-y-12 text-left relative z-10">
           {/* Star Rating */}
-          <div className="flex flex-col items-center bg-gray-50/50 p-8 rounded-[2.5rem] border border-gray-100 shadow-inner">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Service Quality</label>
-              <div className="flex gap-4">
+          <div className="flex flex-col items-center bg-gray-50/50 p-6 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border border-gray-100 shadow-inner">
+              <label className="text-[9px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 sm:mb-6">Service Quality</label>
+              <div className="flex gap-2 sm:gap-4">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
@@ -144,16 +144,16 @@ function FeedbackContent() {
                     onMouseEnter={() => setHoveredRating(star)}
                     onMouseLeave={() => setHoveredRating(0)}
                     onClick={() => setRating(star)}
-                    className="transition-all duration-300 transform hover:scale-135 active:scale-95 outline-none"
+                    className="transition-all duration-300 transform hover:scale-125 active:scale-95 outline-none"
                   >
                     <Star 
-                      size={48} 
-                      strokeWidth={1.5}
                       className={`
+                        w-8 h-8 sm:w-12 sm:h-12
                         ${(hoveredRating || rating) >= star 
                           ? 'fill-amber-400 text-amber-500 drop-shadow-lg' 
                           : 'text-gray-200 fill-transparent'}
                       `}
+                      strokeWidth={1.5}
                     />
                   </button>
                 ))}
@@ -230,9 +230,9 @@ function FeedbackContent() {
 
         <Button 
           type="submit" fullWidth size="lg" variant="primary" disabled={submitting} isLoading={submitting}
-          className="rounded-2xl py-6 shadow-xl shadow-brand-500/20 text-lg flex items-center justify-center gap-3"
+          className="rounded-2xl py-4 sm:py-6 shadow-xl shadow-brand-500/20 text-base sm:text-lg flex items-center justify-center gap-3"
         >
-          Submit Feedback <ArrowRight />
+          Submit Feedback <ArrowRight size={20} />
         </Button>
         </form>
       </div>
