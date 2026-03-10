@@ -1,0 +1,22 @@
+{
+  "name": "Skrapo - Recycle My Bin",
+  "short_name": "Skrapo",
+  "description": "Eco-friendly scrap collection at your doorstep",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "gcm_sender_id": "103953800507",
+  "icons": [
+    {
+      "src": "/skrapo-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/skrapo-logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

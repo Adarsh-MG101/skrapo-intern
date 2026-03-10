@@ -82,6 +82,10 @@ export const SchedulePickupFlow: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
+  useEffect(() => {
     const isToday = formData.date === new Date().toISOString().split('T')[0];
     if (isToday) {
       const now = new Date();

@@ -173,7 +173,7 @@ function AdminDashboardContent() {
                    </div>
                    <div className="flex items-center gap-4 w-full md:w-auto flex-shrink-0">
                       <StatusBadge status={order.status} />
-                      <Link href={`/admin/orders?search=${order._id}`} className="flex-1 md:flex-none">
+                      <Link href={`/admin/orders/${order._id}`} className="flex-1 md:flex-none">
                          <div className="px-6 py-2.5 bg-white rounded-xl border border-gray-200 text-xs font-black text-gray-600 uppercase tracking-widest hover:border-brand-600 hover:text-brand-600 transition-all text-center">
                             Inspect
                          </div>

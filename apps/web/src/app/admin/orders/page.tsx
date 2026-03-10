@@ -161,91 +161,101 @@ export default function AdminOrdersPage() {
             <div className="space-y-6">
               {/* Mobile View: Cards */}
               <div className="grid grid-cols-1 gap-6 md:hidden">
-                {orders.map((order) => (
-                  <div key={order._id} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm space-y-4">
-                    <div className="flex justify-between items-start">
-                      <Link href={`/admin/orders/${order._id}`} className="flex-1">
-                        <p className="font-black text-gray-900 leading-tight mb-1">{order.scrapTypes.join(', ')}</p>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                           {new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </Link>
-                      <StatusBadge status={order.status} />
+                {orders.length === 0 ? (
+                  <div className="bg-white rounded-[2rem] p-12 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
+                      <Inbox size={32} />
                     </div>
-
-                    <div className="flex items-center gap-3 py-3 border-y border-gray-50">
-                       <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold border border-white"><User size={20} /></div>
-                        <div>
-                           <p className="text-xs font-black text-gray-900">{order.customerDetails?.name || 'Deleted User'}</p>
-                           <p className="text-[10px] font-bold text-brand-600">{order.customerDetails?.mobileNumber || 'N/A'}</p>
-                        </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                       <MapPin size={16} className="text-gray-300 flex-shrink-0 mt-0.5" />
-                       <p className="text-xs text-gray-500 font-medium leading-relaxed">{order.exactAddress}</p>
-                    </div>
-
-                    <div className="pt-2 space-y-4">
-                        {/* Engagement Tracker (Always Visible) */}
-                        <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                           <div className="flex items-center justify-between mb-3">
-                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Champ Engagement</p>
-                              {!order.assignedScrapChampId && order.status === 'Requested' && (
-                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
-                                   <CountdownTimer createdAt={order.createdAt} onExpire={() => fetchData()} />
-                                </p>
-                              )}
-                           </div>
-                           <div className="flex items-center justify-between">
-                              <div className="flex gap-2">
-                                 <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg shadow-blue-100" title="Notified">
-                                    {order.notifiedChampsCount || 0}
-                                 </div>
-                                 <div className="w-8 h-8 bg-red-600 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg shadow-red-100" title="Declined">
-                                    {order.declinedChampIds?.length || 0}
-                                 </div>
-                              </div>
-                              <button 
-                                onClick={() => fetchEngagement(order._id)}
-                                className="px-4 py-2 bg-white rounded-xl border border-gray-200 text-[10px] font-black text-gray-600 uppercase tracking-widest shadow-sm hover:border-brand-500 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
-                              >
-                                <span>Engagement View</span>
-                              </button>
-                           </div>
-                        </div>
-
-                        {/* Allocation Section */}
-                        <div className="space-y-2">
-                           <div className="px-1">
-                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Allocation Status</p>
-                           </div>
-                           {order.assignedScrapChampId ? (
-                              <div className="flex items-center justify-between bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100">
-                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs border border-white">
-                                       {order.champDetails?.name?.charAt(0) || <User size={12} />}
-                                    </div>
-                                    <div className="flex flex-col">
-                                       <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest leading-none mb-1">Partner Assigned</p>
-                                       <p className="text-xs font-bold text-gray-800">{order.champDetails?.name || 'Partner'}</p>
-                                    </div>
-                                 </div>
-                                 <StatusBadge status={order.status} />
-                              </div>
-                           ) : (
-                              <div className="bg-white p-3 rounded-2xl border border-gray-100 flex items-center justify-between">
-                                 <div className="flex items-center gap-2">
-                                    <Radio size={16} className="text-blue-500 animate-pulse" />
-                                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Broadcasting Region...</span>
-                                 </div>
-                                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                              </div>
-                           )}
-                        </div>
-                    </div>
+                    <p className="text-gray-400 font-black uppercase tracking-widest text-[10px]">Queue Clear</p>
+                    <p className="text-gray-900 font-bold mt-1">No pickups in queue</p>
                   </div>
-                ))}
+                ) : (
+                  orders.map((order) => (
+                    <div key={order._id} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm space-y-4">
+                      <div className="flex justify-between items-start">
+                        <Link href={`/admin/orders/${order._id}`} className="flex-1">
+                          <p className="font-black text-gray-900 leading-tight mb-1">{order.scrapTypes.join(', ')}</p>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+                             {new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </Link>
+                        <StatusBadge status={order.status} />
+                      </div>
+
+                      <div className="flex items-center gap-3 py-3 border-y border-gray-50">
+                         <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold border border-white"><User size={20} /></div>
+                          <div>
+                             <p className="text-xs font-black text-gray-900">{order.customerDetails?.name || 'Deleted User'}</p>
+                             <p className="text-[10px] font-bold text-brand-600">{order.customerDetails?.mobileNumber || 'N/A'}</p>
+                          </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                         <MapPin size={16} className="text-gray-300 flex-shrink-0 mt-0.5" />
+                         <p className="text-xs text-gray-500 font-medium leading-relaxed">{order.exactAddress}</p>
+                      </div>
+
+                      <div className="pt-2 space-y-4">
+                          {/* Engagement Tracker (Always Visible) */}
+                          <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                             <div className="flex items-center justify-between mb-3">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Champ Engagement</p>
+                                {!order.assignedScrapChampId && order.status === 'Requested' && (
+                                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
+                                     <CountdownTimer createdAt={order.createdAt} onExpire={() => fetchData()} />
+                                  </p>
+                                )}
+                             </div>
+                             <div className="flex items-center justify-between">
+                                <div className="flex gap-2">
+                                   <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg shadow-blue-100" title="Notified">
+                                      {order.notifiedChampsCount || 0}
+                                   </div>
+                                   <div className="w-8 h-8 bg-red-600 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg shadow-red-100" title="Declined">
+                                      {order.declinedChampIds?.length || 0}
+                                   </div>
+                                </div>
+                                <button 
+                                  onClick={() => fetchEngagement(order._id)}
+                                  className="px-4 py-2 bg-white rounded-xl border border-gray-200 text-[10px] font-black text-gray-600 uppercase tracking-widest shadow-sm hover:border-brand-500 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
+                                >
+                                  <span>Engagement View</span>
+                                </button>
+                             </div>
+                          </div>
+
+                          {/* Allocation Section */}
+                          <div className="space-y-2">
+                             <div className="px-1">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Allocation Status</p>
+                             </div>
+                             {order.assignedScrapChampId ? (
+                                <div className="flex items-center justify-between bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100">
+                                   <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs border border-white">
+                                         {order.champDetails?.name?.charAt(0) || <User size={12} />}
+                                      </div>
+                                      <div className="flex flex-col">
+                                         <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest leading-none mb-1">Partner Assigned</p>
+                                         <p className="text-xs font-bold text-gray-800">{order.champDetails?.name || 'Partner'}</p>
+                                      </div>
+                                   </div>
+                                   <StatusBadge status={order.status} />
+                                </div>
+                             ) : (
+                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                   <div className="flex items-center gap-2">
+                                      <Radio size={16} className="text-blue-500 animate-pulse" />
+                                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Broadcasting Region...</span>
+                                   </div>
+                                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                                </div>
+                             )}
+                          </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Desktop View: Table */}

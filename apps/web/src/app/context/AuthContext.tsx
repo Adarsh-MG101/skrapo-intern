@@ -74,17 +74,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = await res.json();
           setUser(data.user);
           localStorage.setItem('skrapo_user', JSON.stringify(data.user));
-          // Store token in localStorage as fallback for mobile browsers that block cookies
-          if (data.token) {
+          
+          // CRITICAL: Only update token if server provided a new one.
+          // Never overwrite a real JWT with a placeholder if the server didn't send one.
+          if (data.token && data.token !== 'session_active') {
             setToken(data.token);
             localStorage.setItem('skrapo_token', data.token);
-          } else {
+          } else if (!savedToken) {
+            // Only use placeholder if we truly have nothing else but have a valid session
             setToken('session_active'); 
           }
-        } else {
-          // If /auth/me fails AND we didn't have a saved session, clear everything
-          // If we HAD a saved session but network failed, maybe don't clear immediately 
-          // to allow offline/slow mobile access? Actually, 401 means definitely invalid.
+        } else if (res.status === 401) {
+          // Only clear session if we are certain it's invalid (401)
+          // For 500 or network errors, we might want to keep the local session for a bit.
+          console.warn('Session invalid, clearing...');
           localStorage.removeItem('skrapo_user');
           localStorage.removeItem('skrapo_token');
           setUser(null);
@@ -259,7 +262,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...options.headers,
     } as any;
 
-    if (token) {
+    // SECURITY/FIX: Only send Authorization header if token looks like a real JWT.
+    // 'session_active' is a placeholder for cookie-only sessions and will break the backend verify() if sent.
+    if (token && token.includes('.') && token !== 'session_active') {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
@@ -271,9 +276,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (res.status === 401) {
-        console.warn('Session expired. Logging out...');
+        // Log details for mobile debugging
+        console.warn(`[API] 401 Unauthorized for ${endpoint}. Logout triggered.`);
         logout();
-        return res; // Return the response so caller can still handle if needed
+        return res; 
       }
 
       return res;
