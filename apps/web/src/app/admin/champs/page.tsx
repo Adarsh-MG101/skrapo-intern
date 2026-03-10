@@ -7,6 +7,7 @@ import { Loader, Button, EmptyState } from '../../components/common';
 import { useToast } from '../../components/common/Toast';
 import Link from 'next/link';
 import { Plus, User, ArrowRight, Phone, Mail, Search } from 'lucide-react';
+import { CreateChampModal } from '../../components/admin/CreateChampModal';
 
 interface Champ {
   _id: string;
@@ -16,6 +17,10 @@ interface Champ {
   serviceArea: string;
   serviceRadiusKm?: number;
   createdAt?: string;
+  profilePhoto?: string;
+  panNumber?: string;
+  aadharNumber?: string;
+  gstNumber?: string;
 }
 
 export default function AdminChampsPage() {
@@ -24,6 +29,7 @@ export default function AdminChampsPage() {
   const [champs, setChamps] = useState<Champ[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedChamp, setSelectedChamp] = useState<Champ | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchChamps = async () => {
     try {
@@ -57,11 +63,13 @@ export default function AdminChampsPage() {
               <h1 className="text-3xl font-black text-gray-900 tracking-tight">Manage Champions</h1>
               <p className="text-gray-500 font-medium">View and monitor your network of Scrap Champions.</p>
             </div>
-            <Link href="/admin/champs/create">
-              <Button size="lg" className="rounded-2xl shadow-lg shadow-brand-500/20 px-8 flex items-center gap-2">
-                <Plus size={18} strokeWidth={3} /> New Champion
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              className="rounded-2xl shadow-lg shadow-brand-500/20 px-8 flex items-center gap-2"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <Plus size={18} strokeWidth={3} /> New Champion
+            </Button>
           </div>
 
           {loading ? (
@@ -88,8 +96,12 @@ export default function AdminChampsPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:scale-110 transition-transform duration-300">
-                          <User size={28} />
+                        <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:scale-110 transition-transform duration-300 overflow-hidden">
+                          {champ.profilePhoto ? (
+                            <img src={champ.profilePhoto} alt={champ.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <User size={28} />
+                          )}
                         </div>
                         <div>
                           <h3 className="text-lg font-black text-gray-900 leading-tight">{champ.name}</h3>
@@ -122,8 +134,12 @@ export default function AdminChampsPage() {
                 {selectedChamp ? (
                   <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-xl shadow-gray-200/50 sticky top-10 animate-fade-in">
                     <div className="text-center mb-8">
-                        <div className="w-24 h-24 bg-brand-50 rounded-[2rem] flex items-center justify-center text-4xl mx-auto mb-4 border border-brand-100/50 shadow-inner">
-                            {selectedChamp.name.charAt(0)}
+                        <div className="w-24 h-24 bg-brand-50 rounded-[2rem] flex items-center justify-center text-4xl mx-auto mb-4 border border-brand-100/50 shadow-inner overflow-hidden">
+                            {selectedChamp.profilePhoto ? (
+                              <img src={selectedChamp.profilePhoto} alt={selectedChamp.name} className="w-full h-full object-cover" />
+                            ) : (
+                              selectedChamp.name.charAt(0)
+                            )}
                         </div>
                         <h2 className="text-2xl font-black text-gray-900">{selectedChamp.name}</h2>
                         <span className="inline-block px-4 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-full uppercase tracking-widest border border-emerald-100 mt-2">Active Partner</span>
@@ -178,6 +194,15 @@ export default function AdminChampsPage() {
             </div>
           )}
         </div>
+        
+        <CreateChampModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          onSuccess={() => {
+            showToast('Champion created successfully!', 'success');
+            fetchChamps();
+          }} 
+        />
       </div>
     </ProtectedRoute>
   );

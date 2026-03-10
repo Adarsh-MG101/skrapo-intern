@@ -12,11 +12,8 @@ import dynamic from 'next/dynamic';
 import { 
   ArrowLeft, 
   MapPin, 
-  Clock, 
   Recycle, 
   Truck, 
-  CheckCircle2, 
-  FileText, 
   ShieldCheck, 
   AlertTriangle, 
   Zap, 
@@ -195,197 +192,187 @@ function OrderDetails() {
   );
 
   return (
-    <div className="p-4 md:p-8 lg:p-10 bg-gray-50/30 min-h-screen">
-      <div className="max-w-4xl mx-auto">
+    <div className="bg-gray-50/30 min-h-screen pb-32 sm:pb-10">
+      <div className="max-w-4xl mx-auto px-4 pt-6 sm:pt-10">
         
-        <div className="w-full flex justify-between items-center mb-10">
-          <button onClick={() => router.back()} className="px-5 py-2.5 bg-white rounded-xl shadow-sm border border-gray-100 text-sm font-black text-gray-400 hover:text-brand-600 flex items-center gap-2 transition-all">
-            <ArrowLeft size={18} />
-            Go Back
+        <div className="w-full flex justify-between items-center mb-6">
+          <button onClick={() => router.back()} className="px-4 py-2 bg-white rounded-xl shadow-sm border border-gray-100 text-xs font-black text-gray-400 hover:text-brand-600 flex items-center gap-2 transition-all">
+            <ArrowLeft size={16} />
+            Back
           </button>
-          <StatusBadge status={order.status} />
+          <div className="scale-90 origin-right">
+            <StatusBadge status={order.status} />
+          </div>
         </div>
 
-        <div className="bg-white rounded-[2.5rem] p-6 sm:p-10 shadow-xl border border-gray-100 w-full animate-fade-in relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-5 text-brand-600 group-hover:scale-110 transition-transform duration-700 pointer-events-none">
-                <Truck size={140} />
-            </div>
-
-            <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 relative z-10">
+        <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 w-full animate-fade-in relative overflow-hidden">
+            <div className="flex flex-col lg:flex-row relative z-10">
               
-              {/* Image Section */}
-              <div className="w-full lg:flex-1">
-                  <div className="aspect-[4/3] bg-gray-50 rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden border-[6px] border-white shadow-2xl relative group">
+              {/* Left Column: Image & Basic Info */}
+              <div className="w-full lg:w-[380px] p-5 sm:p-8 lg:border-r border-gray-50">
+                  <div className="aspect-[4/3] bg-gray-50 rounded-[1.5rem] overflow-hidden border-4 border-white shadow-lg relative group mb-6">
                     {order.photoUrl ? (
-                        <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                        <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                            <Truck size={64} strokeWidth={1} />
+                        <div className="w-full h-full flex items-center justify-center text-gray-200">
+                            <Truck size={48} strokeWidth={1} />
                         </div>
                     )}
-                    <div className="absolute top-6 right-6 bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl border border-white/20 text-white font-black text-[10px] uppercase tracking-widest shadow-sm">
-                      Pickup Preview
+                    <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20 text-white font-black text-[9px] uppercase tracking-widest">
+                      Preview
                     </div>
                   </div>
-              </div>
 
-              {/* Details Section */}
-              <div className="flex-1 flex flex-col justify-center">
-                  <div className="mb-8">
-                     <p className="text-[10px] font-black text-brand-600 uppercase tracking-[0.2em] mb-2">Category Manifest</p>
-                     <h1 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">
+                  <div className="mb-6">
+                     <p className="text-[10px] font-black text-brand-600 uppercase tracking-[0.2em] mb-1">Mission Manifest</p>
+                     <h1 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">
                         {order.scrapTypes.join(', ')}
                      </h1>
                   </div>
 
-                  <div className="flex items-center gap-3 mb-10">
-                    <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 border border-brand-100 shadow-inner">
-                        <Scale size={24} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-3 rounded-2xl border border-white shadow-sm">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Payload</p>
+                        <p className="font-black text-gray-900 text-lg tracking-tight flex items-center gap-1.5">
+                          <Scale size={16} className="text-brand-500" />
+                          {order.estimatedWeight?.total ? `${order.estimatedWeight.total} kg` : 'N/A'}
+                        </p>
                     </div>
-                    <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Expected Payload</p>
-                        <p className="font-black text-gray-900 text-xl tracking-tight">
-                        {order.estimatedWeight?.total ? `${order.estimatedWeight.total} kg` : 'Weight Variable'}
+                    <div className="bg-gray-50 p-3 rounded-2xl border border-white shadow-sm">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Time Window</p>
+                        <p className="font-bold text-gray-900 text-xs leading-tight">
+                          {new Date(order.scheduledAt).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                     </div>
                   </div>
+              </div>
 
-                  <div className="space-y-8 mb-12">
+              {/* Right Column: Address, Map, and Quick Actions */}
+              <div className="flex-1 p-5 sm:p-8 bg-gray-50/20">
+                  <div className="space-y-6">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-brand-600 flex-shrink-0 border border-white shadow-sm">
-                            <MapPin size={24} />
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-brand-600 flex-shrink-0 border border-gray-100 shadow-sm">
+                            <MapPin size={20} />
                         </div>
                         <div className="flex-1">
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">Collection Address</p>
-                          <p className="font-black text-gray-800 leading-relaxed text-sm">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">Target Address</p>
+                          <p className="font-bold text-gray-800 leading-tight text-sm">
                               {order.status === 'Accepted' || order.status === 'Completed' 
                                 ? order.exactAddress 
                                 : order.generalArea + ' (Regional Pooled Request)'}
                           </p>
-                          {order.status === 'Assigned' || order.status === 'Requested' ? (
-                              <p className={`text-[10px] font-black mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${order.status === 'Requested' ? 'bg-blue-50 text-blue-600' : 'bg-brand-50 text-brand-600'} border border-current opacity-70`}>
-                                <Zap size={10} fill="currentColor" /> {order.status === 'Requested' ? 'CLAIM TO REVEAL EXACT LOCATION' : 'ACCEPT TO REVEAL EXACT LOCATION'}
+                          {(order.status === 'Assigned' || order.status === 'Requested') && (
+                              <p className="text-[9px] font-black mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-50 text-brand-600 border border-brand-100">
+                                <Zap size={10} fill="currentColor" /> ACCEPT TO REVEAL LOCATION
                               </p>
-                          ) : null}
+                          )}
                         </div>
                     </div>
 
                     {(order.status === 'Accepted' || order.status === 'Completed') && order.location && (
-                        <div className="-mt-2 mb-4 animate-fade-in">
+                        <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-inner h-[200px] sm:h-[250px]">
                           <CustomerMap location={order.location} />
                         </div>
                     )}
 
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-brand-600 flex-shrink-0 border border-white shadow-sm">
-                           <Clock size={24} />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-1">Mission Window</p>
-                          <p className="font-bold text-gray-900 leading-tight">
-                              {new Date(order.scheduledAt).toLocaleDateString([], { dateStyle: 'long' })} · {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { timeStyle: 'short' })}
-                          </p>
-                        </div>
-                    </div>
-                  </div>
-
-                  {(order.status === 'Requested' || order.status === 'Assigned') && (
-                    <div className="flex gap-4">
-                      <Button 
-                          variant="primary" 
-                          className={`py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-2xl flex-1 flex items-center justify-center gap-3 ${order.status === 'Requested' ? 'bg-brand-600 hover:bg-brand-700 shadow-brand-500/20' : ''}`}
-                          fullWidth 
-                          onClick={() => handleDecision('accept')}
-                          disabled={processing}
-                          size="lg"
-                      >
-                          {processing ? 'Processing...' : (
-                            <> {order.status === 'Requested' ? '⚡ Claim This Mission' : 'Accept Job'} <CheckCircle2 size={18} /> </>
-                          )}
-                      </Button>
-                      <Button 
-                          variant="ghost" 
-                          className="py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest flex-1 border border-gray-100 hover:bg-red-50 hover:text-red-600"
-                          fullWidth 
-                          onClick={() => handleDecision('deny')}
-                          disabled={processing}
-                          size="lg"
-                      >
-                          {order.status === 'Requested' ? 'Pass' : 'Decline'}
-                      </Button>
-                    </div>
-                  )}
-
-                  {order.status === 'Accepted' && (
-                    <div className="space-y-4 animate-slide-up">
-                      <div className="bg-white border-2 border-emerald-500/10 p-8 rounded-[2.5rem] text-center shadow-xl shadow-emerald-500/5 relative overflow-hidden">
-                          <div className="absolute top-0 right-0 p-6 opacity-5 text-emerald-500 pointer-events-none">
-                             <CheckCircle2 size={80} />
+                    {/* Desktop-only secondary status card when Accepted */}
+                    {order.status === 'Accepted' && (
+                      <div className="hidden lg:block bg-emerald-50 border border-emerald-100 p-5 rounded-2xl">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white shadow-md">
+                            <Check size={18} strokeWidth={3} />
                           </div>
-
-                          <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center text-white mx-auto mb-6 shadow-lg shadow-emerald-500/30 animate-pulse relative z-10 border-4 border-white">
-                             <Check size={32} strokeWidth={3} />
-                          </div>
-                          
-                          <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Mission Engaged</h3>
-                          <p className="text-sm text-gray-500 font-medium mb-8 max-w-[240px] mx-auto leading-relaxed">Exact coordinates have been revealed. Route to the customer to collect items.</p>
-                          
-                          <div className="flex flex-col gap-4">
-                            <Button 
-                              variant="ghost" 
-                              fullWidth 
-                              className="py-5 rounded-2xl bg-gray-50 border-gray-100 text-gray-900 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-200 font-black flex gap-3 text-xs uppercase tracking-[0.1em]"
-                              onClick={() => {
-                                const dest = order.location 
-                                  ? `${order.location.lat},${order.location.lng}` 
-                                  : encodeURIComponent(order.exactAddress || '');
-                                window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
-                              }}
-                            >
-                              Open Navigation <Navigation size={18} />
-                            </Button>
-
-                            <Button 
-                              variant="primary" 
-                              fullWidth 
-                              size="lg"
-                              onClick={() => setShowCompleteModal(true)}
-                              disabled={processing}
-                              className="bg-emerald-600 hover:bg-emerald-700 border-none shadow-xl shadow-emerald-500/30 py-6 rounded-2xl text-lg flex gap-3"
-                            >
-                              {processing ? 'Processing...' : 'Mark as Completed!'} <Recycle size={22} className="group-hover:rotate-180 transition-transform duration-700" />
-                            </Button>
-                          </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {order.status === 'Completed' && (
-                    <div className="bg-brand-50 border-2 border-brand-100 p-10 rounded-[2.5rem] text-center shadow-xl shadow-brand-500/5 relative overflow-hidden group">
-                        <div className="absolute -left-4 -bottom-4 p-8 opacity-10 text-brand-600 group-hover:scale-125 transition-transform duration-700 pointer-events-none">
-                           <FileText size={100} />
+                          <h4 className="text-sm font-black text-emerald-900">Engagement Mode</h4>
                         </div>
-                        
-                        <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center text-brand-600 mx-auto mb-6 shadow-sm border border-brand-100 relative z-10">
-                           <FileText size={32} />
-                        </div>
-                        
-                        <h3 className="text-2xl font-black text-brand-900 mb-2 tracking-tight">Session Finalized</h3>
-                        <p className="text-sm text-brand-700 font-medium mb-10 max-w-[280px] mx-auto leading-relaxed">Mission completed successfully. Assessment and receipt have been archived.</p>
-                        
-                        <Link href="/scrap-champ/history">
-                          <Button variant="ghost" fullWidth className="py-5 rounded-2xl bg-white border-brand-200 text-brand-600 hover:bg-brand-600 hover:text-white font-black text-xs uppercase tracking-widest shadow-sm">
-                            View Earnings Log
+                        <p className="text-[11px] text-emerald-700 font-medium mb-4 leading-relaxed">
+                          Follow the map to the target coordinates and finalize the collection.
+                        </p>
+                        <div className="flex gap-3">
+                          <Button 
+                            variant="ghost" 
+                            fullWidth 
+                            className="bg-white text-emerald-700 border-emerald-100 font-black text-[10px] uppercase tracking-wider py-3"
+                            onClick={() => {
+                              const dest = order.location ? `${order.location.lat},${order.location.lng}` : encodeURIComponent(order.exactAddress || '');
+                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
+                            }}
+                          >
+                            Nav <Navigation size={14} />
                           </Button>
-                        </Link>
-                    </div>
-                  )}
+                          <Button 
+                            variant="primary" 
+                            fullWidth 
+                            className="bg-emerald-600 hover:bg-emerald-700 border-none font-black text-[10px] uppercase tracking-wider py-3"
+                            onClick={() => setShowCompleteModal(true)}
+                          >
+                            Finish
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {order.status === 'Completed' && (
+                      <div className="bg-brand-50 border border-brand-100 p-5 rounded-2xl text-center">
+                          <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-1 text-center">Protocol Complete</p>
+                          <h3 className="text-lg font-black text-gray-900 mb-4 tracking-tight">Mission Finalized</h3>
+                          <Link href="/scrap-champ/history">
+                            <Button variant="ghost" fullWidth className="py-3 bg-white border-brand-200 text-brand-600 font-black text-[10px] uppercase tracking-widest whitespace-nowrap">
+                              Earning Logs
+                            </Button>
+                          </Link>
+                      </div>
+                    )}
+
+                    {(order.status === 'Requested' || order.status === 'Assigned') && (
+                      <div className="flex gap-3 pt-4 border-t border-gray-100">
+                        <Button 
+                            variant="primary" 
+                            className="py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg flex-1"
+                            onClick={() => handleDecision('accept')}
+                            disabled={processing}
+                        >
+                            {processing ? '...' : (order.status === 'Requested' ? '⚡ Claim' : 'Accept')}
+                        </Button>
+                        <Button 
+                            variant="ghost" 
+                            className="py-4 rounded-xl font-black text-[10px] uppercase tracking-widest flex-1 border border-gray-200"
+                            onClick={() => handleDecision('deny')}
+                            disabled={processing}
+                        >
+                            {order.status === 'Requested' ? 'Pass' : 'Decline'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
               </div>
             </div>
         </div>
 
-        <div className="mt-12 text-center text-gray-400 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
-            System Issue? <span className="text-brand-500 hover:text-brand-700 cursor-pointer transition-colors border-b-2 border-brand-100 pb-0.5">Contact Support</span>
+        {/* Sticky Mobile Footer for Essential Actions */}
+        {order.status === 'Accepted' && (
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-gray-100 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-50 flex gap-3 animate-slide-up">
+            <Button 
+              variant="ghost" 
+              className="bg-gray-100 text-gray-800 font-black text-[11px] uppercase tracking-[0.15em] flex-1 py-4 flex gap-2 rounded-xl"
+              onClick={() => {
+                const dest = order.location ? `${order.location.lat},${order.location.lng}` : encodeURIComponent(order.exactAddress || '');
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
+              }}
+            >
+              Navigation <Navigation size={18} />
+            </Button>
+            <Button 
+              variant="primary" 
+              className="bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/30 text-white font-black text-[11px] uppercase tracking-[0.15em] flex-[1.5] py-4 flex gap-2 rounded-xl"
+              onClick={() => setShowCompleteModal(true)}
+            >
+              Mark Completed <Check size={18} strokeWidth={3} />
+            </Button>
+          </div>
+        )}
+
+        <div className="mt-10 mb-6 text-center text-gray-300 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+            System Issue? <span className="text-gray-400 border-b border-gray-200 pb-0.5">Contact Support</span>
         </div>
       </div>
 

@@ -50,11 +50,23 @@ export const SchedulePickupFlow: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const initializedRef = useRef(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [customScrapTypes, setCustomScrapTypes] = useState('');
   const [formData, setFormData] = useState({
     itemWeights: {} as Record<string, string>,
-    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    date: (() => {
+      const now = new Date();
+      const cutoffTime = now.getTime() + 2 * 60 * 60 * 1000;
+      const dayEnd = new Date(now);
+      dayEnd.setHours(19, 0, 0, 0);
+
+      // If we can't book today (cutoff is past 7pm), default to tomorrow
+      if (cutoffTime >= dayEnd.getTime()) {
+        return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      }
+      return now.toISOString().split('T')[0];
+    })(),
     time: 'any',
     address: user?.pickupAddress || '',
     location: null as { lat: number, lng: number } | null,
@@ -63,10 +75,28 @@ export const SchedulePickupFlow: React.FC = () => {
   const { showToast } = useToast();
 
   useEffect(() => {
-    if (user?.pickupAddress && !formData.address) {
+    if (user?.pickupAddress && !initializedRef.current) {
       setFormData(prev => ({ ...prev, address: user.pickupAddress || '' }));
+      initializedRef.current = true;
     }
-  }, [user, formData.address]);
+  }, [user]);
+
+  useEffect(() => {
+    const isToday = formData.date === new Date().toISOString().split('T')[0];
+    if (isToday) {
+      const now = new Date();
+      const twoHoursLater = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+      const currentHour = twoHoursLater.getHours();
+      
+      const slotEndHour = formData.time.includes('-') ? parseInt(formData.time.split('-')[1]) : null;
+      
+      if (slotEndHour !== null && currentHour >= slotEndHour) {
+        setFormData(prev => ({ ...prev, time: '' }));
+      } else if (formData.time === 'any' && currentHour >= 19) {
+        setFormData(prev => ({ ...prev, time: '' }));
+      }
+    }
+  }, [formData.date]);
 
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -156,11 +186,32 @@ export const SchedulePickupFlow: React.FC = () => {
         '16-19': '16:00'
       };
       
+      const endTimeMap: Record<string, string> = {
+        'any': '19:00',
+        '08-10': '10:00',
+        '10-13': '13:00',
+        '14-16': '16:00',
+        '16-19': '19:00'
+      };
+      
       const timeValue = timeMap[formData.time] || formData.time;
+      const endTimeValue = endTimeMap[formData.time] || formData.time;
       const scheduledAt = new Date(`${formData.date}T${timeValue}:00`);
+      const slotEndTime = new Date(`${formData.date}T${endTimeValue}:00`);
       
       if (isNaN(scheduledAt.getTime())) {
         throw new Error('Invalid date or time selection');
+      }
+
+      // 2-hour window check relative to the slot's *end* time
+      const earliestPickupTime = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      if (slotEndTime.getTime() < earliestPickupTime.getTime() - 60000) { // 1 min grace
+        throw new Error('Pickup must be scheduled at least 2 hours from now');
+      }
+
+      // Push scheduledAt to the earliest valid pickup time if the start is in the past/buffer
+      if (scheduledAt.getTime() < earliestPickupTime.getTime()) {
+        scheduledAt.setTime(earliestPickupTime.getTime());
       }
 
       const finalCategories = [...selectedCategories];
@@ -223,7 +274,17 @@ export const SchedulePickupFlow: React.FC = () => {
           </div>
           {step !== 1 && step !== 4 && (
             <button 
-              onClick={() => router.back()} 
+              onClick={() => {
+                setStep(1);
+                setCapturedImage(null);
+                setSelectedCategories([]);
+                setCustomScrapTypes('');
+                setFormData(prev => ({
+                  ...prev,
+                  itemWeights: {},
+                  location: null
+                }));
+              }} 
               className="px-6 py-2.5 rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50 transition-all font-black text-xs uppercase tracking-widest border border-red-50 flex items-center gap-2"
             >
               <Trash2 size={16} /> Cancel Pickup
@@ -376,24 +437,18 @@ export const SchedulePickupFlow: React.FC = () => {
                       className="bg-white rounded-xl border-2"
                     />
                   ))}
-                  {selectedCategories.includes('Others') && customScrapTypes.split(',').map(s => s.trim()).filter(Boolean).map(customCat => (
-                    <Input 
-                      key={customCat} label={customCat} placeholder="e.g. 2" type="number" min="0" step="0.1" value={formData.itemWeights[customCat] || ''}
-                      onChange={(e) => setFormData({...formData, itemWeights: {...formData.itemWeights, [customCat]: e.target.value}})}
-                      className="bg-white rounded-xl border-2"
-                    />
-                  ))}
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-8 mb-10">
                 <DateTimePicker 
                   label="Preferred Date" required type="date"
-                  min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                  min={new Date().toISOString().split('T')[0]}
                   value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})}
                 />
                 <DateTimePicker 
                   label="Preferred Time" required type="time"
+                  isToday={formData.date === new Date().toISOString().split('T')[0]}
                   value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})}
                 />
               </div>
@@ -457,7 +512,7 @@ export const SchedulePickupFlow: React.FC = () => {
           <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-125 group-hover:rotate-12 transition-all duration-700">
              <ShieldCheck size={160} />
           </div>
-          <h3 className="text-2xl font-black mb-8 leading-tight relative z-10">Skrapo Assurance</h3>
+          <h3 className="text-2xl font-black mb-8 leading-tight relative z-10">Recycle My Bin Assurance</h3>
           <ul className="space-y-8 relative z-10">
             {[
               { title: 'Verified Network', desc: 'Background-checked partners only.', Icon: ShieldCheck },

@@ -149,71 +149,92 @@ export default function ScrapChampJobsPage() {
               icon={Ban}
             />
           ) : (
-            <div className="grid gap-8">
+            <div className="grid gap-6">
               {jobs.map((job) => {
                 const isAcceptedByOther = acceptedByOthers[job._id];
+                const isRequested = job.status === 'Requested';
+                
                 return (
-                  <div key={job._id} className={`bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border ${isAcceptedByOther ? 'border-gray-100 opacity-40 pointer-events-none' : 'border-gray-50 hover:shadow-2xl hover:-translate-y-1'} transition-all duration-300 animate-fade-in relative overflow-hidden group`}>
-                    <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-110 transition-transform text-brand-600 pointer-events-none">
-                       <Zap size={140} strokeWidth={1} />
+                  <div 
+                    key={job._id} 
+                    className={`bg-white rounded-[2rem] p-5 md:p-7 shadow-sm border transition-all duration-300 relative overflow-hidden group
+                      ${isAcceptedByOther ? 'border-gray-100 opacity-40 pointer-events-none' : 
+                        isRequested ? 'border-brand-100 bg-brand-50/10' : 'border-gray-50 hover:shadow-xl hover:-translate-y-1'}`}
+                  >
+                    {/* Background Decorative Icon */}
+                    <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform text-brand-600 pointer-events-none">
+                       <Zap size={100} strokeWidth={1} />
                     </div>
 
+                    {/* Unavailable Overlay */}
                     {isAcceptedByOther && (
-                      <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center p-4">
-                        <div className="bg-gray-900 text-white px-10 py-5 rounded-[2rem] font-black shadow-2xl text-center transform -rotate-3 border-[6px] border-gray-800 flex flex-col items-center gap-2">
-                          <Ban size={24} className="text-red-500" strokeWidth={3} />
-                          <span className="tracking-[0.2em] mb-1">UNAVAILABLE</span>
-                          <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Claimed by partner: {isAcceptedByOther}</p>
+                      <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] z-10 flex items-center justify-center p-4 text-center">
+                        <div className="bg-gray-900 text-white px-8 py-4 rounded-[1.5rem] font-black shadow-2xl border-4 border-gray-800 flex flex-col items-center gap-1">
+                          <Ban size={20} className="text-red-500" strokeWidth={3} />
+                          <span className="tracking-[0.15em] text-xs">UNAVAILABLE</span>
+                          <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest text-center">Claimed by partner: {isAcceptedByOther}</p>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex flex-col lg:flex-row justify-between gap-10 lg:items-center relative z-10">
-                      <div className="flex items-center sm:items-start gap-6 md:gap-10 flex-1">
-                        <div className="w-20 h-20 md:w-28 md:h-28 rounded-[2rem] flex flex-col items-center justify-center border-4 transition-all group-hover:bg-brand-600 group-hover:text-white bg-brand-50 border-white text-brand-600 shadow-xl group-hover:-translate-x-2">
-                          <span className="text-[10px] md:text-sm font-black uppercase leading-none tracking-[0.2em] mb-1.5 md:mb-2 opacity-60">
+                    <div className="flex flex-col gap-5 relative z-10">
+                      {/* Top Row: Date, Status, Tag */}
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl flex flex-col items-center justify-center border-2 transition-all group-hover:bg-brand-600 group-hover:text-white bg-brand-50 border-white text-brand-600 shadow-md flex-shrink-0">
+                          <span className="text-[8px] font-black uppercase leading-none tracking-widest mb-1 opacity-60">
                             {new Date(job.scheduledAt).toLocaleString('default', { month: 'short' })}
                           </span>
-                          <span className="text-3xl md:text-5xl font-black leading-none tracking-tighter">
+                          <span className="text-xl md:text-2xl font-black leading-none tracking-tighter">
                             {new Date(job.scheduledAt).getDate()}
                           </span>
                         </div>
-                        <div className="flex-1">
-                          <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-4">
-                            <h3 className="text-xl md:text-3xl font-black text-gray-900 leading-tight">
-                              {job.scrapTypes.join(', ')}
-                            </h3>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
                             <StatusBadge status={job.status} />
+                            {isRequested && (
+                              <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-blue-100 flex items-center gap-1">
+                                <Zap size={8} fill="currentColor" /> Pool Mission
+                              </span>
+                            )}
                           </div>
-                          <div className="space-y-3">
-                             <p className="text-sm md:text-lg text-gray-500 font-medium flex items-center gap-3">
-                               <MapPin className="text-brand-500 flex-shrink-0 w-5 h-5" />
-                               <span className="tracking-tight line-clamp-2">
-                                 {job.status === 'Accepted' || job.status === 'Completed' 
-                                   ? job.exactAddress 
-                                   : job.generalArea + ' · Regional Mission'}
-                               </span>
-                             </p>
-                             <div className="flex flex-wrap items-center gap-6">
-                               <div className="flex items-center gap-2.5 text-gray-400 font-black text-[10px] uppercase tracking-[0.2em]">
-                                 <Clock size={16} className="text-brand-300" /> 
-                                 {job.timeSlot ? getTimeSlotLabel(job.timeSlot) : new Date(job.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                               </div>
-                               {job.status === 'Requested' && (
-                                 <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-100">
-                                    <Zap size={10} fill="currentColor" /> Flash Claim Pool
-                                 </div>
-                               )}
-                             </div>
-                          </div>
+                          <h3 className="text-base md:text-xl font-black text-gray-900 leading-tight line-clamp-1">
+                            {job.scrapTypes.join(', ')}
+                          </h3>
                         </div>
                       </div>
+
+                      {/* Content Section: Address and Time */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-600">
+                         <div className="flex items-start gap-2.5">
+                           <MapPin className="text-brand-500 mt-1 flex-shrink-0" size={16} />
+                           <div className="min-w-0">
+                             <p className="text-xs md:text-sm font-bold leading-tight">
+                               {job.status === 'Accepted' || job.status === 'Completed' 
+                                 ? job.exactAddress 
+                                 : job.generalArea}
+                             </p>
+                             {isRequested ? (
+                               <span className="text-[9px] text-brand-500 uppercase font-black tracking-widest mt-0.5 inline-block">Regional Mission Area</span>
+                             ) : (
+                               <span className="text-[9px] text-gray-400 uppercase font-black tracking-widest mt-0.5 inline-block">Direct Assignment</span>
+                             )}
+                           </div>
+                         </div>
+                         
+                         <div className="flex items-center gap-2.5">
+                           <Clock className="text-brand-300 flex-shrink-0" size={16} />
+                           <p className="text-xs md:text-sm font-bold">
+                             {job.timeSlot ? getTimeSlotLabel(job.timeSlot) : new Date(job.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                           </p>
+                         </div>
+                      </div>
                       
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mt-4 lg:mt-0">
+                      {/* Action Row */}
+                      <div className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-gray-100/50 mt-1">
                          {job.status === 'Accepted' && (
                            <Button 
                              variant="ghost" 
-                             className="flex-1 sm:flex-none py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-sm border border-emerald-100 text-emerald-600 hover:bg-emerald-50 px-10 flex gap-3"
+                             className="flex-1 py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 flex items-center justify-center gap-2 shadow-sm"
                              onClick={(e) => {
                                e.preventDefault();
                                const dest = job.location 
@@ -222,44 +243,41 @@ export default function ScrapChampJobsPage() {
                                window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
                              }}
                            >
-                             Navigate <Navigation size={18} />
+                              <Navigation size={16} /> GPS Navigate
                            </Button>
                          )}
                          
-                         {job.status === 'Requested' ? (
-                            <div className="flex gap-4 flex-1 sm:flex-none">
+                         {isRequested ? (
+                            <div className="flex gap-2.5 flex-1">
                                <Button 
                                  variant="primary" 
                                  onClick={() => handleDecision(job._id, 'accept')}
                                  disabled={processingId === job._id}
-                                 className="py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-2xl transition-all bg-brand-600 hover:bg-brand-700 shadow-brand-500/20 px-12 flex-1 flex items-center justify-center gap-3 group/claim"
+                                 className="flex-[3] py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-brand-500/20 bg-brand-600 hover:bg-brand-700 px-6 flex items-center justify-center gap-2 group/claim"
                                >
                                   {processingId === job._id ? 'Processing...' : (
-                                    <>Claim Mission <Zap size={18} className="fill-current group-hover:scale-125 transition-transform" /> </>
+                                    <>Claim Mission <Zap size={14} className="fill-current group-hover:scale-110 transition-transform" /> </>
                                   )}
                                </Button>
                                <Button 
                                  variant="ghost" 
                                  onClick={() => handleDecision(job._id, 'deny')}
                                  disabled={processingId === job._id}
-                                 className="py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all border border-gray-100 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-100 px-6"
-                                 title="Pass this mission"
+                                 className="flex-1 py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-gray-100 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-100 flex items-center justify-center"
                                >
-                                  <XSquare size={22} />
+                                  <XSquare size={18} />
                                </Button>
                             </div>
                          ) : (
-                           <div className="flex-1 lg:w-56">
-                             <Link href={`/scrap-champ/orders/${job._id}`} className="block">
-                               <Button 
-                                  variant="ghost" 
-                                  fullWidth
-                                  className="py-6 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl transition-all border border-gray-100 hover:bg-brand-50 hover:text-brand-600 bg-white flex gap-3 items-center justify-center"
-                               >
-                                  Mission Files <ArrowRight size={18} />
-                               </Button>
-                             </Link>
-                           </div>
+                           <Link href={`/scrap-champ/orders/${job._id}`} className="flex-1 block">
+                             <Button 
+                                variant="ghost" 
+                                fullWidth
+                                className="py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-gray-100 hover:bg-brand-50 hover:text-brand-600 bg-white flex items-center justify-center gap-2 shadow-sm"
+                             >
+                                View Order <ArrowRight size={16} />
+                             </Button>
+                           </Link>
                          )}
                       </div>
                     </div>

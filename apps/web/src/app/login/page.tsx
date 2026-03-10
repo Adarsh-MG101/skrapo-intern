@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
 import { validatePhone, validateEmail } from '../utils/validators';
-import { Package, Trophy, Recycle } from 'lucide-react';
+import { Package, Trophy, Recycle, LogOut } from 'lucide-react';
 
 function LoginContent() {
   const [email, setEmail] = useState('');
@@ -22,16 +22,32 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login, requestOTP, verifyOTP, googleLogin, isAuthenticated, user } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect');
+  const loginAttempted = useRef(false);
+  const { login, requestOTP, verifyOTP, googleLogin, isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      router.replace(redirect || user.defaultRoute);
+    if (isAuthenticated && user && !loginAttempted.current) {
+      setShowLogoutConfirm(true);
     }
-  }, [isAuthenticated, user, router, redirect]);
+  }, [isAuthenticated, user]);
+
+  const handleConfirmLogout = () => {
+    loginAttempted.current = false;
+    logout();
+    window.location.reload();
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+    window.history.forward();
+    setTimeout(() => {
+      router.replace(user?.defaultRoute || '/');
+    }, 100);
+  };
 
   const handleRequestOTP = async () => {
     setFieldErrors({});
@@ -71,9 +87,15 @@ function LoginContent() {
       if (result.needsPhone && result.googleData) {
         // Redirect to register with google data
         const { googleId, email, name } = result.googleData;
+        loginAttempted.current = true;
         router.push(`/register?googleId=${googleId}&email=${email}&name=${name}`);
       } else if (result.defaultRoute) {
-        router.push(redirect || result.defaultRoute);
+        let finalRoute = result.defaultRoute;
+        if (redirect && redirect.startsWith(result.defaultRoute)) {
+          finalRoute = redirect;
+        }
+        loginAttempted.current = true;
+        router.push(finalRoute);
       }
     } else {
       setError(result.error || 'Google login failed');
@@ -135,19 +157,60 @@ function LoginContent() {
       result = await verifyOTP(fullMobileNumber, otp);
       if (result.success && result.isNewUser) {
         // New user verified via OTP but needs to complete registration
+        loginAttempted.current = true;
         router.push(`/register?mobileNumber=${fullMobileNumber}`);
         return;
       }
     }
 
     if (result.success && result.defaultRoute) {
-      router.push(redirect || result.defaultRoute);
+      let finalRoute = result.defaultRoute;
+      if (redirect && redirect.startsWith(result.defaultRoute)) {
+        finalRoute = redirect;
+      }
+      loginAttempted.current = true;
+      router.push(finalRoute);
     } else {
       setError(result.error || 'Login failed');
     }
 
     setLoading(false);
   };
+
+  if (showLogoutConfirm) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white animate-in fade-in duration-300">
+        <div className="max-w-sm w-full p-8 border border-gray-100 rounded-3xl shadow-xl">
+          <div className="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-500 shadow-inner">
+            <LogOut size={40} strokeWidth={2.5} />
+          </div>
+          
+          <h3 className="text-2xl font-black text-gray-900 text-center mb-2">
+            Sign Out?
+          </h3>
+          <p className="text-gray-500 text-center mb-8 leading-relaxed">
+            You are currently logged in. Would you like to sign out of your session?
+          </p>
+          
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleConfirmLogout}
+              className="w-full py-4 bg-red-500 text-white font-black rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <LogOut size={20} />
+              Yes, Sign Out
+            </button>
+            <button
+              onClick={handleCancelLogout}
+              className="w-full py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl hover:bg-gray-100 transition-all active:scale-95"
+            >
+              Stay Logged In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex text-gray-900">
@@ -162,7 +225,7 @@ function LoginContent() {
           <div className="w-32 h-32 bg-white rounded-3xl flex items-center justify-center mx-auto mb-8 animate-float shadow-2xl overflow-hidden border-4 border-white/20">
             <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-4xl font-black text-white mb-4 tracking-tight">Skrapo</h1>
+          <h1 className="text-4xl font-black text-white mb-4 tracking-tight">Recycle My Bin</h1>
           <p className="text-brand-100 text-lg max-w-sm mx-auto leading-relaxed">
             Sign in to continue managing your scrap pickups and contribute to a greener planet.
           </p>
@@ -192,7 +255,7 @@ function LoginContent() {
             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg overflow-hidden border border-gray-100">
               <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-2xl font-black text-gray-900 tracking-tighter">Skrapo</span>
+            <span className="text-2xl font-black text-gray-900 tracking-tighter">Recycle My Bin</span>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">

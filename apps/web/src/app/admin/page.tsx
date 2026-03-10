@@ -61,7 +61,7 @@ function AdminDashboardContent() {
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">
               Control Center <LayoutDashboard className="inline-block text-brand-500 ml-2" size={36} strokeWidth={3} />
             </h1>
-            <p className="text-gray-500 mt-2 text-lg font-medium">Monitoring Skrapo operations and scrap ecosystem.</p>
+            <p className="text-gray-500 mt-2 text-lg font-medium">Monitoring Recycle My Bin operations and scrap ecosystem.</p>
           </div>
           <div className="md:hidden flex items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-gray-100 pr-6">
             <div className="w-12 h-12 bg-brand-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-500/20">
@@ -158,15 +158,12 @@ function AdminDashboardContent() {
             <div className="grid gap-6">
               {stats.recentActivity.map((order: any, idx) => (
                 <div key={order._id} className="flex flex-col md:flex-row items-start md:items-center justify-between p-6 bg-gray-50/50 rounded-3xl border border-gray-100 hover:bg-white transition-all group hover:shadow-md animate-fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
-                   <div className="flex items-center gap-6 mb-4 md:mb-0">
+                   <div className="flex items-center gap-6 mb-4 md:mb-0 flex-1 min-w-0">
                       <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-400 shadow-sm border border-gray-100 group-hover:border-brand-100 group-hover:bg-brand-50 transition-colors flex-shrink-0">
                         <Package size={22} />
                       </div>
-                      <div>
-                         <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <h4 className="font-black text-gray-900 tracking-tight uppercase text-sm">{order.scrapTypes.slice(0, 2).join(', ')}{order.scrapTypes.length > 2 && '...'}</h4>
-                            <StatusBadge status={order.status} />
-                         </div>
+                      <div className="min-w-0 flex-1">
+                         <h4 className="font-black text-gray-900 tracking-tight uppercase text-sm truncate mb-1">{order.scrapTypes.slice(0, 2).join(', ')}{order.scrapTypes.length > 2 && '...'}</h4>
                          <p className="text-xs font-bold text-gray-400 flex items-center gap-2">
                              <span className="text-gray-900">{order.customer?.name}</span>
                              <span>•</span>
@@ -174,8 +171,9 @@ function AdminDashboardContent() {
                          </p>
                       </div>
                    </div>
-                   <div className="flex items-center gap-4 w-full md:w-auto">
-                      <Link href={`/admin/orders?search=${order._id}`} className="flex-1">
+                   <div className="flex items-center gap-4 w-full md:w-auto flex-shrink-0">
+                      <StatusBadge status={order.status} />
+                      <Link href={`/admin/orders?search=${order._id}`} className="flex-1 md:flex-none">
                          <div className="px-6 py-2.5 bg-white rounded-xl border border-gray-200 text-xs font-black text-gray-600 uppercase tracking-widest hover:border-brand-600 hover:text-brand-600 transition-all text-center">
                             Inspect
                          </div>

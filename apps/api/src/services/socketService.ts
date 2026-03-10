@@ -55,16 +55,25 @@ export const initSocket = (server: Server) => {
   io.on('connection', (socket) => {
     const user = socket.data.user;
     
+    // Safety: Clear any existing rooms before joining (standard for new conn)
+    // socket.rooms is a Set, but we don't need to manually clear it on new connection.
+    
+    // Join strictly by role
     if (user.role === 'admin') {
       socket.join('admin_room');
-    }
-    
-    if (user.role === 'scrapChamp') {
+      console.log(`[Socket] Admin ${user.userId} joined admin_room`);
+    } else if (user.role === 'scrapChamp') {
       socket.join('champ_room');
+      console.log(`[Socket] Champ ${user.userId} joined champ_room`);
+    } else if (user.role === 'customer') {
+      socket.join('customer_room'); // Future proofing
+      console.log(`[Socket] Customer ${user.userId} joined customer_room`);
     }
     
+    // Join strictly by personal ID
     if (user.userId) {
       socket.join(`user_${user.userId}`);
+      console.log(`[Socket] User ${user.userId} joined personal room user_${user.userId}`);
     }
   });
 };

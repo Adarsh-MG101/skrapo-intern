@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
-import { useToast } from '../components/common/Toast';
 import { SOCKET_URL } from '../config/env';
 
 interface SocketContextData {
@@ -16,7 +15,6 @@ export const useSocket = () => useContext(SocketContext);
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { token } = useAuth();
-  const { showToast } = useToast();
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
@@ -39,55 +37,46 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // Admin Events
     newSocket.on('new_pickup_request', (data) => {
-      console.log('⚡ [Socket.IO] Received new_pickup_request payload:', data);
-      showToast(`🚨 New Request in ${data.area || 'your zone'}! Assign a champ now.`, 'info', true);
+      console.log('⚡ [Socket.IO] Data Sync: new_pickup_request', data);
+      // No toast here, FCM handles the alert. Pages listen for this to refresh lists.
     });
 
     newSocket.on('pickup_cancelled', (data) => {
-      console.log('⚡ [Socket.IO] Received pickup_cancelled payload:', data);
-      showToast(`🚫 A pickup in ${data.area || 'your zone'} was cancelled by the customer.`, 'error', true);
+      console.log('⚡ [Socket.IO] Data Sync: pickup_cancelled', data);
     });
 
     newSocket.on('order_accepted', (data) => {
-      console.log('⚡ [Socket.IO] Received order_accepted payload:', data);
-      showToast(`✅ ${data.message}`, 'success', true);
+      console.log('⚡ [Socket.IO] Data Sync: order_accepted', data);
     });
 
     newSocket.on('order_declined', (data) => {
-      console.log('⚡ [Socket.IO] Received order_declined payload:', data);
-      showToast(`⚠️ ${data.message}`, 'error', true);
+      console.log('⚡ [Socket.IO] Data Sync: order_declined', data);
     });
 
     newSocket.on('order_completed', (data) => {
-      console.log('⚡ [Socket.IO] Received order_completed payload:', data);
-      showToast(`🏆 ${data.message}`, 'success', true);
+      console.log('⚡ [Socket.IO] Data Sync: order_completed', data);
     });
 
     newSocket.on('auto_assign_success', (data) => {
-      console.log('⚡ [Socket.IO] Received auto_assign_success payload:', data);
-      showToast(`🤖 ${data.message}`, 'success', true);
+      console.log('⚡ [Socket.IO] Data Sync: auto_assign_success', data);
     });
 
     newSocket.on('auto_assign_failed', (data) => {
-      console.log('⚡ [Socket.IO] Received auto_assign_failed payload:', data);
-      showToast(`⚠️ ${data.message}`, 'error', true);
+      console.log('⚡ [Socket.IO] Data Sync: auto_assign_failed', data);
     });
 
     // Champ Events
     newSocket.on('new_job_assigned', (data) => {
-      console.log('⚡ [Socket.IO] Received new_job_assigned payload:', data);
-      showToast('🔔 New job assigned to you! Check your Active Jobs.', 'info', true);
+      console.log('⚡ [Socket.IO] Data Sync: new_job_assigned', data);
     });
 
     // Customer Events
     newSocket.on('order_accepted_customer', (data) => {
-      console.log('⚡ [Socket.IO] Received order_accepted_customer payload:', data);
-      showToast(`✅ ${data.message}`, 'success', true);
+      console.log('⚡ [Socket.IO] Data Sync: order_accepted_customer', data);
     });
 
     newSocket.on('order_completed_customer', (data) => {
-      console.log('⚡ [Socket.IO] Received order_completed_customer payload:', data);
-      showToast(`🏆 ${data.message}`, 'success', true);
+      console.log('⚡ [Socket.IO] Data Sync: order_completed_customer', data);
     });
 
     setSocket(newSocket);

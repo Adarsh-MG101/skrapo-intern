@@ -23,8 +23,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Menu,
-  LogOut,
-  X
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -78,6 +77,7 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
 
   const [adminOrderCount, setAdminOrderCount] = useState(0);
   const [champJobCount, setChampJobCount] = useState(0);
+  const [showLogoutPrompt, setShowLogoutPrompt] = useState(false);
 
   // Get current nav items based on role, default to empty
   const currentNavItems = user?.role ? (NAV_CONFIG as any)[user.role] || [] : [];
@@ -88,60 +88,65 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
     }
   }, [isCollapsed, onCollapse]);
 
+  // Wrap loadCounts in useCallback to use it in useEffect
+  const loadCounts = React.useCallback(async () => {
+    if (!user || !apiFetch) return;
+    try {
+      if (user.role === 'admin' && pathname !== '/admin/orders') {
+        const res = await apiFetch('/orders/admin/stats');
+        if (res.ok) {
+          const data = await res.json();
+          // Current live count is Requested states only
+          setAdminOrderCount(data.pending || 0);
+        }
+      } else if (user.role === 'scrapChamp' && pathname !== '/scrap-champ/jobs') {
+        const res = await apiFetch('/orders/scrap-champ/stats');
+        if (res.ok) {
+          const data = await res.json();
+          setChampJobCount(data.total || 0);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load notification counts', err);
+    }
+  }, [user, apiFetch, pathname]);
+
   useEffect(() => {
     if (!socket) return;
     
-    const handleNewPickup = () => {
-      if (pathname !== '/admin/orders') setAdminOrderCount(prev => prev + 1);
-    };
-    
-    const handleNewJob = () => {
-      if (pathname !== '/scrap-champ/jobs') setChampJobCount(prev => prev + 1);
-    };
+    // Sync with server on ANY relevant change instead of manual math
+    const handleSync = () => loadCounts();
 
-    socket.on('new_pickup_request', handleNewPickup);
-    socket.on('new_job_assigned', handleNewJob);
-    socket.on('new_available_job', handleNewJob);
+    socket.on('new_pickup_request', handleSync);
+    socket.on('pickup_cancelled', handleSync);
+    socket.on('broadcast_exhausted', handleSync);
+    socket.on('broadcast_failed', handleSync);
+    socket.on('order_accepted', handleSync);
+    socket.on('order_completed', handleSync);
+    socket.on('new_job_assigned', handleSync);
+    socket.on('new_available_job', handleSync);
 
     return () => {
-      socket.off('new_pickup_request', handleNewPickup);
-      socket.off('new_job_assigned', handleNewJob);
-      socket.off('new_available_job', handleNewJob);
+      socket.off('new_pickup_request', handleSync);
+      socket.off('pickup_cancelled', handleSync);
+      socket.off('broadcast_exhausted', handleSync);
+      socket.off('broadcast_failed', handleSync);
+      socket.off('order_accepted', handleSync);
+      socket.off('order_completed', handleSync);
+      socket.off('new_job_assigned', handleSync);
+      socket.off('new_available_job', handleSync);
     };
-  }, [socket, pathname]);
+  }, [socket, loadCounts]);
+
+  useEffect(() => {
+    loadCounts();
+  }, [loadCounts]);
 
   useEffect(() => {
     const handleOpen = () => setIsMobileOpen(true);
     window.addEventListener('open-mobile-sidebar', handleOpen);
     return () => window.removeEventListener('open-mobile-sidebar', handleOpen);
   }, []);
-
-  // Initial load logic for fetching actual unread numbers
-  useEffect(() => {
-    if (!user || !apiFetch) return;
-
-    const loadCounts = async () => {
-      try {
-        if (user.role === 'admin' && pathname !== '/admin/orders') {
-          const res = await apiFetch('/orders/admin/stats');
-          if (res.ok) {
-            const data = await res.json();
-            setAdminOrderCount(data.pending || 0);
-          }
-        } else if (user.role === 'scrapChamp' && pathname !== '/scrap-champ/jobs') {
-          const res = await apiFetch('/orders/scrap-champ/stats');
-          if (res.ok) {
-            const data = await res.json();
-            setChampJobCount(data.total || 0);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load notification counts', err);
-      }
-    };
-    
-    loadCounts();
-  }, [user, apiFetch, pathname]);
 
   useEffect(() => {
     if (pathname === '/admin/orders') setAdminOrderCount(0);
@@ -151,8 +156,16 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
   const handleLogout = () => {
+    setShowLogoutPrompt(true);
+  };
+
+  const confirmLogout = () => {
     logout();
     router.replace('/login');
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutPrompt(false);
   };
 
   return (
@@ -174,13 +187,21 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
       >
         <div className="flex flex-col h-full">
           {/* Brand/Header */}
-          <div className={`px-6 pt-10 pb-6 flex items-start mb-2 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+          <div className={`px-6 pt-10 pb-6 flex items-start mb-2 relative ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+            {/* Mobile Close Button */}
+            <button 
+              onClick={() => setIsMobileOpen(false)} 
+              className="lg:hidden absolute top-2 right-6 p-2 rounded-xl bg-gray-50 text-gray-900 hover:bg-gray-100 hover:text-brand-600 transition-all active:scale-95 shadow-sm border border-gray-100 z-10"
+            >
+              <Menu size={20} />
+            </button>
+
             <div className={`flex items-center transition-all duration-500 ${isCollapsed ? 'opacity-0 scale-50 w-0 pointer-events-none overflow-hidden' : 'opacity-100 scale-100'}`}>
               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mr-3 shadow-md rotate-1 flex-shrink-0 transition-transform hover:rotate-6 overflow-hidden border border-gray-100 shadow-brand-500/10">
                 <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col whitespace-nowrap justify-center">
-                <span className="text-2xl font-black text-gray-900 tracking-tighter leading-none">Skrapo</span>
+                <span className="text-2xl font-black text-gray-900 tracking-tighter leading-none">Recycle My Bin</span>
               </div>
             </div>
 
@@ -194,10 +215,6 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
               {isCollapsed ? <ChevronsRight size={22} /> : <ChevronsLeft size={22} />}
             </button>
             
-            {/* Mobile Close Button */}
-            <button onClick={() => setIsMobileOpen(false)} className="lg:hidden p-2 text-gray-400 hover:text-red-500 transition-colors">
-              <X size={24} />
-            </button>
           </div>
 
           <div className="px-6 mb-4">
@@ -215,23 +232,26 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
                 return (
                   <div
                     key={item.href}
-                    className={`flex items-center py-4 px-4 rounded-2xl transition-all duration-300 group relative opacity-40 cursor-not-allowed grayscale text-gray-400 ${isCollapsed ? 'justify-center' : 'justify-start'}`}
+                    className={`flex items-center py-4 px-4 rounded-2xl transition-all duration-300 group relative cursor-pointer
+                      ${isCollapsed ? 'justify-center' : 'justify-start'}
+                      text-slate-900 font-bold hover:bg-gray-900 hover:text-white hover:shadow-xl hover:shadow-gray-900/10 active:scale-95`}
                     title="Coming Soon"
+                    onClick={() => window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: `${item.name} is coming soon!`, type: 'info' }}))}
                   >
-                    <div className="transition-all duration-300 text-gray-400">
+                    <div className="transition-all duration-300 text-slate-700 group-hover:text-white group-hover:scale-110">
                       {item.icon}
                     </div>
                     {!isCollapsed && (
-                      <span className="ml-4 tracking-tight flex items-center">
-                        {item.name}
-                        <span className="ml-2 px-2 py-0.5 bg-gray-200 text-gray-500 text-[9px] uppercase tracking-widest font-black rounded-lg">
+                      <span className="ml-4 tracking-tight flex items-center flex-1 justify-between">
+                        <span>{item.name}</span>
+                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[9px] uppercase tracking-widest font-black rounded-lg group-hover:bg-white/20 group-hover:text-white/60 transition-colors">
                           Soon
                         </span>
                       </span>
                     )}
                     {isCollapsed && (
                       <div className="absolute left-full ml-4 px-3 py-2 bg-gray-900 text-white text-[11px] font-bold uppercase tracking-widest rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all translate-x-[-10px] group-hover:translate-x-0 z-[70] shadow-xl whitespace-nowrap">
-                        {item.name} <span className="text-gray-400 ml-1">(Soon)</span>
+                        {item.name} <span className="text-gray-400 ml-1">(Coming Soon)</span>
                       </div>
                     )}
                   </div>
@@ -243,15 +263,15 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileOpen(false)}
-                  className={`flex items-center py-4 px-4 rounded-2xl transition-all duration-300 group relative
+                  className={`flex items-center py-4 px-4 rounded-2xl transition-all duration-500 group relative active:scale-95
                     ${isActive 
-                      ? 'bg-brand-50 text-brand-700 font-bold shadow-sm shadow-brand-500/5' 
-                      : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'}
+                      ? 'bg-gray-900 text-white font-black shadow-2xl shadow-gray-900/30 ring-1 ring-white/10' 
+                      : 'text-slate-900 font-bold hover:bg-gray-900 hover:text-white hover:shadow-xl hover:shadow-gray-900/10'}
                     ${isCollapsed ? 'justify-center' : 'justify-start'}
                   `}
                   title={item.name}
                 >
-                  <div className={`transition-all duration-300 group-hover:scale-110 ${isActive ? 'text-brand-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                  <div className={`transition-all duration-300 group-hover:scale-110 ${isActive ? 'text-brand-400' : 'text-slate-700 group-hover:text-white'}`}>
                     {item.icon}
                   </div>
                   {!isCollapsed && (
@@ -347,6 +367,10 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
           from { transform: scaleY(0); }
           to { transform: scaleY(1); }
         }
+        @keyframes zoom-in {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
         .animate-fade-in {
           animation: fade-in 0.3s ease-out;
         }
@@ -354,7 +378,47 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
           animation: grow-y 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           transform-origin: center;
         }
+        .animate-zoom-in {
+          animation: zoom-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
       `}</style>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutPrompt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div 
+            className="bg-white rounded-[32px] shadow-2xl max-w-sm w-full p-8 animate-zoom-in border border-gray-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-red-500 shadow-inner">
+              <LogOut size={40} strokeWidth={2.5} />
+            </div>
+            
+            <h3 className="text-2xl font-black text-gray-900 text-center mb-2 tracking-tight">
+              Sign Out?
+            </h3>
+            <p className="text-gray-500 text-center mb-8 leading-relaxed font-medium">
+              Are you sure you want to sign out of your account? You will need to log in again to access your dashboard.
+            </p>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={confirmLogout}
+                className="w-full py-4 bg-red-500 text-white font-black rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/25 active:scale-95 flex items-center justify-center gap-2"
+              >
+                <LogOut size={20} strokeWidth={3} />
+                Yes, Sign Out
+              </button>
+              <button
+                onClick={cancelLogout}
+                className="w-full py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl hover:bg-gray-100 transition-all active:scale-95 text-sm uppercase tracking-widest"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

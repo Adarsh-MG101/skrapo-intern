@@ -1,6 +1,6 @@
 import { getDb } from '../config/db';
 import { smsService } from './smsService';
-import { emitAndLog } from './socketService';
+import { notificationService } from './notificationService';
 
 const POLL_INTERVAL_MS = 30_000; // Check every 30 seconds
 const NO_ACCEPTANCE_WINDOW_MS = 30 * 60 * 1000; // Alert admin if unassigned for 30 mins
@@ -28,12 +28,12 @@ async function checkUnassignedOrders() {
 
     for (const order of delayedOrders) {
       // Emit alert to admin
-      emitAndLog('admin_room', 'admin_no_acceptance', {
-        orderId: order._id,
-        area: order.generalArea,
-        createdAt: order.createdAt,
-        message: `⚠️ NO CHAMPION ACCEPTED order ${order._id} in ${order.generalArea} within 30 minutes! Manual intervention recommended.`
-      });
+      notificationService.notifyAdmins(
+        'Action Required: No Acceptance 🚨',
+        `No champion accepted order ${order._id} in ${order.generalArea} within 30 minutes!`,
+        'admin_no_acceptance',
+        { orderId: order._id, area: order.generalArea, createdAt: order.createdAt }
+      );
 
       // Mark as notified
       await ordersCol.updateOne(
@@ -104,19 +104,22 @@ async function checkAndSendReminders() {
             { $set: { reminderSentAt: new Date() } }
           );
 
-          // Also send a socket notification to the champ
-          emitAndLog(`user_${order.assignedScrapChampId}`, 'pickup_reminder', {
-            orderId: order._id,
-            message: `⏰ Reminder: You have a pickup soon at ${order.scheduledAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-            address: order.exactAddress || order.generalArea,
-          });
+          // Also send a notification to the champ
+          notificationService.notifyUser(
+            order.assignedScrapChampId.toString(),
+            'Upcoming Pickup Reminder ⏰',
+            `Reminder: You have a pickup soon at ${new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            'pickup_reminder',
+            { orderId: order._id, address: order.exactAddress || order.generalArea }
+          );
 
           // Notify admin too
-          emitAndLog('admin_room', 'pickup_reminder_sent', {
-            orderId: order._id,
-            champName: champ.name,
-            scheduledAt: order.scheduledAt,
-          });
+          notificationService.notifyAdmins(
+            'Pickup Reminder Sent',
+            `Reminder sent to ${champ.name} for Order #${order._id.toString().slice(-6).toUpperCase()}`,
+            'pickup_reminder_sent',
+            { orderId: order._id, champName: champ.name, scheduledAt: order.scheduledAt }
+          );
 
           console.log(`[reminder] Sent reminder for order ${order._id} to champ ${champ.name} (${champ.mobileNumber})`);
         } else {

@@ -21,8 +21,11 @@ import {
   Calendar,
   IndianRupee,
   Scale,
-  Phone
+  Phone,
+  Ban,
+  Inbox
 } from 'lucide-react';
+import { Modal } from '../../../components/common/Modal';
 
 interface Order {
   _id: string;
@@ -61,6 +64,30 @@ export default function AdminOrderDetailsPage() {
   const router = useRouter();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [engagementModal, setEngagementModal] = useState<{ isOpen: boolean; orderId: string | null; data: any }>({
+    isOpen: false,
+    orderId: null,
+    data: null
+  });
+  const [loadingEngagement, setLoadingEngagement] = useState(false);
+
+  const { apiFetch } = useAuth();
+
+  const fetchEngagement = async (orderId: string) => {
+    setLoadingEngagement(true);
+    setEngagementModal(prev => ({ ...prev, isOpen: true, orderId, data: null }));
+    try {
+      const res = await apiFetch(`/orders/admin/${orderId}/engagement`);
+      if (res.ok) {
+        const data = await res.json();
+        setEngagementModal(prev => ({ ...prev, data }));
+      }
+    } catch (err) {
+      console.error('Engagement fetch error:', err);
+    } finally {
+      setLoadingEngagement(false);
+    }
+  };
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -294,28 +321,110 @@ export default function AdminOrderDetailsPage() {
                     )}
                 </div>
 
-                {/* Logistics Performance */}
+                {/* Engagement Performance */}
                 {(order.status === 'Accepted' || order.status === 'Completed') && (
-                   <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm group">
-                      <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 px-1">Logistics Insights</h2>
-                      <div className="flex items-center justify-between text-center">
-                         <div className="flex-1">
-                            <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1 group-hover:scale-110 transition-transform">Link Clicks</p>
-                            <p className="text-xl font-black text-gray-900">{order.viewCount || '0'}</p>
-                         </div>
-                         <div className="w-[1px] h-8 bg-gray-100" />
-                         <div className="flex-1">
-                            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1 group-hover:scale-110 transition-transform">Acceptance</p>
-                            <p className="text-xl font-black text-gray-900">100%</p>
-                         </div>
-                      </div>
-                   </div>
+                   <div className="bg-white rounded-[2rem] p-8 border border-gray-100 shadow-sm transition-all hover:border-blue-100">
+                      <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 px-1">Engagement Performance</h2>
+                      <div className="flex items-center justify-between mb-6">
+                         <div className="flex gap-3">
+                            <div className="text-center">
+                               <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-100 mb-2">
+                                  {order.notifiedChampsCount || 0}
+                               </div>
+                               <p className="text-[8px] font-black text-gray-400 uppercase tracking-tight">Notified</p>
+                            </div>
+                            <div className="text-center">
+                               <div className="w-10 h-10 bg-red-600 rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-red-100 mb-2">
+                                  {order.declinedChampIds?.length || 0}
+                               </div>
+                               <p className="text-[8px] font-black text-gray-400 uppercase tracking-tight">Declined</p>
+                             </div>
+                          </div>
+                          <div className="flex-1 text-right">
+                             <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Conversion</p>
+                             <p className="text-2xl font-black text-gray-900">
+                                {Math.round((1 / (order.notifiedChampsCount || 1)) * 100)}%
+                             </p>
+                          </div>
+                       </div>
+                       <button 
+                          onClick={() => fetchEngagement(order._id)}
+                          className="w-full py-3 bg-gray-50 hover:bg-white rounded-2xl border border-gray-100 hover:border-blue-200 text-[10px] font-black text-gray-500 hover:text-blue-600 uppercase tracking-[0.2em] transition-all shadow-sm flex items-center justify-center gap-2 group"
+                       >
+                          View Broadcast Log <ArrowLeft size={14} className="rotate-180 group-hover:translate-x-1 transition-transform" />
+                       </button>
+                    </div>
                 )}
              </div>
 
           </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={engagementModal.isOpen}
+        onClose={() => setEngagementModal(prev => ({ ...prev, isOpen: false }))}
+        title="Champion Engagement Tracker"
+        size="md"
+      >
+        {loadingEngagement ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+            <Loader size="lg" />
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">Retrieving regional response log...</p>
+          </div>
+        ) : engagementModal.data ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50/50 p-4 rounded-3xl border border-blue-100/50">
+                <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 px-1">Regional Reach</p>
+                <p className="text-2xl font-black text-gray-900">{engagementModal.data.notified.length} Champions</p>
+              </div>
+              <div className="bg-red-50/50 p-4 rounded-3xl border border-red-100/50">
+                <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1 px-1">Active Declines</p>
+                <p className="text-2xl font-black text-gray-900">{engagementModal.data.declined.length}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Interaction Log</h3>
+              <div className="bg-gray-50/50 rounded-[2rem] border border-gray-100 divide-y divide-gray-100 max-h-[400px] overflow-y-auto no-scrollbar">
+                {engagementModal.data.notified.length === 0 ? (
+                   <div className="p-10 text-center">
+                      <Inbox className="mx-auto text-gray-200 mb-3" size={32} />
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">No regional matches</p>
+                   </div>
+                ) : engagementModal.data.notified.map((champ: any) => {
+                  const isDeclined = champ.hasDeclined;
+                  return (
+                    <div key={champ.id} className="p-4 flex items-center justify-between group hover:bg-white transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs border ${isDeclined ? 'bg-red-50 text-red-600 border-red-100' : 'bg-white text-blue-600 border-gray-200'}`}>
+                           {champ.name?.charAt(0) || <User size={16} />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-gray-900 leading-none mb-1">{champ.name}</p>
+                          <p className="text-[10px] font-bold text-gray-400 flex items-center gap-1">
+                             <Phone size={10} /> {champ.mobileNumber}
+                          </p>
+                        </div>
+                      </div>
+                      {isDeclined ? (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 rounded-lg text-[9px] font-black text-red-600 uppercase tracking-widest border border-red-100 shadow-sm">
+                           <Ban size={12} /> Declined
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg text-[9px] font-black text-blue-600 uppercase tracking-widest border border-blue-100 shadow-sm">
+                           <Radio size={12} className="animate-pulse" /> Notified
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </ProtectedRoute>
   );
 }

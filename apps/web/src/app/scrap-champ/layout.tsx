@@ -25,7 +25,7 @@ export default function ScrapChampLayout({
           <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center ml-2 shadow-sm border border-gray-100 overflow-hidden">
             <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
-          <span className="text-xl font-black text-gray-900 tracking-tight ml-2">Skrapo</span>
+          <span className="text-xl font-black text-gray-900 tracking-tight ml-2">Recycle My Bin</span>
         </div>
 
         <div className="min-h-screen">

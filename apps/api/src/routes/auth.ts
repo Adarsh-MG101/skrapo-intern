@@ -153,7 +153,10 @@ router.post('/otp/verify', async (req: Request, res: Response) => {
 // POST /auth/register
 router.post('/register', async (req: Request, res: Response) => {
   try {
-    const { name, email, password, mobileNumber, role: roleCode, googleId, pickupAddress, serviceArea, serviceRadiusKm } = req.body;
+    const { 
+      name, email, password, mobileNumber, role: roleCode, googleId, pickupAddress, serviceArea, serviceRadiusKm,
+      panNumber, panCardPic, aadharNumber, aadharCardPic, gstNumber, gstCardPic, profilePhoto
+    } = req.body;
 
     if (!name || !mobileNumber || !roleCode) {
       res.status(400).json({ error: 'name, mobileNumber, and role are required' });
@@ -248,6 +251,15 @@ router.post('/register', async (req: Request, res: Response) => {
     if (pickupAddress) userDoc.pickupAddress = pickupAddress;
     if (serviceArea) userDoc.serviceArea = serviceArea;
     if (serviceRadiusKm) userDoc.serviceRadiusKm = Number(serviceRadiusKm);
+
+    // Identity & Docs for Champ
+    if (panNumber) userDoc.panNumber = panNumber;
+    if (panCardPic) userDoc.panCardPic = panCardPic;
+    if (aadharNumber) userDoc.aadharNumber = aadharNumber;
+    if (aadharCardPic) userDoc.aadharCardPic = aadharCardPic;
+    if (gstNumber) userDoc.gstNumber = gstNumber;
+    if (gstCardPic) userDoc.gstCardPic = gstCardPic;
+    if (profilePhoto) userDoc.profilePhoto = profilePhoto;
 
     const userResult = await usersCol.insertOne(userDoc);
 
@@ -490,6 +502,32 @@ function getDefaultRoute(role: string): string {
       return '/login';
   }
 }
+
+// POST /auth/fcm-token
+// Save FCM token for push notifications
+router.post('/fcm-token', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      res.status(400).json({ error: 'Token is required' });
+      return;
+    }
+
+    const db = getDb();
+    const userId = new ObjectId(req.user!.userId);
+
+    // Save token to user document (using an array to support multiple devices)
+    await db.collection('users').updateOne(
+      { _id: userId },
+      { $addToSet: { fcmTokens: token } as any }
+    );
+
+    res.json({ message: 'FCM token saved successfully' });
+  } catch (error) {
+    console.error('[auth/fcm-token] Error:', error);
+    res.status(500).json({ error: 'Failed to save FCM token' });
+  }
+});
 
 export default router;
 

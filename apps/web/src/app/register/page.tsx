@@ -1,27 +1,35 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
 import { validatePhone, validateEmail, validatePincode } from '../utils/validators';
+import { 
+  Recycle, 
+  Home, 
+  Globe, 
+  Leaf, 
+  User, 
+  Phone, 
+  Building2, 
+  Mail, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  ArrowLeft, 
+  AlertCircle,
+  LogOut
+} from 'lucide-react';
 
-function RecycleIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M7 19H5L8 13L11 19H9L10 21H14L8 10L2 21H6L7 19Z" fill="currentColor" />
-      <path d="M17 19H19L16 13L13 19H15L14 21H10L16 10L22 21H18L17 19Z" fill="currentColor" />
-      <path d="M12 3L15 9H9L12 3ZM12 1L7 10H17L12 1Z" fill="currentColor" />
-    </svg>
-  );
-}
+
 
 const ROLES = [
   {
     code: 'customer',
     name: 'Customer',
-    icon: '🏠',
+    icon: <Home className="w-8 h-8 text-brand-500" />,
     description: 'Schedule scrap pickups from your doorstep',
     gradient: 'from-emerald-400 to-brand-500',
   },
@@ -61,9 +69,11 @@ function RegisterContent() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { register, googleLogin, isAuthenticated, user } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const { register, googleLogin, isAuthenticated, user, logout } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const registerAttempted = useRef(false);
 
   useEffect(() => {
     const roleParam = searchParams.get('role');
@@ -90,10 +100,24 @@ function RegisterContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      router.replace(user.defaultRoute);
+    if (isAuthenticated && user && !registerAttempted.current) {
+      setShowLogoutConfirm(true);
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user]);
+
+  const handleConfirmLogout = () => {
+    registerAttempted.current = false;
+    logout();
+    window.location.reload();
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+    window.history.forward();
+    setTimeout(() => {
+      router.replace(user?.defaultRoute || '/');
+    }, 100);
+  };
 
   const handleGoogleRegisterSuccess = async (credential: string) => {
     setLoading(true);
@@ -107,6 +131,7 @@ function RegisterContent() {
          setName(result.googleData.name);
          setIsGoogleAuth(true);
        } else if (result.defaultRoute) {
+         registerAttempted.current = true;
          router.push(result.defaultRoute);
        }
     } else {
@@ -191,6 +216,7 @@ function RegisterContent() {
     });
 
     if (result.success && result.defaultRoute) {
+      registerAttempted.current = true;
       router.push(result.defaultRoute);
     } else {
       setError(result.error || 'Registration failed');
@@ -198,6 +224,41 @@ function RegisterContent() {
 
     setLoading(false);
   };
+
+  if (showLogoutConfirm) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white animate-in fade-in duration-300">
+        <div className="max-w-sm w-full p-8 border border-gray-100 rounded-3xl shadow-xl">
+          <div className="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-500 shadow-inner">
+            <LogOut size={40} strokeWidth={2.5} />
+          </div>
+          
+          <h3 className="text-2xl font-black text-gray-900 text-center mb-2">
+            Sign Out?
+          </h3>
+          <p className="text-gray-500 text-center mb-8 leading-relaxed">
+            You are currently logged in. Would you like to sign out before creating a new account?
+          </p>
+          
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleConfirmLogout}
+              className="w-full py-4 bg-red-500 text-white font-black rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/20 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <LogOut size={20} />
+              Yes, Sign Out
+            </button>
+            <button
+              onClick={handleCancelLogout}
+              className="w-full py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl hover:bg-gray-100 transition-all active:scale-95"
+            >
+              Stay Logged In
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex">
@@ -210,20 +271,24 @@ function RegisterContent() {
         </div>
         <div className="relative text-center animate-fade-in">
           <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-float backdrop-blur-sm">
-            <RecycleIcon className="w-12 h-12 text-white" />
+            <Recycle className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-4xl font-extrabold text-white mb-4">Join Skrapo</h1>
+          <h1 className="text-4xl font-extrabold text-white mb-4">Join Recycle My Bin</h1>
           <p className="text-brand-100 text-lg max-w-sm mx-auto leading-relaxed">
             Create your account and start making a difference. Every piece of scrap recycled counts!
           </p>
           <div className="mt-12 grid grid-cols-3 gap-4 max-w-sm mx-auto">
-            {['🌍', '♻️', '💚'].map((emoji, i) => (
+            {[
+              <Globe key="globe" className="w-8 h-8 text-white" />,
+              <Recycle key="recycle" className="w-8 h-8 text-white" />,
+              <Leaf key="leaf" className="w-8 h-8 text-white" />
+            ].map((icon, i) => (
               <div
                 key={i}
-                className="h-16 bg-white/10 rounded-2xl flex items-center justify-center text-2xl backdrop-blur-sm animate-fade-in"
+                className="h-16 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm animate-fade-in"
                 style={{ animationDelay: `${(i + 1) * 200}ms` }}
               >
-                {emoji}
+                {icon}
               </div>
             ))}
           </div>
@@ -236,9 +301,9 @@ function RegisterContent() {
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-6 justify-center">
             <div className="w-10 h-10 bg-brand-500 rounded-full flex items-center justify-center shadow-lg">
-              <RecycleIcon className="w-5 h-5 text-white" />
+              <Recycle className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-800">Skrapo</span>
+            <span className="text-2xl font-bold text-gray-800">Recycle My Bin</span>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
@@ -247,15 +312,13 @@ function RegisterContent() {
                 {isGoogleAuth ? 'Finish Setup' : 'Create Account'}
               </h2>
               <p className="text-gray-500 mt-2">
-                {isGoogleAuth ? 'Just a few more details' : 'Get started with Skrapo today'}
+                {isGoogleAuth ? 'Just a few more details' : 'Get started with Recycle My Bin today'}
               </p>
             </div>
 
             {error && (
               <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center gap-2 animate-fade-in">
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 {error}
               </div>
             )}
@@ -297,9 +360,7 @@ function RegisterContent() {
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                    <User className="w-5 h-5" />
                   </span>
                   <input
                     id="name"
@@ -340,9 +401,7 @@ function RegisterContent() {
                   </select>
                   <div className="relative flex-1">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
+                      <Phone className="w-5 h-5" />
                     </span>
                     <input
                       id="mobile"
@@ -380,9 +439,7 @@ function RegisterContent() {
                     </label>
                     <div className="relative">
                       <span className="absolute left-4 top-4 text-gray-400">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
+                        <Building2 className="w-5 h-5" />
                       </span>
                   <textarea
                         id="address-line"
@@ -476,9 +533,7 @@ function RegisterContent() {
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                    </svg>
+                    <Mail className="w-5 h-5" />
                   </span>
                   <input
                     id="reg-email"
@@ -516,9 +571,7 @@ function RegisterContent() {
                     </label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
+                        <Lock className="w-5 h-5" />
                       </span>
                       <input
                         id="reg-password"
@@ -548,16 +601,7 @@ function RegisterContent() {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                       >
-                        {showPassword ? (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        )}
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
                     {fieldErrors.password && <p className="text-red-500 text-xs mt-1">{fieldErrors.password}</p>}
@@ -570,9 +614,7 @@ function RegisterContent() {
                     </label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
+                        <Lock className="w-5 h-5" />
                       </span>
                       <input
                         id="confirm-password"
@@ -601,16 +643,7 @@ function RegisterContent() {
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                       >
-                        {showConfirmPassword ? (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        )}
+                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
                     {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1">{fieldErrors.confirmPassword}</p>}
@@ -646,9 +679,7 @@ function RegisterContent() {
 
           <div className="mt-6 text-center">
             <Link href="/" className="text-sm text-gray-500 hover:text-brand-600 transition-colors flex items-center justify-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
+              <ArrowLeft className="w-4 h-4" />
               Back to home
             </Link>
           </div>

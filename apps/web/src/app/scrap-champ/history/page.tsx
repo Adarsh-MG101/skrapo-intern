@@ -3,17 +3,15 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
-import { StatusBadge, Loader, Button, EmptyState } from '../../components/common';
+import { StatusBadge, Loader, EmptyState } from '../../components/common';
 import Link from 'next/link';
 import { API_URL } from '../../config/env';
 import { 
   ScrollText, 
-  User, 
   MapPin, 
   Star, 
   History as HistoryIcon, 
-  ArrowRight,
-  FileCheck
+  ArrowRight
 } from 'lucide-react';
 
 interface Job {
@@ -74,8 +72,10 @@ export default function ScrapChampHistoryPage() {
               </div>
             </div>
             <div className="bg-white px-8 py-4 rounded-[1.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
-               <span className="text-[10px] font-black uppercase text-gray-400 block tracking-[0.2em] mb-1">Total Logs</span>
-               <span className="text-3xl font-black text-brand-600 tracking-tighter">{history.length}</span>
+               <span className="text-[10px] font-black uppercase text-gray-400 block tracking-[0.2em] mb-1 whitespace-nowrap">Total Jobs Completed</span>
+               <span className="text-3xl font-black text-brand-600 tracking-tighter">
+                 {history.filter(j => j.status === 'Completed').length}
+               </span>
             </div>
           </div>
 
@@ -90,83 +90,54 @@ export default function ScrapChampHistoryPage() {
               icon={ScrollText}
             />
           ) : (
-            <div className="grid gap-6">
+            <div className="grid gap-2">
               {history.map((job) => (
-                <div key={job._id} className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 animate-fade-in group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-8 opacity-5 text-brand-600 group-hover:scale-110 transition-transform duration-700">
-                     <FileCheck size={120} />
+                <div key={job._id} className="bg-white rounded-xl px-4 py-3 sm:px-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-brand-100 transition-all animate-fade-in group flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 relative">
+                  {/* Status Badge - PC (pinned far right) */}
+                  <div className="hidden sm:block absolute right-6 top-1/2 -translate-y-1/2">
+                    <StatusBadge status={job.status} />
                   </div>
 
-                  <div className="flex flex-col lg:flex-row justify-between gap-8 md:gap-10 relative z-10">
-                    <div className="flex gap-6 md:gap-10 flex-1">
-                      {/* Date Indicator */}
-                      <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-50 rounded-[2rem] flex flex-col items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-600 transition-all flex-shrink-0 border border-gray-100 group-hover:border-brand-100 shadow-inner group-hover:scale-105">
-                        <span className="text-[10px] md:text-sm font-black uppercase leading-none mb-1 md:mb-1.5 tracking-widest">
-                          {new Date(job.scheduledAt).toLocaleString('default', { month: 'short' })}
-                        </span>
-                        <span className="text-2xl md:text-4xl font-black leading-none tracking-tighter">
-                          {new Date(job.scheduledAt).getDate()}
-                        </span>
-                      </div>
-
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-3 mb-4">
-                          <h3 className="text-xl md:text-2xl font-black text-gray-900 leading-tight">
-                             {job.scrapTypes.join(', ')}
-                          </h3>
-                          <StatusBadge status={job.status} />
+                  <div className="flex-1 min-w-0 flex items-center gap-3.5 sm:pr-32">
+                     <div className="w-9 h-9 bg-brand-50 rounded-lg flex items-center justify-center text-brand-600 flex-shrink-0">
+                        <HistoryIcon size={18} />
+                     </div>
+                     <div className="min-w-0 flex-1">
+                        <h3 className="text-sm font-black text-gray-900 truncate">
+                          {job.scrapTypes.join(', ')}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+                           <div className="flex items-center gap-1 min-w-0 max-w-full sm:max-w-[300px]">
+                             <MapPin size={10} className="text-gray-300 flex-shrink-0" />
+                             <p className="text-[11px] text-gray-400 font-medium truncate" title={job.exactAddress}>
+                               {job.customer.name} · {job.exactAddress || 'Regional Area'}
+                             </p>
+                           </div>
+                           <p className="text-[10px] text-gray-300 font-bold uppercase tracking-wider whitespace-nowrap">
+                             {new Date(job.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                           </p>
+                           {job.feedback && (
+                             <div className="flex items-center gap-1 text-amber-500">
+                               <Star size={10} className="fill-current" />
+                               <span className="text-[10px] font-black">{job.feedback.rating}</span>
+                             </div>
+                           )}
                         </div>
+                     </div>
+                  </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-brand-600 flex-shrink-0 border border-white shadow-sm">
-                                <User size={18} />
-                             </div>
-                             <div>
-                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">Customer Name</p>
-                               <p className="text-sm font-bold text-gray-800 tracking-tight">{job.customer.name}</p>
-                             </div>
-                           </div>
-                           <div className="flex items-center gap-3">
-                             <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-brand-600 flex-shrink-0 border border-white shadow-sm">
-                                <MapPin size={18} />
-                             </div>
-                             <div className="flex-1 min-w-0">
-                               <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-0.5">Collection Point</p>
-                               <p className="text-sm font-bold text-gray-600 truncate tracking-tight" title={job.exactAddress}>{job.exactAddress || 'Address Restricted'}</p>
-                             </div>
-                           </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row lg:flex-col justify-center gap-4 lg:w-56">
-                        {job.feedback ? (
-                           <div className="bg-brand-50/50 p-5 rounded-[1.5rem] border border-brand-100 flex-1 group/rating hover:bg-white transition-all shadow-inner">
-                              <div className="flex items-center gap-1.5 mb-2 text-amber-500">
-                                 {[...Array(5)].map((_, i) => (
-                                   <Star key={i} size={14} className={i < job.feedback!.rating ? 'fill-current' : 'text-gray-200'} strokeWidth={3} />
-                                 ))}
-                                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-700 ml-2">Rating</span>
-                              </div>
-                              <p className="text-[11px] text-gray-500 font-medium italic leading-relaxed line-clamp-3">
-                                 "{job.feedback.comments || 'Excellent service provided.'}"
-                              </p>
-                           </div>
-                        ) : (
-                           <div className="p-5 rounded-[1.5rem] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center flex-1 bg-gray-50/20">
-                              <span className="text-[10px] font-black uppercase text-gray-300 tracking-[0.2em]">Awaiting Review</span>
-                           </div>
-                        )}
-                        
-                        <div className="lg:w-full">
-                          <Link href={`/scrap-champ/orders/${job._id}`}>
-                            <Button variant="ghost" fullWidth size="lg" className="py-5 rounded-xl flex gap-2 font-black text-[11px] uppercase tracking-widest hover:bg-brand-50 hover:text-brand-700">
-                               Receipt Details <ArrowRight size={16} />
-                            </Button>
-                          </Link>
-                        </div>
-                    </div>
+                  <div className="flex items-center justify-between sm:justify-end gap-5 sm:pr-32">
+                     {/* Status Badge - Phone (bottom left) */}
+                     <div className="sm:hidden flex-shrink-0">
+                        <StatusBadge status={job.status} />
+                     </div>
+                     <div className="flex items-center gap-4 flex-shrink-0">
+                        <Link href={`/scrap-champ/orders/${job._id}`} className="ml-auto">
+                           <button className="text-[11px] font-black text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors uppercase tracking-widest">
+                            Receipt <ArrowRight size={14} />
+                           </button>
+                        </Link>
+                     </div>
                   </div>
                 </div>
               ))}

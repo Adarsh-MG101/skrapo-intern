@@ -4,12 +4,14 @@ import { ToastProvider } from './components/common/Toast';
 import { SocketProvider } from './context/SocketContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
+import { FCMInitializer } from '../components/common/FCMInitializer';
+
 // IMPORTANT: Replace this with your actual Google Client ID from the Google Cloud Console
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
 export const metadata = {
-  title: 'Skrapo - Smart Scrap Pickup Scheduling',
-  description: 'Skrapo connects you with scrap champions for hassle-free doorstep scrap collection. Schedule pickups, track orders, and contribute to a greener future.',
+  title: 'Recycle My Bin - Smart Scrap Pickup Scheduling',
+  description: 'Recycle My Bin connects you with scrap champions for hassle-free doorstep scrap collection. Schedule pickups, track orders, and contribute to a greener future.',
   icons: {
     icon: '/favicon.ico',
   },
@@ -32,6 +34,7 @@ export default function RootLayout({
           <ToastProvider>
             <AuthProvider>
               <SocketProvider>
+                <FCMInitializer />
                 {children}
               </SocketProvider>
             </AuthProvider>

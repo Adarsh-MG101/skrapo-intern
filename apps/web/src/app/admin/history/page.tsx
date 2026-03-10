@@ -81,7 +81,7 @@ export default function AdminHistoryPage() {
     return matchesSearch;
   });
 
-  const statuses = ['All', 'Completed', 'Cancelled', 'Problem'];
+  const statuses = ['All', 'Completed', 'Cancelled', 'Expired', 'Problem'];
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
@@ -241,7 +241,7 @@ export default function AdminHistoryPage() {
                              </Link>
                           </td>
                           <td className="px-10 py-8 text-center text-left">
-                            <StatusBadge status={order.status} />
+                            <StatusBadge status={order.status === 'Requested' ? 'Expired' : order.status} />
                           </td>
                         </tr>
                       ))}
@@ -262,7 +262,7 @@ export default function AdminHistoryPage() {
                           </p>
                           <p className="font-black text-gray-900 text-xl tracking-tight leading-none">{order.scrapTypes.join(', ')}</p>
                        </div>
-                       <StatusBadge status={order.status} />
+                       <StatusBadge status={order.status === 'Requested' ? 'Expired' : order.status} />
                     </div>
 
                     <div className="p-6 bg-gray-50/50 rounded-3xl border border-gray-50 space-y-4">

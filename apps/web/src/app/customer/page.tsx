@@ -11,7 +11,6 @@ import {
   Package, 
   Clock, 
   ShieldCheck, 
-  Star, 
   Sprout, 
   Globe, 
   Sparkles,
@@ -22,13 +21,12 @@ interface Stats {
   total: number;
   pending: number;
   completed: number;
-  avgRating: string;
 }
 
 function CustomerDashboardContent() {
   const { user, token } = useAuth();
   const { socket } = useSocket();
-  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, completed: 0, avgRating: '--' });
+  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, completed: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -139,12 +137,11 @@ function CustomerDashboardContent() {
       {loading ? (
         <div className="flex justify-center py-10"><Loader size="lg" /></div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12 animate-fade-in">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-12 animate-fade-in">
           {[
             { label: 'Total Scraps', value: stats.total, Icon: Package, color: 'text-brand-600', bg: 'bg-brand-50' },
             { label: 'Pending', value: stats.pending, Icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
             { label: 'Completed', value: stats.completed, Icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Reputation', value: stats.avgRating, Icon: Star, color: 'text-yellow-600', bg: 'bg-yellow-50' },
           ].map((stat) => (
             <div key={stat.label} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
               <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-4 border border-white shadow-sm`}>

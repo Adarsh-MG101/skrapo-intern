@@ -12,6 +12,7 @@ interface DateTimePickerProps {
   onChange: (e: { target: { value: string } }) => void;
   type?: 'date' | 'time';
   min?: string;
+  isToday?: boolean;
   error?: string;
   className?: string;
 }
@@ -23,6 +24,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   onChange, 
   type = 'date',
   min,
+  isToday,
   error,
   className = ''
 }) => {
@@ -149,9 +151,24 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
               
               {Array.from({ length: daysInMonth(currentMonth) }).map((_, i) => {
                 const day = i + 1;
-                const dateObj = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-                const isoDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-                const isPast = min ? isoDate < min : false;
+                const d = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+                const isoDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                
+                const today = new Date();
+                const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                
+                let isPast = min ? isoDate < min : false;
+                
+                // Special check for "Today": If now + 2 hours is past 7 PM (19:00), Today is effectively past
+                if (isoDate === todayIso) {
+                  const cutoff = today.getTime() + 2 * 60 * 60 * 1000;
+                  const dayEnd = new Date(today);
+                  dayEnd.setHours(19, 0, 0, 0);
+                  if (cutoff >= dayEnd.getTime()) {
+                    isPast = true;
+                  }
+                }
+                
                 const isSelected = value === isoDate;
                 
                 return (
@@ -196,16 +213,42 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
              <div className="flex flex-col gap-2.5 pb-2">
               {TIME_SLOTS.map((slot) => {
                 const isSelected = value === slot.value;
+                let isPast = false;
+
+                if (isToday) {
+                  const now = new Date();
+                  const cutoffTime = now.getTime() + 2 * 60 * 60 * 1000;
+                  
+                  if (slot.value.includes('-')) {
+                    const [_, endStr] = slot.value.split('-');
+                    const endHour = parseInt(endStr);
+                    const slotEndTime = new Date(now);
+                    slotEndTime.setHours(endHour, 0, 0, 0);
+                    
+                    if (cutoffTime >= slotEndTime.getTime()) {
+                      isPast = true;
+                    }
+                  } else if (slot.value === 'any') {
+                    // Disable "Any" if it's past the end of the last possible slot (7 PM)
+                    const dayEndTime = new Date(now);
+                    dayEndTime.setHours(19, 0, 0, 0);
+                    if (cutoffTime >= dayEndTime.getTime()) {
+                      isPast = true;
+                    }
+                  }
+                }
+
                 return (
                   <button
                     key={slot.value}
                     type="button"
+                    disabled={isPast}
                     onClick={() => handleTimeSelect(slot.value)}
                     className={`
                       px-6 py-4 rounded-3xl border-2 font-black text-sm tracking-tight transition-all duration-300 text-left flex items-center justify-between
                       ${isSelected 
                         ? 'bg-emerald-50 border-emerald-500 text-emerald-700 shadow-xl shadow-emerald-600/10' 
-                        : 'bg-white border-gray-50 text-gray-400 hover:border-emerald-200 hover:text-gray-700'}
+                        : (isPast ? 'bg-gray-50 border-gray-100 text-gray-200 cursor-not-allowed opacity-40' : 'bg-white border-gray-50 text-gray-400 hover:border-emerald-200 hover:text-gray-700')}
                     `}
                   >
                     <span>{slot.label}</span>

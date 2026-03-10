@@ -5,6 +5,7 @@ import { getDb } from '../config/db';
 import { authenticate, authorize, AuthenticatedRequest } from '../middleware/auth';
 import { smsService } from '../services/smsService';
 import { emitAndLog } from '../services/socketService';
+import { notificationService } from '../services/notificationService';
 
 const router = Router();
 
@@ -41,11 +42,12 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
 
     if (matchingChamps.length === 0) {
       console.log(`[broadcast] No champs matched pincode ${customerPincode}`);
-      emitAndLog('admin_room', 'broadcast_failed', {
-        orderId,
-        message: `No Scrap Champions found in pincode ${customerPincode}.`,
-        reason: 'no_matches'
-      });
+      notificationService.notifyAdmins(
+        'Broadcast Failed', 
+        `No Scrap Champions found in pincode ${customerPincode}.`,
+        'broadcast_failed',
+        { orderId, reason: 'no_matches' }
+      );
       return;
     }
 
@@ -79,10 +81,13 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
         });
 
         // Real-time notification
-        emitAndLog(`user_${champ._id}`, 'new_available_job', {
-          orderId: orderId,
-          message: 'A new pickup is available in your area! First to accept gets it. ♻️'
-        });
+        notificationService.notifyUser(
+          champ._id.toString(),
+          'New Scrapo Job Available! ♻️',
+          'A new pickup is available in your area! First to accept gets it.',
+          'new_available_job',
+          { orderId }
+        );
       } catch (err) {
         console.error(`[broadcast] Failed to notify champ ${champ._id}:`, err);
       }
@@ -91,11 +96,12 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
     await Promise.all(notifyTasks);
 
     // Notify admin
-    emitAndLog('admin_room', 'broadcast_success', {
-      orderId,
-      notifiedCount: matchingChamps.length,
-      message: `Pickup broadcasted to ${matchingChamps.length} champions in pincode ${customerPincode}.`
-    });
+    notificationService.notifyAdmins(
+      'Broadcast Success',
+      `Pickup broadcasted to ${matchingChamps.length} champions in pincode ${customerPincode}.`,
+      'broadcast_success',
+      { orderId, notifiedCount: matchingChamps.length }
+    );
 
     const maxRetries = parseInt(process.env.BROADCAST_MAX_RETRIES || '3', 10);
     const timeoutMin = parseInt(process.env.BROADCAST_TIMEOUT_MINUTES || '10', 10);
@@ -118,18 +124,27 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
             
             await broadcastToChamps(orderId, customerAddress, retryCount + 1);
           } else {
-            console.log(`[broadcast-timer] Order ${orderId} reached max retries (${maxRetries}).`);
-            // Notify admin of ultimate failure
-            emitAndLog('admin_room', 'broadcast_exhausted', {
-              orderId,
-              message: `🚨 Critical: Order #${orderId.slice(-6).toUpperCase()} has reached max broadcast retries (${maxRetries}). Manual intervention required!`
-            });
+            console.log(`[broadcast-timer] Order ${orderId} reached max retries (${maxRetries}). Expiring...`);
             
-            // Optionally update order status to indicate it needs manual help
+            // Mark as Expired
             await freshDb.collection('orders').updateOne(
               { _id: new ObjectId(orderId) },
-              { $set: { adminNotifiedOfDelay: true, updatedAt: new Date() } }
+              { $set: { status: 'Expired', adminNotifiedOfDelay: true, updatedAt: new Date() } }
             );
+
+            // Notify admin
+            emitAndLog('admin_room', 'broadcast_exhausted', {
+              orderId,
+              message: `🚨 Order #${orderId.slice(-6).toUpperCase()} expired. No champ accepted within 30m.`
+            });
+
+            // Notify customer
+            if (currentOrder.customerId) {
+              emitAndLog(`user_${currentOrder.customerId}`, 'order_expired', {
+                orderId,
+                message: 'No Scrap Champions were available in your area for this time. Please try rescheduling! ♻️'
+              });
+            }
           }
         } else {
            console.log(`[broadcast-timer] Order ${orderId} is no longer Requested (status: ${currentOrder?.status}). Stopping timer.`);
@@ -198,11 +213,12 @@ router.post('/', authenticate, authorize('customer'), async (req: AuthenticatedR
     // Emit real-time notification to all admins
     try {
       console.log(`[socket] Emitting 'new_pickup_request' for order ${result.insertedId} to admin_room`);
-      emitAndLog('admin_room', 'new_pickup_request', {
-        orderId: result.insertedId,
-        message: 'A new pickup request has been scheduled!',
-        area: generalArea
-      });
+      notificationService.notifyAdmins(
+        'New Pickup Request! ♻️',
+        `A new pickup has even scheduled in ${generalArea}`,
+        'new_pickup_request',
+        { orderId: result.insertedId, area: generalArea }
+      );
     } catch (e) {
       console.error('[socket] Failed to emit new_pickup_request', e);
     }
@@ -304,7 +320,11 @@ router.get('/admin', authenticate, authorize('admin'), async (req: Authenticated
     // Build query
     const query: any = {};
     if (status && status !== 'All') {
-      query.status = status;
+      if (status === 'Expired') {
+        query.status = { $in: ['Expired', 'Requested'] };
+      } else {
+        query.status = status;
+      }
     }
 
     if (startDate || endDate) {
@@ -372,10 +392,15 @@ router.get('/admin/stats', authenticate, authorize('admin'), async (req: Authent
     const ordersCol = db.collection('orders');
     const usersCol = db.collection('users');
 
-    const [total, pending, active, completed, champs] = await Promise.all([
+    const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+    const [total, requested, active, completed, champs] = await Promise.all([
       ordersCol.countDocuments({}),
-      ordersCol.countDocuments({ status: 'Requested' }),
-      ordersCol.countDocuments({ status: { $in: ['Assigned', 'Accepted'] } }),
+      ordersCol.countDocuments({ 
+        status: 'Requested',
+        createdAt: { $gt: thirtyMinsAgo }
+      }),
+      ordersCol.countDocuments({ status: { $in: ['Assigned', 'Accepted', 'Arrived', 'Picking'] } }),
       ordersCol.countDocuments({ status: 'Completed' }),
       usersCol.countDocuments({ role: 'scrapChamp' })
     ]);
@@ -397,7 +422,7 @@ router.get('/admin/stats', authenticate, authorize('admin'), async (req: Authent
 
     res.json({ 
       total, 
-      pending, 
+      pending: requested, 
       active, 
       completed, 
       champs,
@@ -419,7 +444,10 @@ router.get('/admin/scrap-champs', authenticate, authorize('admin'), async (req: 
 
     const champs = await usersCol
       .find({ role: 'scrapChamp' })
-      .project({ name: 1, mobileNumber: 1, serviceArea: 1, createdAt: 1, email: 1, serviceRadiusKm: 1 })
+      .project({ 
+        name: 1, mobileNumber: 1, serviceArea: 1, createdAt: 1, email: 1, serviceRadiusKm: 1, 
+        profilePhoto: 1, panNumber: 1, aadharNumber: 1, gstNumber: 1 
+      })
       .toArray();
 
     res.json(champs);
@@ -461,7 +489,10 @@ router.get('/admin/scrap-champs/:champId', authenticate, authorize('admin'), asy
 router.patch('/admin/scrap-champs/:champId', authenticate, authorize('admin'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { champId } = req.params;
-    const { name, email, mobileNumber, serviceArea, serviceRadiusKm, password } = req.body;
+    const { 
+      name, email, mobileNumber, serviceArea, serviceRadiusKm, password,
+      panNumber, panCardPic, aadharNumber, aadharCardPic, gstNumber, gstCardPic, profilePhoto
+    } = req.body;
 
     if (!ObjectId.isValid(champId)) {
       res.status(400).json({ error: 'Invalid Champion ID' });
@@ -477,6 +508,15 @@ router.patch('/admin/scrap-champs/:champId', authenticate, authorize('admin'), a
     if (mobileNumber) updateDoc.mobileNumber = mobileNumber;
     if (serviceArea) updateDoc.serviceArea = serviceArea;
     if (serviceRadiusKm !== undefined) updateDoc.serviceRadiusKm = Number(serviceRadiusKm);
+
+    // Identity & Docs
+    if (panNumber !== undefined) updateDoc.panNumber = panNumber;
+    if (panCardPic !== undefined) updateDoc.panCardPic = panCardPic;
+    if (aadharNumber !== undefined) updateDoc.aadharNumber = aadharNumber;
+    if (aadharCardPic !== undefined) updateDoc.aadharCardPic = aadharCardPic;
+    if (gstNumber !== undefined) updateDoc.gstNumber = gstNumber;
+    if (gstCardPic !== undefined) updateDoc.gstCardPic = gstCardPic;
+    if (profilePhoto !== undefined) updateDoc.profilePhoto = profilePhoto;
 
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -566,6 +606,55 @@ router.get('/admin/:orderId', authenticate, authorize('admin'), async (req: Auth
 
 
 /**
+ * GET /admin/orders/:orderId/engagement
+ * View list of champs notified and those who declined (Story: Engagement Visibility)
+ */
+router.get('/admin/:orderId/engagement', authenticate, authorize('admin'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const db = getDb();
+    
+    const dbOrder = await db.collection('orders').findOne({ _id: new ObjectId(orderId) });
+    if (!dbOrder) {
+      res.status(404).json({ error: 'Order not found' });
+      return;
+    }
+
+    const pincodeMatch = (dbOrder.exactAddress || '').match(/(\d{6})/);
+    const orderPincode = pincodeMatch ? pincodeMatch[1] : null;
+
+    if (!orderPincode) {
+      res.json({ notified: [], declined: [] });
+      return;
+    }
+
+    // Find all champs in that pincode (these were notified)
+    const matchingChamps = await db.collection('users').find({ 
+      role: 'scrapChamp',
+      serviceArea: { $regex: orderPincode }
+    }).project({ name: 1, mobileNumber: 1, profilePhoto: 1 }).toArray();
+
+    const declinedIds = (dbOrder.declinedChampIds || []).map((id: any) => id.toString());
+    
+    const notified = matchingChamps.map(champ => ({
+      id: champ._id.toString(),
+      name: champ.name,
+      mobileNumber: champ.mobileNumber,
+      profilePhoto: champ.profilePhoto,
+      hasDeclined: declinedIds.includes(champ._id.toString())
+    }));
+
+    const declined = notified.filter(c => c.hasDeclined);
+
+    res.json({ notified, declined });
+  } catch (error) {
+    console.error('[orders] Engagement fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch engagement details' });
+  }
+});
+
+
+/**
  * POST /admin/orders/:orderId/assign
  * Assign a Scrap Champ to an order (Story 8)
  */
@@ -635,10 +724,13 @@ router.post('/admin/:orderId/assign', authenticate, authorize('admin'), async (r
     // Emit real-time notification to the specific Champ
     try {
       console.log(`[socket] Emitting 'new_job_assigned' for order ${orderId} to user_${scrapChampId}`);
-      emitAndLog(`user_${scrapChampId}`, 'new_job_assigned', {
-        orderId: orderId,
-        message: 'You have been assigned a new pickup!'
-      });
+      notificationService.notifyUser(
+        scrapChampId,
+        'New assignment! ♻️',
+        'You have been assigned a new pickup!',
+        'new_job_assigned',
+        { orderId }
+      );
     } catch (e) {
       console.error('[socket] Failed to emit new_job_assigned', e);
     }
@@ -678,6 +770,7 @@ router.get('/scrap-champ/available-jobs', authenticate, authorize('scrapChamp'),
         assignedScrapChampId: null,
         status: 'Requested',
         declinedChampIds: { $ne: new ObjectId(req.user!.userId) },
+        createdAt: { $gt: new Date(Date.now() - 30 * 60 * 1000) },
         $or: [
           { exactAddress: { $regex: champPincode } },
           { generalArea: { $regex: champPincode } }
@@ -716,6 +809,7 @@ router.get('/scrap-champ/stats', authenticate, authorize('scrapChamp'), async (r
         assignedScrapChampId: null,
         status: 'Requested',
         declinedChampIds: { $ne: champId },
+        createdAt: { $gt: new Date(Date.now() - 30 * 60 * 1000) },
         $or: [
           { exactAddress: { $regex: champPincode } },
           { generalArea: { $regex: champPincode } }
@@ -749,11 +843,12 @@ router.post('/scrap-champ/:orderId/decline', authenticate, authorize('scrapChamp
     );
 
     // Notify admin
-    emitAndLog('admin_room', 'order_declined', {
-      orderId,
-      champId: req.user!.userId,
-      message: 'A champion declined a broadcasted job.'
-    });
+    notificationService.notifyAdmins(
+      'Job Declined',
+      'A champion declined a broadcasted job.',
+      'order_declined',
+      { orderId, champId: req.user!.userId }
+    );
 
     res.json({ success: true, message: 'Job declined successfully' });
   } catch (error) {
@@ -945,11 +1040,12 @@ router.post('/scrap-champ/:orderId/complete', authenticate, authorize('scrapCham
     // Emit real-time notification to admin
     try {
       console.log(`[socket] Emitting 'order_completed' for order ${orderId} to admin_room`);
-      emitAndLog('admin_room', 'order_completed', {
-        orderId: orderId,
-        message: 'A pickup task has been completed by the Scrap Champ.',
-        status: 'Completed'
-      });
+      notificationService.notifyAdmins(
+        'Pickup Completed! ♻️',
+        'A pickup task has been completed by the Scrap Champ.',
+        'order_completed',
+        { orderId, status: 'Completed' }
+      );
     } catch (e) {
       console.error('[socket] Failed to emit order_completed', e);
     }
@@ -957,11 +1053,13 @@ router.post('/scrap-champ/:orderId/complete', authenticate, authorize('scrapCham
     // Emit real-time notification to customer
     try {
       console.log(`[socket] Emitting 'order_completed_customer' for order ${orderId} to user_${order.customerId}`);
-      emitAndLog(`user_${order.customerId}`, 'order_completed_customer', {
-        orderId: orderId,
-        message: 'Your pickup has been completed! Thank you for recycling. ♻️',
-        status: 'Completed'
-      });
+      notificationService.notifyUser(
+        order.customerId.toString(),
+        'Pickup Completed! ♻️',
+        'Your pickup has been completed! Thank you for recycling.',
+        'order_completed_customer',
+        { orderId, status: 'Completed' }
+      );
     } catch (e) {
       console.error('[socket] Failed to emit order_completed_customer', e);
     }
@@ -1071,11 +1169,12 @@ router.post('/scrap-champ/:orderId/decision', authenticate, authorize('scrapCham
         // Emit real-time notification to admin
         try {
           console.log(`[socket] Emitting 'order_accepted' for order ${orderId} to admin_room`);
-          emitAndLog('admin_room', 'order_accepted', {
-            orderId: orderId,
-            message: `Scrap Champ ${champ.name} has accepted the pickup.`,
-            status: 'Accepted'
-          });
+          notificationService.notifyAdmins(
+            'Job Accepted! ♻️',
+            `Scrap Champ ${champ.name} has accepted the pickup.`,
+            'order_accepted',
+            { orderId, status: 'Accepted' }
+          );
         } catch (e) {
           console.error('[socket] Failed to emit order_accepted', e);
         }
@@ -1083,11 +1182,12 @@ router.post('/scrap-champ/:orderId/decision', authenticate, authorize('scrapCham
         // Emit real-time notification to ALL OTHER CHAMPS
         try {
            console.log(`[socket] Emitting 'order_accepted_by_other' for order ${orderId} to champ_room`);
-           emitAndLog('champ_room', 'order_accepted_by_other', {
-             orderId: orderId,
-             champName: champ.name,
-             acceptedByUserId: req.user!.userId
-           });
+           notificationService.notifyChamps(
+             'Job Taken ♻️',
+             `Job #${orderId.slice(-6).toUpperCase()} was accepted by ${champ.name}.`,
+             'order_accepted_by_other',
+             { orderId, champName: champ.name, acceptedByUserId: req.user!.userId }
+           );
         } catch (e) {
            console.error('[socket] Failed to emit order_accepted_by_other', e);
         }
@@ -1095,12 +1195,13 @@ router.post('/scrap-champ/:orderId/decision', authenticate, authorize('scrapCham
         // Emit real-time notification to customer
         try {
           console.log(`[socket] Emitting 'order_accepted_customer' for order ${orderId} to user_${order.customerId}`);
-          emitAndLog(`user_${order.customerId}`, 'order_accepted_customer', {
-            orderId: orderId,
-            message: `Your pickup has been accepted by ${champ.name}! They will arrive at the scheduled time.`,
-            champName: champ.name,
-            status: 'Accepted'
-          });
+          notificationService.notifyUser(
+            order.customerId.toString(),
+            'Pickup Confirmed! ♻️',
+            `Your pickup has been accepted by ${champ.name}! They will arrive at the scheduled time.`,
+            'order_accepted_customer',
+            { orderId, champName: champ.name, status: 'Accepted' }
+          );
         } catch (e) {
           console.error('[socket] Failed to emit order_accepted_customer', e);
         }
@@ -1187,11 +1288,12 @@ router.delete('/:orderId', authenticate, authorize('customer'), async (req: Auth
     // Emit real-time cancellation notification to all admins
     try {
       console.log(`[socket] Emitting 'pickup_cancelled' for order ${orderId} to admin_room`);
-      emitAndLog('admin_room', 'pickup_cancelled', {
-        orderId: orderId,
-        message: 'A pickup request was just cancelled by the customer.',
-        area: order.generalArea
-      });
+      notificationService.notifyAdmins(
+        'Pickup Cancelled 🚨',
+        'A pickup request was just cancelled by the customer.',
+        'pickup_cancelled',
+        { orderId, area: order.generalArea }
+      );
     } catch (e: any) {
       console.error('[socket] Failed to emit pickup_cancelled', e.message);
     }

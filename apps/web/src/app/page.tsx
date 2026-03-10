@@ -3,7 +3,19 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { 
+  ArrowRight, 
+  FileText, 
+  Recycle, 
+  Wrench, 
+  GlassWater, 
+  Calendar, 
+  Trophy, 
+  Truck, 
+  Home, 
+  Settings, 
+  Check 
+} from 'lucide-react';
 
 
 function LeafPattern() {
@@ -18,14 +30,14 @@ function LeafPattern() {
 
 export default function LandingPage() {
   const { isAuthenticated, user } = useAuth();
-  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      router.replace(user.defaultRoute);
-    }
-  }, [isAuthenticated, user, router]);
+  // Removed auto-redirect so the landing page can be accessed even when signed in.
+  // useEffect(() => {
+  //   if (isAuthenticated && user) {
+  //     router.replace(user.defaultRoute);
+  //   }
+  // }, [isAuthenticated, user, router]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -42,21 +54,33 @@ export default function LandingPage() {
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden border border-gray-100">
               <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-2xl font-bold text-gray-800">Skrapo</span>
+            <span className="text-2xl font-bold text-gray-800">Recycle My Bin</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <Link
-              href="/login"
-              className="px-4 py-2 sm:px-5 sm:py-2.5 text-brand-700 font-bold hover:bg-brand-50 rounded-full transition-all text-sm sm:text-base border border-brand-100/50 sm:border-transparent"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="px-4 py-2 sm:px-6 sm:py-2.5 bg-brand-500 text-white font-bold rounded-full hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20 hover:-translate-y-0.5 text-sm sm:text-base"
-            >
-              Get Started
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href={user?.defaultRoute || '/'}
+                className="px-4 py-2 sm:px-6 sm:py-2.5 bg-brand-500 text-white font-bold rounded-full hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20 hover:-translate-y-0.5 text-sm sm:text-base flex items-center gap-2"
+              >
+                Go to Dashboard
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-4 py-2 sm:px-5 sm:py-2.5 text-brand-700 font-bold hover:bg-brand-50 rounded-full transition-all text-sm sm:text-base border border-brand-100/50 sm:border-transparent"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-4 py-2 sm:px-6 sm:py-2.5 bg-brand-500 text-white font-bold rounded-full hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20 hover:-translate-y-0.5 text-sm sm:text-base"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -87,9 +111,7 @@ export default function LandingPage() {
                   className="group px-8 py-4 bg-brand-500 text-white font-bold rounded-2xl hover:bg-brand-600 transition-all shadow-xl shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-1 text-lg flex items-center gap-2"
                 >
                   Schedule a Pickup
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <a
                   href="#how-it-works"
@@ -125,17 +147,17 @@ export default function LandingPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4 w-full">
                       {[
-                        { icon: '📦', label: 'Paper', color: 'bg-amber-50 border-amber-200' },
-                        { icon: '🧴', label: 'Plastic', color: 'bg-blue-50 border-blue-200' },
-                        { icon: '🔩', label: 'Metal', color: 'bg-gray-50 border-gray-200' },
-                        { icon: '🥛', label: 'Milk Covers', color: 'bg-green-50 border-green-200' },
+                        { icon: <FileText className="w-8 h-8 text-amber-600" />, label: 'Paper', color: 'bg-amber-50 border-amber-200' },
+                        { icon: <Recycle className="w-8 h-8 text-blue-600" />, label: 'Plastic', color: 'bg-blue-50 border-blue-200' },
+                        { icon: <Wrench className="w-8 h-8 text-gray-600" />, label: 'Metal', color: 'bg-gray-50 border-gray-200' },
+                        { icon: <GlassWater className="w-8 h-8 text-green-600" />, label: 'Milk Covers', color: 'bg-green-50 border-green-200' },
                       ].map((item, index) => (
                         <div
                           key={item.label}
                           className={`${item.color} border rounded-xl p-4 text-center transition-transform hover:scale-105 animate-fade-in`}
                           style={{ animationDelay: `${(index + 1) * 150}ms` }}
                         >
-                          <span className="text-2xl">{item.icon}</span>
+                          <div className="flex justify-center mb-1">{item.icon}</div>
                           <p className="text-sm font-medium text-gray-700 mt-1">{item.label}</p>
                         </div>
                       ))}
@@ -168,21 +190,21 @@ export default function LandingPage() {
                 step: '01',
                 title: 'Schedule Pickup',
                 description: 'Choose your scrap types, pick a convenient time slot, and submit your request in seconds.',
-                icon: '📅',
+                icon: <Calendar className="w-8 h-8 text-white" />,
                 gradient: 'from-brand-400 to-brand-600',
               },
               {
                 step: '02',
                 title: 'Scrap Champion Assigned',
                 description: 'Our admin team assigns a certified Scrap Champion near your location for the pickup.',
-                icon: '🏆',
+                icon: <Trophy className="w-8 h-8 text-white" />,
                 gradient: 'from-brand-500 to-brand-700',
               },
               {
                 step: '03',
                 title: 'Doorstep Collection',
                 description: 'Your Scrap Champion arrives at your door, weighs the scrap, and pays you instantly.',
-                icon: '🚪',
+                icon: <Truck className="w-8 h-8 text-white" />,
                 gradient: 'from-brand-600 to-brand-800',
               },
             ].map((item, index) => (
@@ -216,14 +238,14 @@ export default function LandingPage() {
               Built for Every Role
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Whether you&apos;re a customer, admin, or scrap champion — Skrapo has you covered
+              Whether you&apos;re a customer, admin, or scrap champion — Recycle My Bin has you covered
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 role: 'Customer',
-                icon: '🏠',
+                icon: <Home className="w-10 h-10 text-brand-500" />,
                 description: 'Schedule pickups from your doorstep. Track your orders and provide feedback.',
                 features: ['Easy scheduling', 'Order tracking', 'Rate & review'],
                 color: 'brand',
@@ -231,7 +253,7 @@ export default function LandingPage() {
               },
               {
                 role: 'Admin',
-                icon: '⚙️',
+                icon: <Settings className="w-10 h-10 text-brand-500" />,
                 description: 'Manage orders, assign Scrap Champions, and monitor operations seamlessly.',
                 features: ['Order management', 'Champion allocation', 'Analytics dashboard'],
                 color: 'brand',
@@ -239,7 +261,7 @@ export default function LandingPage() {
               },
               {
                 role: 'Scrap Champion',
-                icon: '🏆',
+                icon: <Trophy className="w-10 h-10 text-brand-500" />,
                 description: 'Accept pickup jobs, earn money, and build your reputation in the community.',
                 features: ['Job notifications', 'Route optimization', 'Performance stats'],
                 color: 'brand',
@@ -250,15 +272,13 @@ export default function LandingPage() {
                 key={item.role}
                 className="group relative bg-white rounded-2xl p-8 border-2 border-gray-100 hover:border-brand-300 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
               >
-                <div className="text-4xl mb-4">{item.icon}</div>
+                <div className="mb-4">{item.icon}</div>
                 <h3 className="text-2xl font-bold text-gray-900 mb-3">{item.role}</h3>
                 <p className="text-gray-600 mb-6">{item.description}</p>
                 <ul className="space-y-2 mb-8">
                   {item.features.map((feature) => (
                     <li key={feature} className="flex items-center gap-2 text-gray-700">
-                      <svg className="w-5 h-5 text-brand-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                      <Check className="w-5 h-5 text-brand-500 flex-shrink-0" />
                       <span className="text-sm">{feature}</span>
                     </li>
                   ))}
@@ -268,9 +288,7 @@ export default function LandingPage() {
                   className="inline-flex items-center gap-2 text-brand-600 font-semibold hover:text-brand-700 group-hover:gap-3 transition-all"
                 >
                   Get Started
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
+                  <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
             ))}
@@ -298,9 +316,7 @@ export default function LandingPage() {
                 className="inline-flex items-center gap-2 px-8 py-4 bg-white text-brand-700 font-bold rounded-2xl hover:bg-brand-50 transition-all shadow-xl hover:-translate-y-1 text-lg"
               >
                 Create Your Account
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
+                <ArrowRight className="w-5 h-5" />
               </Link>
             </div>
           </div>
@@ -315,7 +331,7 @@ export default function LandingPage() {
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
                 <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
               </div>
-              <span className="text-lg font-bold text-white">Skrapo</span>
+              <span className="text-lg font-bold text-white">Recycle My Bin</span>
             </div>
             <div className="flex items-center gap-6 text-sm">
               <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
@@ -323,7 +339,7 @@ export default function LandingPage() {
               <Link href="/register" className="hover:text-white transition-colors">Register</Link>
             </div>
             <p className="text-sm">
-              © {new Date().getFullYear()} Skrapo. All rights reserved.
+              © {new Date().getFullYear()} Recycle My Bin. All rights reserved.
             </p>
           </div>
         </div>

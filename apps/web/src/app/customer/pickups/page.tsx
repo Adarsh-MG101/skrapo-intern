@@ -9,7 +9,7 @@ import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/common/Toast';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
-import { Recycle, Trash2, MapPin, Calendar, Clock, ArrowRight, MessageSquare, ListTodo, X, ShieldCheck } from 'lucide-react';
+import { Recycle, Trash2, MapPin, ArrowRight, ListTodo, X, ShieldCheck } from 'lucide-react';
 import { API_URL } from '../../config/env';
 
 interface Order {
@@ -80,7 +80,10 @@ export default function CustomerPickupsPage() {
         });
         const data = await res.json();
         if (res.ok) {
-          setOrders(data);
+          const sorted = data.sort((a: Order, b: Order) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setOrders(sorted);
         }
       } catch (err) {
         console.error('Failed to fetch orders:', err);
@@ -104,7 +107,12 @@ export default function CustomerPickupsPage() {
             cache: 'no-store'
           });
           const data = await res.json();
-          if (res.ok) setOrders(data);
+          if (res.ok) {
+            const sorted = data.sort((a: Order, b: Order) => 
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+            setOrders(sorted);
+          }
         } catch (err) {
           console.error('Failed to refresh orders:', err);
         }
@@ -114,10 +122,12 @@ export default function CustomerPickupsPage() {
 
     socket.on('order_completed_customer', handleRefresh);
     socket.on('order_accepted_customer', handleRefresh);
+    socket.on('order_expired', handleRefresh);
 
     return () => {
       socket.off('order_completed_customer', handleRefresh);
       socket.off('order_accepted_customer', handleRefresh);
+      socket.off('order_expired', handleRefresh);
     };
   }, [socket, token]);
 
@@ -153,66 +163,84 @@ export default function CustomerPickupsPage() {
               }
             />
           ) : (
-            <div className="grid gap-6">
+            <div className="grid gap-2">
               {orders.map((order) => (
-                <div key={order._id} className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-sm border border-gray-100 hover:shadow-xl hover:border-brand-100 transition-all animate-fade-in group">
-                  <div className="flex flex-col lg:flex-row justify-between gap-6">
-                    <div className="flex items-start gap-6">
-                      <div className="w-20 h-20 bg-brand-50 rounded-3xl flex flex-col items-center justify-center text-brand-600 border border-brand-100 shadow-inner group-hover:scale-105 transition-transform">
-                        <span className="text-[10px] font-black uppercase tracking-widest leading-none mb-1 text-brand-400">
-                          {new Date(order.scheduledAt).toLocaleString('default', { month: 'short' })}
-                        </span>
-                        <span className="text-3xl font-black leading-none">
-                          {new Date(order.scheduledAt).getDate()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-3 mb-2">
-                          <h3 className="text-xl font-black text-gray-900 group-hover:text-brand-600 transition-colors">
-                            {order.scrapTypes.join(', ')}
-                          </h3>
-                          <StatusBadge status={order.status} />
-                        </div>
-                        <div className="space-y-2">
-                           <p className="text-sm text-gray-400 font-bold flex items-center gap-2">
-                             <MapPin size={16} className="text-brand-500" />
-                             <span className="truncate">{order.exactAddress}</span>
-                           </p>
-                           <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.1em] flex items-center gap-2">
-                             <Calendar size={14} className="text-gray-300" />
-                             {new Date(order.scheduledAt).toLocaleDateString()} 
-                             <span className="w-1 h-1 bg-gray-200 rounded-full" />
-                             <Clock size={14} className="text-gray-300" />
+                <div key={order._id} className={`bg-white rounded-xl px-4 py-3 sm:px-6 shadow-sm border ${order.status === 'Expired' ? 'border-amber-200 bg-amber-50/10' : 'border-gray-100'} hover:shadow-md hover:border-brand-100 transition-all animate-fade-in group flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 relative overflow-hidden`}>
+                  {/* Status Badge - PC (pinned far right) */}
+                  <div className="hidden sm:block absolute right-6 top-1/2 -translate-y-1/2">
+                    <StatusBadge status={order.status} />
+                  </div>
+
+                  {/* Expired Flag Indicator */}
+                  {order.status === 'Expired' && (
+                    <div className="absolute top-0 right-0 bg-amber-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-lg shadow-sm z-10">
+                      Action Required
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0 flex items-center gap-3.5 sm:pr-32">
+                     <div className="w-9 h-9 bg-brand-50 rounded-lg flex items-center justify-center text-brand-600 flex-shrink-0">
+                        <Recycle size={18} />
+                     </div>
+                     <div className="min-w-0 flex-1">
+                        <h3 className="text-sm font-black text-gray-900 truncate">
+                          {order.scrapTypes.join(', ')}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
+                           <div className="flex items-center gap-1 min-w-0 max-w-full sm:max-w-[300px]">
+                             <MapPin size={10} className="text-gray-300 flex-shrink-0" />
+                             <p className="text-[11px] text-gray-400 font-medium truncate" title={order.exactAddress}>
+                               {order.exactAddress}
+                             </p>
+                           </div>
+                           <p className="text-[10px] text-gray-300 font-bold uppercase tracking-wider whitespace-nowrap">
+                             {new Date(order.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                             {' · '}
                              {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                            </p>
                         </div>
-                      </div>
-                    </div>
-                     <div className="flex flex-wrap items-center gap-3 lg:self-center">
-                        {order.status === 'Completed' && !order.hasFeedback && (
-                          <Link href={`/customer/feedback/${order._id}`}>
-                             <Button variant="success" size="sm" className="rounded-xl flex items-center gap-2">
-                                <MessageSquare size={16} /> Rate & Review
-                             </Button>
-                          </Link>
+                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-5 sm:pr-32">
+                     {/* Status Badge - Phone (bottom left) */}
+                     <div className="sm:hidden flex-shrink-0">
+                        <StatusBadge status={order.status} />
+                     </div>
+                     <div className="flex items-center gap-4 flex-shrink-0">
+                        {order.status === 'Completed' && (
+                          order.hasFeedback ? (
+                            <span className="text-[10px] font-black text-emerald-600 flex items-center gap-1 uppercase tracking-widest opacity-60">
+                              <ShieldCheck size={12} />
+                              <span className="hidden sm:inline">Reviewed</span>
+                            </span>
+                          ) : (
+                            <Link href={`/customer/feedback/${order._id}`}>
+                              <button className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest">
+                                Rate
+                              </button>
+                            </Link>
+                          )
                         )}
-                        {order.hasFeedback && (
-                          <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl uppercase tracking-widest border border-emerald-100 flex items-center gap-2">
-                             <ShieldCheck size={14} /> Feedback Submitted
-                          </span>
+                        {order.status === 'Expired' && (
+                           <Link href="/customer/schedule">
+                             <button className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest">
+                               Reschedule
+                             </button>
+                           </Link>
                         )}
                         <Link href={`/customer/pickups/${order._id}`}>
-                           <Button variant="ghost" size="sm" className="rounded-xl flex items-center gap-2">
-                             Details <ArrowRight size={16} />
-                           </Button>
+                           <button className="text-[11px] font-black text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors uppercase tracking-widest">
+                            Details <ArrowRight size={14} />
+                           </button>
                         </Link>
-                        {!['Accepted', 'Completed'].includes(order.status) && (
-                          <button 
-                            onClick={() => triggerCancel(order._id, order.status)}
-                            className="text-xs font-black text-gray-400 hover:text-red-500 px-4 py-2 rounded-xl transition-all border border-gray-100 hover:border-red-100 hover:bg-red-50 flex items-center gap-2"
-                          >
-                            <Trash2 size={16} /> Cancel
-                          </button>
+                        {!['Accepted', 'Completed', 'Cancelled', 'Expired'].includes(order.status) && (
+                           <button 
+                             onClick={() => triggerCancel(order._id, order.status)}
+                             className="text-[11px] font-black text-gray-300 hover:text-red-500 transition-colors uppercase tracking-widest"
+                           >
+                             Cancel
+                           </button>
                         )}
                      </div>
                   </div>
