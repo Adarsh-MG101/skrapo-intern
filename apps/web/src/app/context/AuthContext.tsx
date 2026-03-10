@@ -46,6 +46,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Helper: check if a string looks like a real JWT (has 3 dot-separated segments)
+  const isValidJWT = (t: string | null): boolean => {
+    if (!t || t === 'session_active') return false;
+    return t.split('.').length === 3;
+  };
+
   // Load saved session on mount
   useEffect(() => {
     const checkSession = async () => {
@@ -53,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const savedToken = localStorage.getItem('skrapo_token');
       
       if (savedUser) {
-        setUser(JSON.parse(savedUser));
+        try { setUser(JSON.parse(savedUser)); } catch { /* corrupt data */ }
       }
       if (savedToken) {
         setToken(savedToken);
@@ -61,7 +67,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const headers: Record<string, string> = {};
-        if (savedToken) {
+        
+        // MOBILE FIX: Only send Authorization header if the saved token is a real JWT.
+        // Sending 'session_active' or other placeholders causes the backend's jwt.verify()
+        // to fail with 401. On PC, the cookie fallback covers this. On mobile browsers, 
+        // cross-origin cookies are often blocked, so the header is the ONLY auth mechanism.
+        if (isValidJWT(savedToken)) {
           headers['Authorization'] = `Bearer ${savedToken}`;
         }
 
@@ -75,26 +86,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(data.user);
           localStorage.setItem('skrapo_user', JSON.stringify(data.user));
           
-          // CRITICAL: Only update token if server provided a new one.
-          // Never overwrite a real JWT with a placeholder if the server didn't send one.
-          if (data.token && data.token !== 'session_active') {
+          // Always store the fresh JWT from the server
+          if (data.token && isValidJWT(data.token)) {
             setToken(data.token);
             localStorage.setItem('skrapo_token', data.token);
           } else if (!savedToken) {
-            // Only use placeholder if we truly have nothing else but have a valid session
             setToken('session_active'); 
           }
         } else if (res.status === 401) {
-          // Only clear session if we are certain it's invalid (401)
-          // For 500 or network errors, we might want to keep the local session for a bit.
-          console.warn('Session invalid, clearing...');
-          localStorage.removeItem('skrapo_user');
-          localStorage.removeItem('skrapo_token');
-          setUser(null);
-          setToken(null);
+          // 401 = definitely invalid session. But only clear if we actually sent credentials.
+          // If we had NO valid token AND no cookie was sent, the 401 is expected — 
+          // don't clear a localStorage session that might just need a re-login with /auth/me.
+          if (isValidJWT(savedToken) || !savedToken) {
+            // We sent a real token and it was rejected, OR we never had a session
+            console.warn('[Auth] Session invalid (401), clearing...');
+            localStorage.removeItem('skrapo_user');
+            localStorage.removeItem('skrapo_token');
+            setUser(null);
+            setToken(null);
+          } else {
+            // We had a non-JWT token (like 'session_active') and the cookie wasn't sent.
+            // This is the mobile edge case. Keep the local session alive — 
+            // the user is likely still logged in, just the cookie wasn't sent.
+            // The individual page's apiFetch calls will use the real token once it's refreshed.
+            console.warn('[Auth] 401 but no valid JWT was sent (likely mobile cookie issue). Keeping local session.');
+          }
         }
+        // For 500, network errors, etc — do nothing, keep the local session
       } catch (err) {
-        console.error('Session check failed:', err);
+        console.error('[Auth] Session check failed (network):', err);
+        // Network error: keep local session alive (offline/slow mobile)
       } finally {
         setIsLoading(false);
       }
@@ -262,9 +283,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...options.headers,
     } as any;
 
-    // SECURITY/FIX: Only send Authorization header if token looks like a real JWT.
-    // 'session_active' is a placeholder for cookie-only sessions and will break the backend verify() if sent.
-    if (token && token.includes('.') && token !== 'session_active') {
+    // Only send Authorization header with real JWTs
+    if (isValidJWT(token)) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
@@ -276,9 +296,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (res.status === 401) {
-        // Log details for mobile debugging
-        console.warn(`[API] 401 Unauthorized for ${endpoint}. Logout triggered.`);
-        logout();
+        // Only auto-logout if we actually sent valid credentials and they were rejected.
+        // If no valid JWT was sent (and cookie wasn't sent either on mobile), 
+        // the 401 is a cookie delivery failure, not a real session expiry.
+        if (isValidJWT(token)) {
+          console.warn(`[API] 401 for ${endpoint} with valid JWT. Session expired, logging out.`);
+          logout();
+        } else {
+          console.warn(`[API] 401 for ${endpoint} but no valid JWT was sent. Skipping auto-logout.`);
+        }
         return res; 
       }
 

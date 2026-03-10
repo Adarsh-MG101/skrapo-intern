@@ -18,7 +18,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    if (!token) {
+    // Only connect socket with a real JWT token.
+    // 'session_active' or other placeholders will fail jwt.verify() on the server.
+    const isValidJWT = token && token.split('.').length === 3 && token !== 'session_active';
+    
+    if (!isValidJWT) {
       if (socket) {
         socket.disconnect();
         setSocket(null);

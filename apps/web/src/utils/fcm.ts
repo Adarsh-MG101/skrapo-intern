@@ -63,12 +63,36 @@ export const setupFCM = async (apiFetch: any): Promise<string | null> => {
     if (token) {
       console.log('[FCM] Token acquired:', token.substring(0, 20) + '...');
       
-      // Save token to backend
-      await apiFetch('/auth/fcm-token', {
-        method: 'POST',
-        body: JSON.stringify({ token }),
-      });
-
+      // Save token to backend (with retry for mobile auth timing)
+      const saveToken = async () => {
+        try {
+          const res = await apiFetch('/auth/fcm-token', {
+            method: 'POST',
+            body: JSON.stringify({ token }),
+          });
+          if (res.ok) {
+            console.log('[FCM] Token saved to backend');
+          } else {
+            throw new Error(`Save failed: ${res.status}`);
+          }
+        } catch (err) {
+          console.warn('[FCM] Token save failed, retrying in 3s...', err);
+          // Retry once after auth state has likely settled
+          setTimeout(async () => {
+            try {
+              await apiFetch('/auth/fcm-token', {
+                method: 'POST',
+                body: JSON.stringify({ token }),
+              });
+              console.log('[FCM] Token saved on retry');
+            } catch (retryErr) {
+              console.error('[FCM] Token save retry also failed:', retryErr);
+            }
+          }, 3000);
+        }
+      };
+      
+      await saveToken();
       return token;
     } else {
       console.log('[FCM] No registration token available.');
