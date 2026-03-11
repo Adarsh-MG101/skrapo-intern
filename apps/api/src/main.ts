@@ -11,7 +11,7 @@ import { seedUsers } from './seeds/users';
 import { initSocket } from './services/socketService';
 import { startPickupReminderScheduler, stopPickupReminderScheduler } from './services/pickupReminderScheduler';
 
-const host = process.env.HOST ?? 'localhost';
+const host = process.env.HOST ?? '0.0.0.0';
 const port = process.env.PORT ? Number(process.env.PORT) : 3333;
 
 async function bootstrap() {
