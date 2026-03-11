@@ -81,7 +81,9 @@ export default function AdminHistoryPage() {
       order.exactAddress.toLowerCase().includes(searchLow) ||
       order.scrapTypes.some(t => t.toLowerCase().includes(searchLow));
     
-    return matchesSearch;
+    const matchesStatus = status === 'All' ? order.status !== 'Requested' : true;
+    
+    return matchesSearch && matchesStatus;
   });
 
   const statuses = ['All', 'Completed', 'Cancelled', 'Expired', 'Problem'];
@@ -244,7 +246,7 @@ export default function AdminHistoryPage() {
                              </Link>
                           </td>
                           <td className="px-4 py-5 text-center text-left">
-                            <StatusBadge status={order.status === 'Requested' ? 'Expired' : order.status} />
+                            <StatusBadge status={order.status} />
                           </td>
                         </tr>
                       ))}
@@ -265,7 +267,7 @@ export default function AdminHistoryPage() {
                           </p>
                           <p className="font-black text-gray-900 text-xl tracking-tight leading-none">{order.scrapTypes.join(', ')}</p>
                        </div>
-                       <StatusBadge status={order.status === 'Requested' ? 'Expired' : order.status} />
+                       <StatusBadge status={order.status} />
                     </div>
 
                     <div className="p-6 bg-gray-50/50 rounded-3xl border border-gray-50 space-y-4">

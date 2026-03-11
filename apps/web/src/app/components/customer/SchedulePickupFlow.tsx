@@ -57,12 +57,11 @@ export const SchedulePickupFlow: React.FC = () => {
     itemWeights: {} as Record<string, string>,
     date: (() => {
       const now = new Date();
-      const cutoffTime = now.getTime() + 2 * 60 * 60 * 1000;
       const dayEnd = new Date(now);
-      dayEnd.setHours(19, 0, 0, 0);
+      dayEnd.setHours(15, 30, 0, 0);
 
-      // If we can't book today (cutoff is past 7pm), default to tomorrow
-      if (cutoffTime >= dayEnd.getTime()) {
+      // If it's past 3:30 PM, default to tomorrow
+      if (now.getTime() >= dayEnd.getTime()) {
         return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       }
       return now.toISOString().split('T')[0];

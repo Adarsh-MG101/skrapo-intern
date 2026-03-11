@@ -13,6 +13,7 @@ interface User {
   pickupAddress?: string;
   serviceArea?: string;
   serviceRadiusKm?: number;
+  isActive?: boolean;
 }
 
 interface AuthContextType {

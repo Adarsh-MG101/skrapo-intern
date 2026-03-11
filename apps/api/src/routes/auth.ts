@@ -434,6 +434,7 @@ router.post('/login', async (req: Request, res: Response) => {
         role: roleCode,
         defaultRoute: getDefaultRoute(roleCode),
         pickupAddress: user.pickupAddress,
+        isActive: user.isActive !== false,
       },
     });
   } catch (error: unknown) {
@@ -478,6 +479,7 @@ router.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response)
         role: roleCode,
         defaultRoute: getDefaultRoute(roleCode),
         pickupAddress: user.pickupAddress,
+        isActive: user.isActive !== false,
       },
     });
   } catch (error: unknown) {

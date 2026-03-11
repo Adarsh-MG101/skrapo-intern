@@ -118,6 +118,28 @@ export default function ScrapChampJobsPage() {
     };
   }, [socket, user]);
 
+  if (user?.isActive === false) {
+    return (
+      <ProtectedRoute allowedRoles={['scrapChamp']}>
+        <div className="min-h-screen bg-gray-50/30 flex flex-col items-center justify-center p-4">
+          <div className="bg-white max-w-md w-full rounded-[2.5rem] p-10 border border-red-100 shadow-2xl flex flex-col items-center text-center">
+            <div className="w-24 h-24 bg-red-50 rounded-[2rem] flex items-center justify-center text-red-500 mb-6 border-8 border-white shadow-xl">
+               <Ban size={40} strokeWidth={2.5} />
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-3">Account Suspended</h1>
+            <p className="text-gray-500 font-medium leading-relaxed mb-8">
+              Your Scrap Champion account has been temporarily deactivated by an administrator. You can no longer receive or accept new pickup requests.
+            </p>
+            <div className="bg-gray-50 border border-gray-100 p-4 rounded-2xl w-full">
+               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Need Help?</p>
+               <p className="text-sm font-bold text-gray-700">Please contact support to resolve this issue and reactivate your account.</p>
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute allowedRoles={['scrapChamp']}>
       <div className="p-4 md:p-8 lg:p-10 bg-gray-50/30 min-h-screen">

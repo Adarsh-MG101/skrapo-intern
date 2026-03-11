@@ -34,10 +34,11 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
 
     console.log(`[broadcast] Broadcasting Order ${orderId} to pincode: ${customerPincode}`);
 
-    // Get all champs whose serviceArea contains this pincode
+    // Get all Active champs whose serviceArea contains this pincode
     const matchingChamps = await usersCol.find({ 
       role: 'scrapChamp',
-      serviceArea: { $regex: customerPincode }
+      serviceArea: { $regex: customerPincode },
+      isActive: { $ne: false } // Exclude deactivated champs
     }).toArray();
 
     if (matchingChamps.length === 0) {
@@ -140,10 +141,13 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
 
             // Notify customer
             if (currentOrder.customerId) {
-              emitAndLog(`user_${currentOrder.customerId}`, 'order_expired', {
-                orderId,
-                message: 'No Scrap Champions were available in your area for this time. Please try rescheduling! ♻️'
-              });
+              notificationService.notifyUser(
+                currentOrder.customerId.toString(),
+                'Pickup Status Update ♻️',
+                'Sorry, Scrap Champions are unavailable at the moment. Please try again later!',
+                'order_expired',
+                { orderId, status: 'Expired' }
+              );
             }
           }
         } else {
@@ -270,7 +274,22 @@ router.get('/history', authenticate, authorize('customer'), async (req: Authenti
       { $sort: { updatedAt: -1 } }
     ]).toArray();
 
-    res.json(orders);
+    const now = new Date();
+    const processedOrders = orders.map(order => {
+      // Check if order is Requested but older than 30 mins
+      if (order.status === 'Requested') {
+        const createdAt = new Date(order.createdAt);
+        const diffMs = now.getTime() - createdAt.getTime();
+        const diffMins = diffMs / (1000 * 60);
+        
+        if (diffMins >= 30) {
+          return { ...order, status: 'Expired' };
+        }
+      }
+      return order;
+    });
+
+    res.json(processedOrders);
   } catch (error) {
     console.error('[orders] History error:', error);
     res.status(500).json({ error: 'Failed to fetch order history' });
@@ -321,11 +340,13 @@ router.get('/admin', authenticate, authorize('admin'), async (req: Authenticated
     const query: any = {};
     if (status && status !== 'All') {
       if (status === 'Expired') {
-        query.status = { $in: ['Expired', 'Requested'] };
+        query.status = 'Expired';
       } else {
         query.status = status;
       }
     }
+    // Note: 'Requested' status is now filtered correctly at the frontend level
+    // between Allocation Center and History pages.
 
     if (startDate || endDate) {
       query.scheduledAt = {};
@@ -367,11 +388,32 @@ router.get('/admin', authenticate, authorize('admin'), async (req: Authenticated
       .sort({ updatedAt: -1 })
       .toArray();
 
-    // Mask image for cancelled orders if needed
+    // Fetch active champs to dynamically recount
+    const activeChamps = await db.collection('users').find({ role: 'scrapChamp', isActive: { $ne: false } }).project({ _id: 1, serviceArea: 1 }).toArray();
+
+    // Mask image for cancelled orders if needed and recalculate engagement
     const filteredOrders = orders.map(o => {
+      o = { ...o };
       if (o.status === 'Cancelled') {
-        return { ...o, photoUrl: null, maskReason: 'Customer cancelled pickup' };
+        o.photoUrl = null;
+        o.maskReason = 'Customer cancelled pickup';
       }
+      
+      const pincodeMatch = (o.exactAddress || '').match(/(\d{6})/);
+      const orderPincode = pincodeMatch ? pincodeMatch[1] : null;
+      
+      if (orderPincode) {
+         o.notifiedChampsCount = activeChamps.filter(c => c.serviceArea?.includes(orderPincode)).length;
+      } else {
+         o.notifiedChampsCount = 0;
+      }
+
+      if (o.declinedChampIds && Array.isArray(o.declinedChampIds)) {
+         o.declinedChampIds = o.declinedChampIds.filter((id: any) => 
+            activeChamps.some(c => c._id.toString() === id.toString())
+         );
+      }
+
       return o;
     });
 
@@ -540,6 +582,143 @@ router.patch('/admin/scrap-champs/:champId', authenticate, authorize('admin'), a
 });
 
 /**
+ * POST /admin/scrap-champs/:champId/deactivate
+ * Deactivate a scrap champion
+ */
+router.post('/admin/scrap-champs/:champId/deactivate', authenticate, authorize('admin'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { champId } = req.params;
+    if (!ObjectId.isValid(champId)) {
+      res.status(400).json({ error: 'Invalid Champion ID' });
+      return;
+    }
+
+    const db = getDb();
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(champId), role: 'scrapChamp' },
+      { $set: { isActive: false, updatedAt: new Date() } }
+    );
+
+    if (result.matchedCount === 0) {
+      res.status(404).json({ error: 'Scrap Champion not found' });
+      return;
+    }
+
+    res.json({ message: 'Champion deactivated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to deactivate champion' });
+  }
+});
+
+/**
+ * POST /admin/scrap-champs/:champId/activate
+ * Reactivate a scrap champion
+ */
+router.post('/admin/scrap-champs/:champId/activate', authenticate, authorize('admin'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { champId } = req.params;
+    if (!ObjectId.isValid(champId)) {
+      res.status(400).json({ error: 'Invalid Champion ID' });
+      return;
+    }
+
+    const db = getDb();
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(champId), role: 'scrapChamp' },
+      { $set: { isActive: true, updatedAt: new Date() } }
+    );
+
+    if (result.matchedCount === 0) {
+      res.status(404).json({ error: 'Scrap Champion not found' });
+      return;
+    }
+
+    res.json({ message: 'Champion activated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to activate champion' });
+  }
+});
+
+/**
+ * POST /orders/admin/:orderId/assign
+ * Manually assign or reassign an order to a specific Scrap Champion by Admin
+ */
+router.post('/admin/:orderId/assign', authenticate, authorize('admin'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const { champId } = req.body;
+
+    if (!ObjectId.isValid(orderId) || !ObjectId.isValid(champId)) {
+      res.status(400).json({ error: 'Invalid Order ID or Champion ID' });
+      return;
+    }
+
+    const db = getDb();
+    const ordersCol = db.collection('orders');
+    const usersCol = db.collection('users');
+
+    const champ = await usersCol.findOne({ _id: new ObjectId(champId), role: 'scrapChamp' });
+    if (!champ) {
+      res.status(404).json({ error: 'Scrap Champion not found' });
+      return;
+    }
+
+    const order = await ordersCol.findOne({ _id: new ObjectId(orderId) });
+    if (!order) {
+      res.status(404).json({ error: 'Order not found' });
+      return;
+    }
+
+    if (['Completed', 'Cancelled'].includes(order.status)) {
+      res.status(400).json({ error: 'Cannot reassign a completed or cancelled order' });
+      return;
+    }
+
+    const result = await ordersCol.updateOne(
+      { _id: new ObjectId(orderId) },
+      { 
+        $set: { 
+          assignedScrapChampId: new ObjectId(champId),
+          status: 'Assigned',
+          updatedAt: new Date()
+        } 
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      res.status(404).json({ error: 'Order not found or update failed' });
+      return;
+    }
+
+    // Notify the newly assigned champion via SMS and Socket
+    if (champ.mobileNumber) {
+        // Prepare SMS
+        const smsMessage = `You have been manually assigned a new pickup by Admin! Order ${orderId.slice(-6).toUpperCase()}. Please check your app.`;
+        await smsService.sendSms(champ.mobileNumber, smsMessage);
+        
+        // Log SMS Event
+        await db.collection('smsEvents').insertOne({
+            orderId: order._id,
+            userId: champ._id,
+            mobileNumber: champ.mobileNumber,
+            eventType: 'Manual_Allocation',
+            status: 'Sent',
+            meta: {},
+            createdAt: new Date(),
+        });
+    }
+
+    // Real-time socket notification to the champ
+    emitAndLog(`user_${champ._id}`, 'orderAssigned', { orderId: order._id, assignedBy: 'Admin' });
+
+    res.json({ message: 'Order manually reassigned successfully', assignedTo: champ.name });
+  } catch (error) {
+    console.error('[orders] Admin manual assign error:', error);
+    res.status(500).json({ error: 'Failed to manually assign order' });
+  }
+});
+
+/**
  * GET /orders/admin/:orderId
  * Get detailed order info for admin
  */
@@ -597,6 +776,22 @@ router.get('/admin/:orderId', authenticate, authorize('admin'), async (req: Auth
       order.maskReason = 'Customer cancelled pickup';
     }
 
+    const pincodeMatch = (order.exactAddress || '').match(/(\d{6})/);
+    const orderPincode = pincodeMatch ? pincodeMatch[1] : null;
+
+    if (orderPincode) {
+      const activeChamps = await db.collection('users').find({ role: 'scrapChamp', isActive: { $ne: false } }).project({ _id: 1, serviceArea: 1 }).toArray();
+      order.notifiedChampsCount = activeChamps.filter(c => c.serviceArea?.includes(orderPincode)).length;
+      
+      if (order.declinedChampIds && Array.isArray(order.declinedChampIds)) {
+         order.declinedChampIds = order.declinedChampIds.filter((id: any) => 
+            activeChamps.some(c => c._id.toString() === id.toString())
+         );
+      }
+    } else {
+      order.notifiedChampsCount = 0;
+    }
+
     res.json(order);
   } catch (error) {
     console.error('[orders] Admin detail error:', error);
@@ -631,7 +826,8 @@ router.get('/admin/:orderId/engagement', authenticate, authorize('admin'), async
     // Find all champs in that pincode (these were notified)
     const matchingChamps = await db.collection('users').find({ 
       role: 'scrapChamp',
-      serviceArea: { $regex: orderPincode }
+      serviceArea: { $regex: orderPincode },
+      isActive: { $ne: false }
     }).project({ name: 1, mobileNumber: 1, profilePhoto: 1 }).toArray();
 
     const declinedIds = (dbOrder.declinedChampIds || []).map((id: any) => id.toString());
@@ -1230,7 +1426,106 @@ router.post('/scrap-champ/:orderId/decision', authenticate, authorize('scrapCham
   }
 });
 
+/**
+ * PATCH /orders/admin/:orderId/status
+ * Manually update order status (Admin Override)
+ */
+router.patch('/admin/:orderId/status', authenticate, authorize('admin'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    const db = getDb();
+    const ordersCol = db.collection('orders');
+
+    const order = await ordersCol.findOne({ _id: new ObjectId(orderId) });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    await ordersCol.updateOne(
+      { _id: new ObjectId(orderId) },
+      { $set: { status, updatedAt: new Date() } }
+    );
+
+    // Notify customer
+    const statusMsg = status === 'Accepted' 
+      ? 'Your pickup request has been accepted! A Scrap Champion will be assigned shortly.' 
+      : `Your pickup request status has been updated to: ${status}`;
+
+    notificationService.notifyUser(
+      order.customerId.toString(),
+      'Pickup Update ♻️',
+      statusMsg,
+      'order_status_update',
+      { orderId, status }
+    );
+
+    return res.json({ message: 'Status updated successfully', status });
+  } catch (error) {
+    console.error('[admin-status-update] Error:', error);
+    return res.status(500).json({ error: 'Failed to update status' });
+  }
+});
+
 // --- GENERIC PARAMETERIZED ROUTES (Put at the end to avoid hijacking) ---
+
+/**
+ * POST /orders/:orderId/retry
+ * Retry an expired order (Story 14/New Request)
+ */
+router.post('/:orderId/retry', authenticate, authorize('customer'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user!.userId;
+    const db = getDb();
+    const ordersCol = db.collection('orders');
+
+    const order = await ordersCol.findOne({ _id: new ObjectId(orderId) });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found' });
+      return;
+    }
+
+    if (order.customerId.toString() !== userId) {
+      res.status(403).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const isStaleRequested = order.status === 'Requested' && (new Date().getTime() - new Date(order.createdAt).getTime() > 30 * 60 * 1000);
+
+    if (order.status !== 'Expired' && !isStaleRequested) {
+      res.status(400).json({ error: 'Only expired orders can be retried' });
+      return;
+    }
+
+    // Reset order for re-broadcast
+    await ordersCol.updateOne(
+      { _id: new ObjectId(orderId) },
+      { 
+        $set: { 
+          status: 'Requested', 
+          declinedChampIds: [], 
+          notifiedChampsCount: 0,
+          adminNotifiedOfDelay: false,
+          createdAt: new Date(), // Reset timer for Allocation Center
+          updatedAt: new Date() 
+        } 
+      }
+    );
+
+    // Re-broadcast
+    const usersCol = db.collection('users');
+    const customer = await usersCol.findOne({ _id: new ObjectId(userId) });
+    const addressForMatching = customer?.pickupAddress || order.exactAddress;
+    broadcastToChamps(orderId.toString(), addressForMatching).catch(err => {
+      console.error('[broadcast] Background failure during retry:', err);
+    });
+
+    res.json({ message: 'Order re-broadcasted successfully' });
+  } catch (error) {
+    console.error('[orders] Retry error:', error);
+    res.status(500).json({ error: 'Failed to retry order' });
+  }
+});
 
 /**
  * DELETE /orders/:orderId

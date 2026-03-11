@@ -4,10 +4,11 @@ import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
-import { StatusBadge, Loader } from '../../components/common';
+import { StatusBadge, Loader, Button } from '../../components/common';
+import { useToast } from '../../components/common/Toast';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
-import { User, MapPin, Inbox, Zap, ArrowRight, Radio, Ban, Phone } from 'lucide-react';
+import { User, MapPin, Inbox, Zap, ArrowRight, Radio, Ban, Phone, ChevronDown } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
 
 interface Order {
@@ -69,6 +70,7 @@ const CountdownTimer: React.FC<{ createdAt: string; onExpire?: () => void }> = (
 export default function AdminOrdersPage() {
   const { apiFetch, isLoading, isAuthenticated } = useAuth();
   const { socket } = useSocket();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [engagementModal, setEngagementModal] = useState<{ isOpen: boolean; orderId: string | null; data: any }>({
@@ -77,6 +79,16 @@ export default function AdminOrdersPage() {
     data: null
   });
   const [loadingEngagement, setLoadingEngagement] = useState(false);
+
+  // Manual Assignment State
+  const [assignModal, setAssignModal] = useState({
+    isOpen: false,
+    loading: false,
+    champs: [] as any[],
+    selectedChampId: '',
+    selectedOrderId: '',
+    submitting: false
+  });
 
   const fetchEngagement = async (orderId: string) => {
     setLoadingEngagement(true);
@@ -91,6 +103,66 @@ export default function AdminOrdersPage() {
       console.error('Engagement fetch error:', err);
     } finally {
       setLoadingEngagement(false);
+    }
+  };
+
+  const openAssignModal = async (orderId: string) => {
+    setAssignModal(prev => ({ ...prev, isOpen: true, loading: true, selectedOrderId: orderId }));
+    try {
+      const res = await apiFetch('/orders/admin/scrap-champs');
+      if (res.ok) {
+        const champs = await res.json();
+        const activeChamps = champs.filter((c: any) => c.isActive !== false);
+        setAssignModal(prev => ({ ...prev, champs: activeChamps, loading: false }));
+      }
+    } catch (err) {
+      showToast('Failed to fetch champs', 'error');
+      setAssignModal(prev => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  const handleManualAssign = async () => {
+    if (!assignModal.selectedChampId || !assignModal.selectedOrderId) return;
+    setAssignModal(prev => ({ ...prev, submitting: true }));
+    try {
+      const res = await apiFetch(`/orders/admin/${assignModal.selectedOrderId}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ champId: assignModal.selectedChampId })
+      });
+      if (res.ok) {
+        showToast('Champion assigned successfully!', 'success');
+        setAssignModal(prev => ({ ...prev, isOpen: false, submitting: false, selectedChampId: '', selectedOrderId: '' }));
+        fetchData();
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Assignment failed', 'error');
+        setAssignModal(prev => ({ ...prev, submitting: false }));
+      }
+    } catch (err) {
+      showToast('Assignment error', 'error');
+      setAssignModal(prev => ({ ...prev, submitting: false }));
+    }
+  };
+
+  const updateStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const res = await apiFetch(`/orders/admin/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        showToast(`Status updated to ${newStatus}`, 'success');
+        fetchData();
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Failed to update status', 'error');
+      }
+    } catch (err) {
+      showToast('Error updating status', 'error');
     }
   };
 
@@ -228,8 +300,11 @@ export default function AdminOrdersPage() {
 
                           {/* Allocation Section */}
                           <div className="space-y-2">
-                             <div className="px-1">
+                             <div className="px-1 flex justify-between items-center">
                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Allocation Status</p>
+                                {order.status !== 'Completed' && (
+                                  <button onClick={() => openAssignModal(order._id)} className="text-[9px] font-black text-brand-500 uppercase tracking-widest hover:text-brand-700 underline underline-offset-2">Manual Assign</button>
+                                )}
                              </div>
                              {order.assignedScrapChampId ? (
                                 <div className="flex items-center justify-between bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100">
@@ -270,13 +345,14 @@ export default function AdminOrdersPage() {
                         <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Customer</th>
                         <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Address</th>
                         <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Engagement</th>
-                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status / Allocation</th>
+                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
+                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Allocation</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                        {orders.length === 0 ? (
                          <tr>
-                           <td colSpan={5} className="py-20 text-center">
+                           <td colSpan={6} className="py-20 text-center">
                               <div className="flex flex-col items-center">
                                 <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
                                   <Inbox size={40} />
@@ -328,6 +404,22 @@ export default function AdminOrdersPage() {
                                </button>
                             </td>
                             <td className="px-4 py-6">
+                               <div className="relative group/status flex items-center">
+                                 <StatusBadge status={order.status} />
+                                 <select 
+                                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                   value={order.status}
+                                   onChange={(e) => updateStatus(order._id, e.target.value)}
+                                 >
+                                   <option value="Requested">Requested</option>
+                                   <option value="Accepted">Accepted</option>
+                                   <option value="Cancelled">Rejected (Cancel)</option>
+                                   <option value="Problem">Problem</option>
+                                 </select>
+                                 <ChevronDown size={14} className="text-gray-400 ml-1 opacity-0 group-hover/status:opacity-100 transition-opacity" />
+                               </div>
+                            </td>
+                            <td className="px-4 py-6">
                               {order.assignedScrapChampId ? (
                                 <div className="flex items-center gap-3">
                                    <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-700 font-black text-xs border border-emerald-100 shadow-sm flex-shrink-0">
@@ -335,7 +427,11 @@ export default function AdminOrdersPage() {
                                    </div>
                                    <div className="min-w-0 max-w-[150px]">
                                      <p className="text-xs font-black text-gray-900 leading-none mb-1.5 truncate">{order.champDetails?.name || 'Partner'}</p>
-                                     <StatusBadge status={order.status} />
+                                     <div className="flex items-center gap-2">
+                                        {order.status !== 'Completed' && (
+                                           <button onClick={() => openAssignModal(order._id)} className="text-[9px] font-black text-brand-500 hover:text-brand-700 uppercase tracking-widest underline underline-offset-2">Reassign</button>
+                                        )}
+                                     </div>
                                    </div>
                                 </div>
                               ) : (
@@ -346,7 +442,10 @@ export default function AdminOrdersPage() {
                                       </div>
                                    </div>
                                    <div className="flex flex-col min-w-0">
-                                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none truncate">Broadcasting</span>
+                                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none truncate flex items-center justify-between">
+                                         Broadcasting
+                                         <button onClick={() => openAssignModal(order._id)} className="text-[9px] font-black text-brand-500 uppercase tracking-widest underline underline-offset-2 ml-4">Assign Now</button>
+                                      </span>
                                       <span className="text-[10px] font-bold text-blue-600 mt-1.5 flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
                                          Live Now <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse flex-shrink-0" />
                                          <span className="ml-1 text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
@@ -434,6 +533,56 @@ export default function AdminOrdersPage() {
           )}
         </div>
       </Modal>
+
+      <Modal
+        isOpen={assignModal.isOpen}
+        onClose={() => setAssignModal(prev => ({ ...prev, isOpen: false }))}
+        title="Manual Partner Assignment"
+        size="md"
+      >
+        <div className="space-y-6">
+          <p className="text-sm text-gray-500 font-medium">
+            Manually assigning a partner will override any ongoing broadcasts. The newly selected partner will receive an immediate SMS notification.
+          </p>
+          
+          {assignModal.loading ? (
+            <div className="flex justify-center py-10"><Loader size="md" /></div>
+          ) : assignModal.champs.length === 0 ? (
+            <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-bold text-center border border-red-100">
+              No active champions available to assign.
+            </div>
+          ) : (
+            <div className="space-y-4">
+               <div>
+                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Select Champion</label>
+                  <select 
+                    value={assignModal.selectedChampId}
+                    onChange={(e) => setAssignModal(prev => ({ ...prev, selectedChampId: e.target.value }))}
+                    className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-800 focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all cursor-pointer"
+                  >
+                    <option value="" disabled>-- Choose a partner --</option>
+                    {assignModal.champs.map((c) => (
+                      <option key={c._id} value={c._id}>
+                        {c.name} - {c.serviceArea} ({c.mobileNumber})
+                      </option>
+                    ))}
+                  </select>
+               </div>
+               
+               <Button 
+                 fullWidth 
+                 className="py-4 text-sm mt-4 rounded-2xl" 
+                 isLoading={assignModal.submitting}
+                 disabled={!assignModal.selectedChampId}
+                 onClick={handleManualAssign}
+               >
+                 Assign Order Now
+               </Button>
+            </div>
+          )}
+        </div>
+      </Modal>
+
     </ProtectedRoute>
   );
 }

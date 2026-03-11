@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '../../../components/common/ProtectedRoute';
 import { useAuth } from '../../../context/AuthContext';
-import { StatusBadge, Loader, Button } from '../../../components/common';
+import { StatusBadge, Loader, Button, Modal } from '../../../components/common';
 import { useToast } from '../../../components/common/Toast';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -45,6 +45,7 @@ export default function CustomerOrderDetailsPage() {
   const { showToast } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -117,7 +118,18 @@ export default function CustomerOrderDetailsPage() {
                         Verification Image
                       </div>
                    </div>
-                </div>
+
+                    {(order.status === 'Requested' || order.status === 'Accepted') && (
+                       <Button 
+                         variant="outline" 
+                         fullWidth 
+                         className="mt-6 rounded-2xl py-4 border-2 border-brand-500 bg-brand-50/40 text-brand-700 font-black uppercase tracking-widest text-[10px] flex gap-3 shadow-md hover:bg-brand-50 transition-all active:scale-95"
+                         onClick={() => setIsRescheduleModalOpen(true)}
+                       >
+                         <Calendar size={14} className="text-brand-600" /> Reschedule time
+                       </Button>
+                    )}
+                 </div>
 
                 {/* Details Section */}
                 <div className="flex-1 flex flex-col justify-center">
@@ -232,7 +244,29 @@ export default function CustomerOrderDetailsPage() {
              Need Assistance? <span className="text-brand-500 hover:text-brand-700 cursor-pointer transition-colors border-b-2 border-brand-100 pb-0.5">Contact Support</span>
           </div>
         </div>
-      </div>
-    </ProtectedRoute>
+       </div>
+
+       <Modal
+         isOpen={isRescheduleModalOpen}
+         onClose={() => setIsRescheduleModalOpen(false)}
+         title="Reschedule Pickup"
+       >
+         <div className="text-center p-4">
+           <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mx-auto mb-6">
+             <Phone size={32} />
+           </div>
+           <p className="text-gray-600 font-medium leading-relaxed">
+             Please reach out to us at <span className="font-black text-brand-600 underline">6366317690</span> if the order needs to be rescheduled for a suitable time!
+           </p>
+           <Button 
+             fullWidth 
+             className="mt-8 rounded-xl py-4" 
+             onClick={() => setIsRescheduleModalOpen(false)}
+           >
+             Got it
+           </Button>
+         </div>
+       </Modal>
+     </ProtectedRoute>
   );
 }

@@ -68,6 +68,29 @@ export default function CustomerPickupsPage() {
     }
   };
 
+  const handleRetry = async (orderId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/orders/${orderId}/retry`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        showToast('Pickup re-broadcasted successfully!', 'success');
+        // Refresh local state to 'Requested'
+        setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: 'Requested' } : o));
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Retry failed', 'error');
+      }
+    } catch (err) {
+      showToast('Network error', 'error');
+    }
+  };
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -173,8 +196,8 @@ export default function CustomerPickupsPage() {
 
                   {/* Expired Flag Indicator */}
                   {order.status === 'Expired' && (
-                    <div className="absolute top-0 right-0 bg-amber-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-lg shadow-sm z-10">
-                      Action Required
+                    <div className="absolute top-0 right-0 bg-brand-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-lg shadow-sm z-10 animate-pulse">
+                      Needs Attention
                     </div>
                   )}
 
@@ -222,13 +245,14 @@ export default function CustomerPickupsPage() {
                             </Link>
                           )
                         )}
-                        {order.status === 'Expired' && (
-                           <Link href="/customer/schedule">
-                             <button className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest">
-                               Reschedule
-                             </button>
-                           </Link>
-                        )}
+                         {order.status === 'Expired' && (
+                            <button 
+                              onClick={() => handleRetry(order._id)}
+                              className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest"
+                            >
+                              Retry
+                            </button>
+                         )}
                         <Link href={`/customer/pickups/${order._id}`}>
                            <button className="text-[11px] font-black text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors uppercase tracking-widest">
                             Details <ArrowRight size={14} />

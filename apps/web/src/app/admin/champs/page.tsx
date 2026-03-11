@@ -21,6 +21,7 @@ interface Champ {
   panNumber?: string;
   aadharNumber?: string;
   gstNumber?: string;
+  isActive?: boolean;
 }
 
 export default function AdminChampsPage() {
@@ -46,6 +47,32 @@ export default function AdminChampsPage() {
       showToast('Connection error', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (champId: string, currentStatus: boolean) => {
+    try {
+      const endpoint = `/orders/admin/scrap-champs/${champId}/${currentStatus ? 'deactivate' : 'activate'}`;
+      const res = await apiFetch(endpoint, { method: 'POST' });
+      
+      if (res.ok) {
+        showToast(`Champion ${currentStatus ? 'deactivated' : 'activated'} successfully`, 'success');
+        // Update local state to reflect change immediately
+        setChamps(prevChamps => 
+          prevChamps.map(c => 
+            c._id === champId ? { ...c, isActive: !currentStatus } : c
+          )
+        );
+        if (selectedChamp && selectedChamp._id === champId) {
+          setSelectedChamp({ ...selectedChamp, isActive: !currentStatus });
+        }
+      } else {
+        const errorData = await res.json();
+        showToast(errorData.error || 'Failed to update champion status', 'error');
+      }
+    } catch (err) {
+      console.error('Toggle status error:', err);
+      showToast('Connection error while updating status', 'error');
     }
   };
 
@@ -144,7 +171,11 @@ export default function AdminChampsPage() {
                             )}
                         </div>
                         <h2 className="text-2xl font-black text-gray-900">{selectedChamp.name}</h2>
-                        <span className="inline-block px-4 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-full uppercase tracking-widest border border-emerald-100 mt-2">Active Partner</span>
+                        {selectedChamp.isActive !== false ? (
+                            <span className="inline-block px-4 py-1.5 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-full uppercase tracking-widest border border-emerald-100 mt-2">Active Partner</span>
+                        ) : (
+                            <span className="inline-block px-4 py-1.5 bg-red-50 text-red-600 text-[10px] font-black rounded-full uppercase tracking-widest border border-red-100 mt-2">Inactive Partner</span>
+                        )}
                     </div>
 
                     <div className="space-y-6">
@@ -180,7 +211,25 @@ export default function AdminChampsPage() {
                             <Link href={`/admin/champs/edit/${selectedChamp._id}`} className="block">
                                 <Button variant="ghost" fullWidth className="!rounded-xl border-gray-200">Edit Info</Button>
                             </Link>
-                            <Button variant="ghost" fullWidth className="!rounded-xl border-red-100 text-red-500 hover:bg-red-50">Deactivate</Button>
+                            {selectedChamp.isActive !== false ? (
+                                <Button 
+                                  variant="ghost" 
+                                  fullWidth 
+                                  className="!rounded-xl border-red-100 text-red-500 hover:bg-red-50"
+                                  onClick={() => handleToggleStatus(selectedChamp._id, true)}
+                                >
+                                  Deactivate
+                                </Button>
+                            ) : (
+                                <Button 
+                                  variant="ghost" 
+                                  fullWidth 
+                                  className="!rounded-xl border-emerald-100 text-emerald-600 hover:bg-emerald-50"
+                                  onClick={() => handleToggleStatus(selectedChamp._id, false)}
+                                >
+                                  Activate
+                                </Button>
+                            )}
                         </div>
                     </div>
                   </div>

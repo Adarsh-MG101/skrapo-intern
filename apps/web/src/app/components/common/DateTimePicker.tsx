@@ -159,12 +159,11 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                 
                 let isPast = min ? isoDate < min : false;
                 
-                // Special check for "Today": If now + 2 hours is past 7 PM (19:00), Today is effectively past
+                // Special check for "Today": If past 3:30 PM, Today is disabled
                 if (isoDate === todayIso) {
-                  const cutoff = today.getTime() + 2 * 60 * 60 * 1000;
-                  const dayEnd = new Date(today);
-                  dayEnd.setHours(19, 0, 0, 0);
-                  if (cutoff >= dayEnd.getTime()) {
+                  const cutoff = new Date(today);
+                  cutoff.setHours(15, 30, 0, 0);
+                  if (today.getTime() >= cutoff.getTime()) {
                     isPast = true;
                   }
                 }
@@ -197,14 +196,25 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                 type="button"
                 onClick={() => {
                   const today = new Date();
-                  const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                  setCurrentMonth(today);
+                  const cutoff = new Date(today);
+                  cutoff.setHours(15, 30, 0, 0);
+                  
+                  // If today is disabled, "Go to Today" actually goes to tomorrow
+                  const targetDate = today.getTime() >= cutoff.getTime() 
+                    ? new Date(today.getTime() + 24 * 60 * 60 * 1000) 
+                    : today;
+                    
+                  const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+                  setCurrentMonth(targetDate);
                   onChange({ target: { value: dateStr } });
                   setIsOpen(false);
                 }}
                 className="px-6 py-2 bg-gray-50 hover:bg-emerald-50 rounded-full text-[10px] font-black text-gray-500 hover:text-emerald-600 tracking-widest uppercase transition-all duration-300 border border-transparent hover:border-emerald-100"
                >
-                 Go to Today
+                 {(() => {
+                   const now = new Date();
+                   return (now.getHours() > 15 || (now.getHours() === 15 && now.getMinutes() >= 30)) ? 'Available From Tomorrow' : 'Go to Today';
+                 })()}
                </button>
             </div>
           </div>
