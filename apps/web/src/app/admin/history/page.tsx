@@ -81,7 +81,7 @@ export default function AdminHistoryPage() {
       order.exactAddress.toLowerCase().includes(searchLow) ||
       order.scrapTypes.some(t => t.toLowerCase().includes(searchLow));
     
-    const matchesStatus = status === 'All' ? order.status !== 'Requested' : true;
+    const matchesStatus = status === 'All' ? !['Requested', 'Problem'].includes(order.status) : true;
     
     return matchesSearch && matchesStatus;
   });

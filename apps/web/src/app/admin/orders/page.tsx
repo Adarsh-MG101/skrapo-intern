@@ -173,7 +173,7 @@ export default function AdminOrdersPage() {
         const allOrders: Order[] = await res.json();
         const liveOrders = allOrders.filter(o => {
           const isExpired = o.status === 'Requested' && (new Date(o.createdAt).getTime() + 30 * 60 * 1000 <= Date.now());
-          return !isExpired && ['Requested', 'Assigned', 'Accepted', 'Arrived', 'Picking'].includes(o.status);
+          return !isExpired && ['Requested', 'Assigned', 'Accepted', 'Arrived', 'Picking', 'Problem'].includes(o.status);
         });
         setOrders(liveOrders);
       }
