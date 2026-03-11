@@ -266,11 +266,11 @@ export default function AdminOrdersPage() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-gray-50/50 border-b border-gray-100">
-                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Order Info</th>
-                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Customer</th>
-                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Address</th>
-                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Engagement</th>
-                        <th className="px-10 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status / Allocation</th>
+                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Order Info</th>
+                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Customer</th>
+                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Address</th>
+                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Engagement</th>
+                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status / Allocation</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -288,30 +288,30 @@ export default function AdminOrdersPage() {
                        ) : (
                          orders.map((order) => (
                           <tr key={order._id} className="hover:bg-gray-50/30 transition-colors group">
-                            <td className="px-10 py-8">
+                            <td className="px-4 py-6">
                                <Link href={`/admin/orders/${order._id}`} className="group/link block">
-                                 <p className="font-black text-gray-900 group-hover/link:text-brand-600 transition-colors tracking-tight text-base mb-1">{order.scrapTypes.join(', ')}</p>
+                                 <p className="font-black text-gray-900 group-hover/link:text-brand-600 transition-colors tracking-tight text-base mb-1 truncate max-w-[150px]">{order.scrapTypes.join(', ')}</p>
                                  <p className="text-[10px] text-gray-400 font-black flex items-center gap-1.5 uppercase tracking-widest">
-                                   <ArrowRight size={10} className="text-brand-500" />
-                                   {new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                   <ArrowRight size={10} className="text-brand-500 flex-shrink-0" />
+                                   <span className="truncate">{new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                  </p>
                                </Link>
                             </td>
-                            <td className="px-10 py-8">
+                            <td className="px-4 py-6">
                               <div className="flex items-center gap-3">
-                                 <div className="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 border border-brand-100"><User size={18} /></div>
-                                 <div className="min-w-0">
+                                 <div className="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 border border-brand-100 flex-shrink-0"><User size={18} /></div>
+                                 <div className="min-w-0 max-w-[150px]">
                                    <p className="font-black text-gray-900 leading-tight truncate">{order.customerDetails?.name || 'Deleted User'}</p>
-                                   <p className="text-[10px] text-brand-600 font-bold tracking-wider mt-0.5">{order.customerDetails?.mobileNumber || 'N/A'}</p>
+                                   <p className="text-[10px] text-brand-600 font-bold tracking-wider mt-0.5 truncate">{order.customerDetails?.mobileNumber || 'N/A'}</p>
                                  </div>
                               </div>
                             </td>
-                            <td className="px-10 py-8 max-w-[240px]">
+                            <td className="px-4 py-6 max-w-[180px]">
                               <p className="text-[13px] text-gray-500 font-medium truncate group-hover:text-gray-900 transition-colors" title={order.exactAddress}>
                                 {order.exactAddress}
                               </p>
                             </td>
-                            <td className="px-10 py-8">
+                            <td className="px-4 py-6">
                                 <div className="flex justify-center gap-2 mb-3">
                                    <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg shadow-blue-100" title="Notified">
                                       {order.notifiedChampsCount || 0}
@@ -322,33 +322,33 @@ export default function AdminOrdersPage() {
                                 </div>
                                <button 
                                  onClick={() => fetchEngagement(order._id)}
-                                 className="mt-2 w-full py-1.5 bg-white rounded-lg border border-gray-100 text-[9px] font-black text-gray-400 uppercase tracking-widest hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm"
+                                 className="mt-2 w-full py-1.5 px-2 bg-white rounded-lg border border-gray-100 text-[9px] font-black text-gray-400 uppercase tracking-widest hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm"
                                >
                                  Engagement View
                                </button>
                             </td>
-                            <td className="px-10 py-8">
+                            <td className="px-4 py-6">
                               {order.assignedScrapChampId ? (
                                 <div className="flex items-center gap-3">
-                                   <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-700 font-black text-xs border border-emerald-100 shadow-sm">
+                                   <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-700 font-black text-xs border border-emerald-100 shadow-sm flex-shrink-0">
                                      {order.champDetails?.name?.charAt(0) || <User size={16} />}
                                    </div>
-                                   <div>
-                                     <p className="text-xs font-black text-gray-900 leading-none mb-1.5">{order.champDetails?.name || 'Partner'}</p>
+                                   <div className="min-w-0 max-w-[150px]">
+                                     <p className="text-xs font-black text-gray-900 leading-none mb-1.5 truncate">{order.champDetails?.name || 'Partner'}</p>
                                      <StatusBadge status={order.status} />
                                    </div>
                                 </div>
                               ) : (
                                 <div className="flex items-center gap-4">
-                                   <div className="relative">
+                                   <div className="relative flex-shrink-0">
                                       <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-blue-500 border border-gray-100 shadow-inner">
                                          <Radio size={20} className="animate-pulse" />
                                       </div>
                                    </div>
-                                   <div className="flex flex-col">
-                                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Broadcasting</span>
-                                      <span className="text-[10px] font-bold text-blue-600 mt-1.5 flex items-center gap-1.5 whitespace-nowrap">
-                                         Live Now <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse" />
+                                   <div className="flex flex-col min-w-0">
+                                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none truncate">Broadcasting</span>
+                                      <span className="text-[10px] font-bold text-blue-600 mt-1.5 flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
+                                         Live Now <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse flex-shrink-0" />
                                          <span className="ml-1 text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
                                             <CountdownTimer createdAt={order.createdAt} onExpire={() => fetchData()} />
                                          </span>
