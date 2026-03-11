@@ -5,30 +5,31 @@ import ProtectedRoute from '../../components/common/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
 import { Loader, EmptyState } from '../../components/common';
 import Link from 'next/link';
-import { API_URL } from '../../config/env';
 import { Star, MessageSquare, User, ArrowRight } from 'lucide-react';
 
 export default function AdminFeedbackPage() {
-  const { token } = useAuth();
+  const { apiFetch, isLoading, isAuthenticated } = useAuth();
   const [feedback, setFeedback] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchFeedback = async () => {
       try {
-        const res = await fetch(`${API_URL}/feedback/admin`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (res.ok) setFeedback(data);
+        const res = await apiFetch('/feedback/admin');
+        if (res.ok) {
+          const data = await res.json();
+          setFeedback(data);
+        }
       } catch (err) {
         console.error('Fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
-    if (token) fetchFeedback();
-  }, [token]);
+    if (!isLoading && isAuthenticated) {
+      fetchFeedback();
+    }
+  }, [isLoading, isAuthenticated, apiFetch]);
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>

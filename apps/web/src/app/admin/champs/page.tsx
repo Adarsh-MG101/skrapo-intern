@@ -24,7 +24,7 @@ interface Champ {
 }
 
 export default function AdminChampsPage() {
-  const { apiFetch } = useAuth();
+  const { apiFetch, isLoading, isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const [champs, setChamps] = useState<Champ[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +50,10 @@ export default function AdminChampsPage() {
   };
 
   useEffect(() => {
-    fetchChamps();
-  }, []);
+    if (!isLoading && isAuthenticated) {
+      fetchChamps();
+    }
+  }, [isLoading, isAuthenticated]);
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>

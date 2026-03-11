@@ -67,7 +67,7 @@ const CountdownTimer: React.FC<{ createdAt: string; onExpire?: () => void }> = (
 };
 
 export default function AdminOrdersPage() {
-  const { apiFetch } = useAuth();
+  const { apiFetch, isLoading, isAuthenticated } = useAuth();
   const { socket } = useSocket();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,8 +113,10 @@ export default function AdminOrdersPage() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, [apiFetch]);
+    if (!isLoading && isAuthenticated) {
+      fetchData();
+    }
+  }, [isLoading, isAuthenticated, apiFetch]);
 
   useEffect(() => {
     if (!socket) return;

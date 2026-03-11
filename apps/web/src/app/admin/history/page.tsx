@@ -32,7 +32,7 @@ interface Order {
 }
 
 export default function AdminHistoryPage() {
-  const { apiFetch } = useAuth();
+  const { apiFetch, isLoading, isAuthenticated } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('All');
@@ -50,7 +50,8 @@ export default function AdminHistoryPage() {
 
       const res = await apiFetch(`/orders/admin?${params.toString()}`);
       if (res.ok) {
-        setOrders(await res.json());
+        const data = await res.json();
+        setOrders(data);
       }
     } catch (err) {
       console.error('Fetch error:', err);
@@ -60,8 +61,10 @@ export default function AdminHistoryPage() {
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, [status, startDate, endDate, apiFetch]);
+    if (!isLoading && isAuthenticated) {
+      fetchOrders();
+    }
+  }, [status, startDate, endDate, isLoading, isAuthenticated, apiFetch]);
 
   const resetFilters = () => {
     setStatus('All');
