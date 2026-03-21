@@ -4,51 +4,38 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { ProtectedRoute, Loader, Button } from '../components/common';
 import Link from 'next/link';
-import { API_URL } from '../config/env';
 import { 
   Inbox, 
-  CheckCircle2, 
   TrendingUp, 
   Star, 
   Truck, 
   History as HistoryIcon, 
   Zap, 
   Package, 
+  Hand,
   ArrowRight,
-  Hand
+  XCircle
 } from 'lucide-react';
 
 interface Stats {
-  total: number;
-  accepted: number;
+  myJobs: number;
+  availableJobs: number;
   declined: number;
   avgRating: string;
 }
 
 function ScrapChampDashboardContent() {
-  const { token, user } = useAuth();
-  const [stats, setStats] = useState<Stats>({ total: 0, accepted: 0, declined: 0, avgRating: '--' });
+  const { apiFetch, user } = useAuth();
+  const [stats, setStats] = useState<Stats>({ myJobs: 0, availableJobs: 0, declined: 0, avgRating: '--' });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch(`${API_URL}/orders/scrap-champ/history`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
+        const res = await apiFetch('/orders/scrap-champ/stats');
         if (res.ok) {
-          const total = data.length;
-          const accepted = data.filter((j: any) => j.status === 'Accepted' || j.status === 'Completed').length;
-          const ratings = data.filter((j: any) => j.feedback?.rating).map((j: any) => j.feedback.rating);
-          const avg = ratings.length > 0 ? (ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length).toFixed(1) : '--';
-          
-          setStats({
-            total,
-            accepted,
-            declined: 0, 
-            avgRating: avg
-          });
+          const data = await res.json();
+          setStats(data);
         }
       } catch (err) {
         console.error('Stats error:', err);
@@ -56,8 +43,8 @@ function ScrapChampDashboardContent() {
         setLoading(false);
       }
     };
-    if (token) fetchStats();
-  }, [token]);
+    fetchStats();
+  }, [apiFetch]);
 
   if (loading) return <div className="flex justify-center items-center min-h-screen"><Loader size="lg" /></div>;
 
@@ -77,12 +64,13 @@ function ScrapChampDashboardContent() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-8 mb-10 sm:mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-10 sm:mb-16">
           {[
-            { label: 'Assigned', value: stats.total, Icon: Inbox, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-            { label: 'Completed', value: stats.accepted, Icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-            { label: 'Earning', value: stats.total > 0 ? `${Math.round((stats.accepted/stats.total)*100)}%` : '--', Icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
+            { label: 'Active', value: stats.myJobs, Icon: Inbox, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+            { label: 'Available', value: stats.availableJobs, Icon: Zap, color: 'text-brand-600', bg: 'bg-brand-50', border: 'border-brand-100' },
+            { label: 'Declined', value: stats.declined, Icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100' },
             { label: 'Rating', value: stats.avgRating, Icon: Star, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
+            { label: 'Success', value: (stats.myJobs + stats.declined) > 0 ? `${Math.round((stats.myJobs / (stats.myJobs + stats.declined)) * 100)}%` : '--', Icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
           ].map((stat, index) => (
             <div key={stat.label} className="bg-white rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 group animate-fade-in overflow-hidden" style={{ animationDelay: `${index * 100}ms` }}>
               <div className={`w-10 h-10 sm:w-14 sm:h-14 ${stat.bg} ${stat.color} rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-neutral-100 shadow-inner border ${stat.border} group-hover:scale-110 transition-transform`}>

@@ -99,8 +99,11 @@ export const setupFCM = async (apiFetch: any): Promise<string | null> => {
       return null;
     }
   } catch (err: any) {
-    // Don't crash the app if FCM fails — just log it
-    console.error('[FCM] Setup error:', err?.message || err);
+    if (err?.message?.includes('push service error')) {
+      console.warn('[FCM] Push service unavailable (common in Brave or local dev). Notifications disabled.');
+    } else {
+      console.error('[FCM] Setup error:', err?.message || err);
+    }
     return null;
   }
 };

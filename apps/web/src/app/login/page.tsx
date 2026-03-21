@@ -12,7 +12,7 @@ function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+91');
+  const [countryCode] = useState('+91');
   const [otp, setOtp] = useState('');
   const [loginType, setLoginType] = useState<'email' | 'mobile'>('email');
   const [otpSent, setOtpSent] = useState(false);
@@ -225,7 +225,7 @@ function LoginContent() {
           <div className="w-32 h-32 bg-white rounded-3xl flex items-center justify-center mx-auto mb-8 animate-float shadow-2xl overflow-hidden border-4 border-white/20">
             <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-4xl font-black text-white mb-4 tracking-tight">Recycle My Bin</h1>
+          <h1 className="text-4xl font-black text-white mb-4 tracking-tight">Recyclemybin</h1>
           <p className="text-brand-100 text-lg max-w-sm mx-auto leading-relaxed">
             Sign in to continue managing your scrap pickups and contribute to a greener planet.
           </p>
@@ -255,7 +255,7 @@ function LoginContent() {
             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg overflow-hidden border border-gray-100">
               <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-2xl font-black text-gray-900 tracking-tighter">Recycle My Bin</span>
+            <span className="text-2xl font-black text-gray-900 tracking-tighter">Recyclemybin</span>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
@@ -416,15 +416,9 @@ function LoginContent() {
                     </label>
                     <div className="flex flex-col gap-3">
                       <div className="flex gap-2 flex-1">
-                        <select
-                          value={countryCode}
-                          onChange={(e) => setCountryCode(e.target.value)}
-                          className="w-[80px] px-1 py-3 border-2 border-gray-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-gray-900 bg-white text-xs"
-                          disabled={otpSent}
-                        >
-                          <option value="+91">+91 (IN)</option>
-                          <option value="+92">+92 (PK)</option>
-                        </select>
+                        <div className={`w-[80px] px-1 py-3 border-2 border-gray-100 rounded-xl bg-gray-50 text-gray-600 font-bold flex items-center justify-center text-xs ${otpSent ? 'opacity-50' : ''}`}>
+                          +91
+                        </div>
                         <div className="relative flex-1">
                           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

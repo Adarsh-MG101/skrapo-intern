@@ -44,7 +44,7 @@ export default function AdminHistoryPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (status !== 'All') params.append('status', status);
+      if (status !== 'All' && status !== 'Active') params.append('status', status);
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
 
@@ -81,12 +81,22 @@ export default function AdminHistoryPage() {
       order.exactAddress.toLowerCase().includes(searchLow) ||
       order.scrapTypes.some(t => t.toLowerCase().includes(searchLow));
     
-    const matchesStatus = status === 'All' ? !['Requested', 'Problem'].includes(order.status) : true;
+    const isExpired = order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now());
+    const displayStatus = isExpired ? 'Expired' : order.status;
+
+    let matchesStatus = true;
+    if (status === 'All') {
+      matchesStatus = !['Requested', 'Problem'].includes(displayStatus);
+    } else if (status === 'Active') {
+      matchesStatus = ['Requested', 'Assigned', 'Accepted', 'Arrived', 'Arriving', 'Picking', 'Problem'].includes(displayStatus);
+    } else {
+      matchesStatus = displayStatus === status;
+    }
     
     return matchesSearch && matchesStatus;
   });
 
-  const statuses = ['All', 'Completed', 'Cancelled', 'Expired', 'Problem'];
+  const statuses = ['All', 'Active', 'Completed', 'Cancelled', 'Expired', 'Problem'];
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
@@ -198,10 +208,13 @@ export default function AdminHistoryPage() {
                                   <p className="text-[11px] text-brand-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5 truncate">
                                      <Phone size={12} className="text-brand-500 shrink-0" /> {order.customerDetails?.mobileNumber || 'N/A'}
                                   </p>
-                                  <p className="text-[11px] text-gray-400 font-bold leading-tight max-w-[200px] truncate group-hover:text-gray-600 transition-colors" title={order.exactAddress}>
-                                     {order.exactAddress}
-                                  </p>
-                               </div>
+                                   <p className="text-[11px] text-gray-400 font-bold leading-tight max-w-[200px] truncate group-hover:text-gray-600 transition-colors" title={order.exactAddress}>
+                                      {order.exactAddress}
+                                   </p>
+                                   <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-2 flex items-center gap-1 opacity-60">
+                                      <Clock size={10} /> Placed: {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                   </p>
+                                </div>
                             </div>
                           </td>
                           <td className="px-4 py-5 whitespace-nowrap text-left">
@@ -239,14 +252,14 @@ export default function AdminHistoryPage() {
                             )}
                           </td>
                           <td className="px-4 py-5 text-center">
-                             <Link href={`/admin/orders/${order._id}`}>
+                             <Link href={`/admin/history/${order._id}`}>
                                 <button className="px-4 py-3 bg-gray-900 text-white hover:bg-black text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-gray-200 transition-all active:scale-95 whitespace-nowrap flex items-center gap-2 mx-auto">
                                    View Record <ArrowRight size={12} />
                                 </button>
                              </Link>
                           </td>
-                          <td className="px-4 py-5 text-center text-left">
-                            <StatusBadge status={order.status} />
+                          <td className="px-4 py-5 text-center">
+                            <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
                           </td>
                         </tr>
                       ))}
@@ -267,7 +280,7 @@ export default function AdminHistoryPage() {
                           </p>
                           <p className="font-black text-gray-900 text-xl tracking-tight leading-none">{order.scrapTypes.join(', ')}</p>
                        </div>
-                       <StatusBadge status={order.status} />
+                       <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
                     </div>
 
                     <div className="p-6 bg-gray-50/50 rounded-3xl border border-gray-50 space-y-4">
@@ -297,7 +310,7 @@ export default function AdminHistoryPage() {
 
                     <div className="pt-2">
                        <Link 
-                          href={`/admin/orders/${order._id}`}
+                          href={`/admin/history/${order._id}`}
                           className="flex items-center justify-center gap-3 w-full py-5 bg-gray-900 text-white text-[11px] font-black uppercase tracking-[0.3em] rounded-[1.5rem] shadow-2xl shadow-gray-200 active:scale-[0.98] transition-all"
                        >
                           View Full Details <ArrowRight size={14} />

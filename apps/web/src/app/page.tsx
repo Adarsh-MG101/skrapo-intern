@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -54,7 +54,7 @@ export default function LandingPage() {
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden border border-gray-100">
               <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-2xl font-bold text-gray-800">Recycle My Bin</span>
+            <span className="text-2xl font-bold text-gray-800">Recyclemybin</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             {isAuthenticated ? (
@@ -238,7 +238,7 @@ export default function LandingPage() {
               Built for Every Role
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Whether you&apos;re a customer, admin, or scrap champion — Recycle My Bin has you covered
+              Whether you&apos;re a customer, admin, or scrap champion — Recyclemybin has you covered
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -331,7 +331,7 @@ export default function LandingPage() {
               <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center overflow-hidden border border-gray-100">
                 <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
               </div>
-              <span className="text-lg font-bold text-white">Recycle My Bin</span>
+              <span className="text-lg font-bold text-white">Recyclemybin</span>
             </div>
             <div className="flex items-center gap-6 text-sm">
               <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
@@ -339,7 +339,7 @@ export default function LandingPage() {
               <Link href="/register" className="hover:text-white transition-colors">Register</Link>
             </div>
             <p className="text-sm">
-              © {new Date().getFullYear()} Recycle My Bin. All rights reserved.
+              © {new Date().getFullYear()} Recyclemybin. All rights reserved.
             </p>
           </div>
         </div>

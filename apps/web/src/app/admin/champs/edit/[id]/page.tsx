@@ -40,6 +40,7 @@ function EditChampContent() {
     gstNumber: '',
     gstCardPic: null as string | null,
     profilePhoto: null as string | null,
+    cardNumber: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,11 +74,7 @@ function EditChampContent() {
           // Mobile number parsing
           let mobile = data.mobileNumber || '';
           let code = '+91';
-          if (mobile.startsWith('+92')) {
-            code = '+92';
-            mobile = mobile.replace('+92', '');
-          } else if (mobile.startsWith('+91')) {
-            code = '+91';
+          if (mobile.startsWith('+91')) {
             mobile = mobile.replace('+91', '');
           }
 
@@ -98,6 +95,7 @@ function EditChampContent() {
             gstNumber: data.gstNumber || '',
             gstCardPic: data.gstCardPic || null,
             profilePhoto: data.profilePhoto || null,
+            cardNumber: data.cardNumber || '',
           });
         } else {
           setError('Failed to load champion details');
@@ -197,6 +195,7 @@ function EditChampContent() {
         gstNumber: formData.gstNumber,
         gstCardPic: formData.gstCardPic,
         profilePhoto: formData.profilePhoto,
+        cardNumber: formData.cardNumber,
       };
 
       if (formData.password) {
@@ -278,14 +277,9 @@ function EditChampContent() {
                 Mobile Number <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
-                <select
-                  value={formData.countryCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, countryCode: e.target.value }))}
-                  className="px-3 py-3 border-2 border-gray-100 rounded-2xl focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all text-gray-900 bg-white shadow-sm font-bold text-sm"
-                >
-                  <option value="+91">+91 (IN)</option>
-                  <option value="+92">+92 (PK)</option>
-                </select>
+                <div className="px-4 py-3 border-2 border-gray-100 rounded-2xl bg-gray-50 text-gray-500 font-bold text-sm flex items-center justify-center min-w-[70px] shadow-sm">
+                  +91
+                </div>
                 <div className="flex-1">
                   <Input 
                     value={formData.mobileNumber}
@@ -357,9 +351,18 @@ function EditChampContent() {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, aadharNumber: e.target.value.replace(/\D/g, '')})}
                   />
                   <label className="flex-1 cursor-pointer">
-                    <div className={`px-4 py-3.5 border-2 border-dashed rounded-2xl text-center transition-all ${formData.aadharCardPic ? 'border-emerald-200 bg-emerald-50 text-emerald-600 font-bold' : 'border-gray-100 hover:border-brand-200 text-gray-400 font-medium'}`}>
-                       <span className="text-xs uppercase tracking-widest">{formData.aadharCardPic ? '✅ Aadhar Card Added' : '➕ Upload Aadhar Card'}</span>
-                    </div>
+                    {formData.aadharCardPic ? (
+                      <div className="relative aspect-video w-full rounded-2xl border-2 border-gray-100 overflow-hidden group">
+                        <img src={formData.aadharCardPic} alt="Aadhar Card" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-xs font-bold tracking-wide">Change Image</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="px-4 py-8 border-2 border-dashed rounded-2xl text-center transition-all border-gray-100 hover:border-brand-200 text-gray-400 font-medium bg-gray-50/50">
+                         <span className="text-xs uppercase tracking-widest block font-black">➕ Upload Aadhar Card</span>
+                      </div>
+                    )}
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'aadharCardPic')} />
                   </label>
                </div>
@@ -375,9 +378,18 @@ function EditChampContent() {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, panNumber: e.target.value.toUpperCase()})}
                   />
                   <label className="flex-1 cursor-pointer">
-                    <div className={`px-4 py-3.5 border-2 border-dashed rounded-2xl text-center transition-all ${formData.panCardPic ? 'border-emerald-200 bg-emerald-50 text-emerald-600 font-bold' : 'border-gray-100 hover:border-brand-200 text-gray-400 font-medium'}`}>
-                       <span className="text-xs uppercase tracking-widest">{formData.panCardPic ? '✅ PAN Card Added' : '➕ Upload PAN Card'}</span>
-                    </div>
+                    {formData.panCardPic ? (
+                      <div className="relative aspect-video w-full rounded-2xl border-2 border-gray-100 overflow-hidden group">
+                        <img src={formData.panCardPic} alt="PAN Card" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-xs font-bold tracking-wide">Change Image</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="px-4 py-8 border-2 border-dashed rounded-2xl text-center transition-all border-gray-100 hover:border-brand-200 text-gray-400 font-medium bg-gray-50/50">
+                         <span className="text-xs uppercase tracking-widest block font-black">➕ Upload PAN Card</span>
+                      </div>
+                    )}
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'panCardPic')} />
                   </label>
                </div>
@@ -393,11 +405,30 @@ function EditChampContent() {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, gstNumber: e.target.value.toUpperCase()})}
                   />
                   <label className="flex-1 cursor-pointer">
-                    <div className={`px-4 py-3.5 border-2 border-dashed rounded-2xl text-center transition-all ${formData.gstCardPic ? 'border-emerald-200 bg-emerald-50 text-emerald-600 font-bold' : 'border-gray-100 hover:border-brand-200 text-gray-400 font-medium'}`}>
-                       <span className="text-xs uppercase tracking-widest">{formData.gstCardPic ? '✅ GST Certificate Added' : '➕ Upload GST Certificate'}</span>
-                    </div>
+                    {formData.gstCardPic ? (
+                      <div className="relative aspect-video w-full rounded-2xl border-2 border-gray-100 overflow-hidden group">
+                        <img src={formData.gstCardPic} alt="GST Certificate" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-xs font-bold tracking-wide">Change Image</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="px-4 py-8 border-2 border-dashed rounded-2xl text-center transition-all border-gray-100 hover:border-brand-200 text-gray-400 font-medium bg-gray-50/50">
+                         <span className="text-xs uppercase tracking-widest block font-black">➕ Upload GST Certificate</span>
+                      </div>
+                    )}
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'gstCardPic')} />
                   </label>
+               </div>
+               
+               {/* Card Number */}
+               <div className="grid md:grid-cols-2 gap-6 items-end">
+                  <Input 
+                    label="Worker ID / Card Number (Optional)"
+                    placeholder="Enter official Scrapo ID"
+                    value={formData.cardNumber}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, cardNumber: e.target.value})}
+                  />
                </div>
             </div>
           </div>

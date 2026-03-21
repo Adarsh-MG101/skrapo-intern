@@ -1,4 +1,4 @@
-﻿import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 // Initialize env vars immediately before ANY other imports
 dotenv.config({ path: 'apps/api/.env', override: true });
 dotenv.config({ override: true });
@@ -47,4 +47,21 @@ bootstrap().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
   console.error(`[startup-error] ${message}`);
   process.exit(1);
+});
+
+// ── Global Safety Nets ────────────────────────────────────────────────
+// Prevent the server from crashing due to unhandled errors in background
+// tasks (e.g., broadcast retries, notification delivery, timer callbacks).
+process.on('unhandledRejection', (reason: unknown) => {
+  console.error('[UNHANDLED REJECTION] The server caught an unhandled promise rejection.');
+  console.error('[UNHANDLED REJECTION] Reason:', reason);
+  // Log but do NOT exit — the server stays alive.
+});
+
+process.on('uncaughtException', (error: Error) => {
+  console.error('[UNCAUGHT EXCEPTION] The server caught an uncaught exception.');
+  console.error('[UNCAUGHT EXCEPTION] Error:', error.message);
+  console.error('[UNCAUGHT EXCEPTION] Stack:', error.stack);
+  // Log but do NOT exit — keeps the server running.
+  // In production you may want to gracefully restart here instead.
 });

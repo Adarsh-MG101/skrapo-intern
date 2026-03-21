@@ -217,7 +217,7 @@ router.post('/', authenticate, authorize('customer'), async (req: AuthenticatedR
     // Emit real-time notification to all admins
     try {
       console.log(`[socket] Emitting 'new_pickup_request' for order ${result.insertedId} to admin_room`);
-      notificationService.notifyAdmins(
+      await notificationService.notifyAdmins(
         'New Pickup Request! ♻️',
         `A new pickup has even scheduled in ${generalArea}`,
         'new_pickup_request',
@@ -225,6 +225,18 @@ router.post('/', authenticate, authorize('customer'), async (req: AuthenticatedR
       );
     } catch (e) {
       console.error('[socket] Failed to emit new_pickup_request', e);
+    }
+
+    try {
+      await notificationService.notifyUser(
+        req.user!.userId,
+        'Pickup Scheduled 🎉',
+        `Your scrap pickup has been confirmed! We will notify you once a Scrap Champion is assigned.`,
+        'pickup_scheduled',
+        { orderId: result.insertedId, status: 'Requested' }
+      );
+    } catch (e) {
+      console.error('[socket] Failed to notify customer of creation', e);
     }
 
     // Broadcast to all champs in the customer's area
@@ -488,7 +500,7 @@ router.get('/admin/scrap-champs', authenticate, authorize('admin'), async (req: 
       .find({ role: 'scrapChamp' })
       .project({ 
         name: 1, mobileNumber: 1, serviceArea: 1, createdAt: 1, email: 1, serviceRadiusKm: 1, 
-        profilePhoto: 1, panNumber: 1, aadharNumber: 1, gstNumber: 1 
+        profilePhoto: 1, panNumber: 1, aadharNumber: 1, gstNumber: 1, cardNumber: 1
       })
       .toArray();
 
@@ -533,7 +545,7 @@ router.patch('/admin/scrap-champs/:champId', authenticate, authorize('admin'), a
     const { champId } = req.params;
     const { 
       name, email, mobileNumber, serviceArea, serviceRadiusKm, password,
-      panNumber, panCardPic, aadharNumber, aadharCardPic, gstNumber, gstCardPic, profilePhoto
+      panNumber, panCardPic, aadharNumber, aadharCardPic, gstNumber, gstCardPic, profilePhoto, cardNumber
     } = req.body;
 
     if (!ObjectId.isValid(champId)) {
@@ -559,6 +571,7 @@ router.patch('/admin/scrap-champs/:champId', authenticate, authorize('admin'), a
     if (gstNumber !== undefined) updateDoc.gstNumber = gstNumber;
     if (gstCardPic !== undefined) updateDoc.gstCardPic = gstCardPic;
     if (profilePhoto !== undefined) updateDoc.profilePhoto = profilePhoto;
+    if (cardNumber !== undefined) updateDoc.cardNumber = cardNumber;
 
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -646,9 +659,10 @@ router.post('/admin/scrap-champs/:champId/activate', authenticate, authorize('ad
 router.post('/admin/:orderId/assign', authenticate, authorize('admin'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { orderId } = req.params;
-    const { champId } = req.body;
+    const { champId, scrapChampId } = req.body;
+    const finalChampId = champId || scrapChampId;
 
-    if (!ObjectId.isValid(orderId) || !ObjectId.isValid(champId)) {
+    if (!ObjectId.isValid(orderId) || !ObjectId.isValid(finalChampId)) {
       res.status(400).json({ error: 'Invalid Order ID or Champion ID' });
       return;
     }
@@ -657,7 +671,7 @@ router.post('/admin/:orderId/assign', authenticate, authorize('admin'), async (r
     const ordersCol = db.collection('orders');
     const usersCol = db.collection('users');
 
-    const champ = await usersCol.findOne({ _id: new ObjectId(champId), role: 'scrapChamp' });
+    const champ = await usersCol.findOne({ _id: new ObjectId(finalChampId), role: 'scrapChamp' });
     if (!champ) {
       res.status(404).json({ error: 'Scrap Champion not found' });
       return;
@@ -678,7 +692,7 @@ router.post('/admin/:orderId/assign', authenticate, authorize('admin'), async (r
       { _id: new ObjectId(orderId) },
       { 
         $set: { 
-          assignedScrapChampId: new ObjectId(champId),
+          assignedScrapChampId: new ObjectId(finalChampId),
           status: 'Assigned',
           updatedAt: new Date()
         } 
@@ -690,26 +704,55 @@ router.post('/admin/:orderId/assign', authenticate, authorize('admin'), async (r
       return;
     }
 
-    // Notify the newly assigned champion via SMS and Socket
-    if (champ.mobileNumber) {
-        // Prepare SMS
-        const smsMessage = `You have been manually assigned a new pickup by Admin! Order ${orderId.slice(-6).toUpperCase()}. Please check your app.`;
-        await smsService.sendSms(champ.mobileNumber, smsMessage);
-        
-        // Log SMS Event
-        await db.collection('smsEvents').insertOne({
-            orderId: order._id,
-            userId: champ._id,
-            mobileNumber: champ.mobileNumber,
-            eventType: 'Manual_Allocation',
-            status: 'Sent',
-            meta: {},
-            createdAt: new Date(),
-        });
-    }
+    // Side effects wrapped in try-catch to ensure main logic success
+    try {
+        // Notify the newly assigned champion via SMS
+        if (champ.mobileNumber) {
+            // Prepare SMS
+            const smsMessage = `You have been manually assigned a new pickup by Admin! Order ${orderId.slice(-6).toUpperCase()}. Please check your app.`;
+            await smsService.sendSms(champ.mobileNumber, smsMessage);
+            
+            // Log SMS Event (Optional persistence)
+            await db.collection('smsEvents').insertOne({
+                orderId: order._id,
+                userId: champ._id,
+                mobileNumber: champ.mobileNumber,
+                eventType: 'Manual_Allocation',
+                status: 'Sent',
+                meta: {},
+                createdAt: new Date(),
+            }).catch(e => console.error('[orders] SMS Event log failed:', e));
+        }
 
-    // Real-time socket notification to the champ
-    emitAndLog(`user_${champ._id}`, 'orderAssigned', { orderId: order._id, assignedBy: 'Admin' });
+        // Real-time socket notification to the champ
+        try {
+            emitAndLog(`user_${champ._id}`, 'orderAssigned', { orderId: order._id, assignedBy: 'Admin' });
+            notificationService.notifyUser(
+              champ._id.toString(),
+              'New Assignment Received! ♻️',
+              `An Admin has manually assigned you Job #${orderId.slice(-6).toUpperCase()}. Please check details and accept.`,
+              'new_job_assigned_manual',
+              { orderId: order._id }
+            );
+        } catch (sockError) {
+            console.error('[orders] Socket emit error (manual assign):', sockError);
+        }
+
+        // Notify customer that a champ is assigned
+        try {
+            notificationService.notifyUser(
+              order.customerId.toString(),
+              'Champion Assigned! ♻️',
+              `${champ.name} has been assigned for your pickup. They will arrive at the scheduled time.`,
+              'champ_assigned_customer',
+              { orderId: order._id, champName: champ.name }
+            );
+        } catch (custError) {
+            console.error('[orders] Customer notify error (manual assign):', custError);
+        }
+    } catch (sideEffectError) {
+        console.error('[orders] assignment side effects failed but DB updated:', sideEffectError);
+    }
 
     res.json({ message: 'Order manually reassigned successfully', assignedTo: champ.name });
   } catch (error) {
@@ -849,94 +892,6 @@ router.get('/admin/:orderId/engagement', authenticate, authorize('admin'), async
   }
 });
 
-
-/**
- * POST /admin/orders/:orderId/assign
- * Assign a Scrap Champ to an order (Story 8)
- */
-router.post('/admin/:orderId/assign', authenticate, authorize('admin'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { orderId } = req.params;
-    const { scrapChampId } = req.body;
-
-    const db = getDb();
-    const ordersCol = db.collection('orders');
-
-    // Case: Unassign
-    if (!scrapChampId) {
-      await ordersCol.updateOne(
-        { _id: new ObjectId(orderId) },
-        { 
-          $set: { 
-            assignedScrapChampId: null,
-            status: 'Requested',
-            updatedAt: new Date()
-          } 
-        }
-      );
-      res.json({ message: 'Assignment cleared' });
-      return;
-    }
-
-    const usersCol = db.collection('users');
-    const champ = await usersCol.findOne({ _id: new ObjectId(scrapChampId), role: 'scrapChamp' });
-
-    if (!champ) {
-      res.status(404).json({ error: 'Scrap Champion not found' });
-      return;
-    }
-
-    const result = await ordersCol.updateOne(
-      { _id: new ObjectId(orderId) },
-      { 
-        $set: { 
-          assignedScrapChampId: new ObjectId(scrapChampId),
-          status: 'Assigned',
-          updatedAt: new Date()
-        } 
-      }
-    );
-
-    if (result.matchedCount === 0) {
-      res.status(404).json({ error: 'Order not found' });
-      return;
-    }
-
-    // Story 8: Trigger SMS to Champ with decision link
-    const area = champ.serviceArea || 'Your Area';
-    await smsService.sendAssignmentNotification(champ.mobileNumber, orderId, area);
-
-    // Track SMS Event
-    await db.collection('smsEvents').insertOne({
-      orderId: new ObjectId(orderId),
-      userId: new ObjectId(scrapChampId),
-      mobileNumber: champ.mobileNumber,
-      eventType: 'AllocationAssigned',
-      status: 'Sent',
-      meta: { area },
-      createdAt: new Date(),
-    });
-
-    // Emit real-time notification to the specific Champ
-    try {
-      console.log(`[socket] Emitting 'new_job_assigned' for order ${orderId} to user_${scrapChampId}`);
-      notificationService.notifyUser(
-        scrapChampId,
-        'New assignment! ♻️',
-        'You have been assigned a new pickup!',
-        'new_job_assigned',
-        { orderId }
-      );
-    } catch (e) {
-      console.error('[socket] Failed to emit new_job_assigned', e);
-    }
-
-    res.json({ message: 'Order assigned and SMS sent' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to assign order' });
-  }
-});
-
 // --- SCRAP CHAMP ENDPOINTS ---
 
 /**
@@ -996,13 +951,13 @@ router.get('/scrap-champ/stats', authenticate, authorize('scrapChamp'), async (r
     const pincodeMatch = (champ?.serviceArea || '').match(/(\d{6})/);
     const champPincode = pincodeMatch ? pincodeMatch[1] : null;
 
-    const [myJobsCount, availableJobsCount] = await Promise.all([
+    const [myJobs, availableJobs, declined, feedbackDocs] = await Promise.all([
       ordersCol.countDocuments({ 
         assignedScrapChampId: champId,
         status: { $in: ['Assigned', 'Accepted'] }
       }),
       champPincode ? ordersCol.countDocuments({
-        assignedScrapChampId: null,
+        assignedScrapChampId: { $ne: champId },
         status: 'Requested',
         declinedChampIds: { $ne: champId },
         createdAt: { $gt: new Date(Date.now() - 30 * 60 * 1000) },
@@ -1010,13 +965,21 @@ router.get('/scrap-champ/stats', authenticate, authorize('scrapChamp'), async (r
           { exactAddress: { $regex: champPincode } },
           { generalArea: { $regex: champPincode } }
         ]
-      }) : Promise.resolve(0)
+      }) : Promise.resolve(0),
+      ordersCol.countDocuments({ declinedChampIds: champId }),
+      db.collection('feedback').find({ champId }).toArray()
     ]);
 
+    // Calculate avg rating
+    const ratings = (feedbackDocs as any[]).filter(f => f.rating).map(f => f.rating);
+    const avgRating = ratings.length > 0 ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : '--';
+
     res.json({ 
-      myJobs: myJobsCount, 
-      availableJobs: availableJobsCount, 
-      total: myJobsCount + availableJobsCount 
+      myJobs, 
+      availableJobs, 
+      declined,
+      avgRating,
+      total: myJobs + availableJobs 
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch champion stats' });
@@ -1089,9 +1052,27 @@ router.get('/scrap-champ/history', authenticate, authorize('scrapChamp'), async 
     const history = await ordersCol.aggregate([
       { 
         $match: { 
-          assignedScrapChampId: new ObjectId(req.user!.userId),
-          status: { $in: ['Accepted', 'Completed', 'Problem'] } 
+          $or: [
+            { assignedScrapChampId: new ObjectId(req.user!.userId) },
+            { declinedChampIds: new ObjectId(req.user!.userId) }
+          ]
         } 
+      },
+      {
+        $addFields: {
+          status: {
+            $cond: {
+              if: { 
+                $and: [
+                  { $ne: ["$assignedScrapChampId", new ObjectId(req.user!.userId)] },
+                  { $in: [new ObjectId(req.user!.userId), { $ifNull: ["$declinedChampIds", []] }] }
+                ]
+              },
+              then: "Declined",
+              else: "$status"
+            }
+          }
+        }
       },
       {
         $lookup: {
@@ -1129,6 +1110,11 @@ router.get('/scrap-champ/:orderId', authenticate, authorize('scrapChamp'), async
     const { orderId } = req.params;
     const db = getDb();
     const ordersCol = db.collection('orders');
+
+    if (!ObjectId.isValid(orderId)) {
+      res.status(400).json({ error: 'Invalid order ID format' });
+      return;
+    }
 
     const order = await ordersCol.findOne({ _id: new ObjectId(orderId) });
 
@@ -1170,15 +1156,18 @@ router.get('/scrap-champ/:orderId', authenticate, authorize('scrapChamp'), async
       }
     }
 
-    const filteredOrder = { ...order };
+    const filteredOrder = { ...order } as any;
+    filteredOrder.hasDeclined = order.declinedChampIds?.some((id: any) => id.toString() === req.user!.userId);
+
     if (order.status !== 'Accepted' && order.status !== 'Completed') {
       delete (filteredOrder as any).exactAddress;
       (filteredOrder as any).isAddressHidden = true;
     }
 
     res.json(filteredOrder);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch order details' });
+  } catch (error: any) {
+    console.error(`[orders] Scrap-champ detail error (ID: ${req.params.orderId}):`, error);
+    res.status(500).json({ error: `Failed to fetch order details: ${error.message}` });
   }
 });
 
@@ -1458,6 +1447,17 @@ router.patch('/admin/:orderId/status', authenticate, authorize('admin'), async (
       { orderId, status }
     );
 
+    // Notify Champ if assigned
+    if (order.assignedScrapChampId) {
+      notificationService.notifyUser(
+        order.assignedScrapChampId.toString(),
+        'Job Status Updated',
+        `An admin has updated the status of order #${orderId.slice(-6).toUpperCase()} to: ${status}.`,
+        'order_status_update_champ',
+        { orderId, status }
+      );
+    }
+
     return res.json({ message: 'Status updated successfully', status });
   } catch (error) {
     console.error('[admin-status-update] Error:', error);
@@ -1519,6 +1519,23 @@ router.post('/:orderId/retry', authenticate, authorize('customer'), async (req: 
     broadcastToChamps(orderId.toString(), addressForMatching).catch(err => {
       console.error('[broadcast] Background failure during retry:', err);
     });
+
+    // Notify Customer
+    notificationService.notifyUser(
+      userId,
+      'Retry Initiated ♻️',
+      'We have re-broadcasted your pickup request to nearby Scrap Champions.',
+      'order_retried_customer',
+      { orderId }
+    );
+
+    // Notify Admin
+    notificationService.notifyAdmins(
+      'Pickup Retried',
+      `Customer ${customer?.name || 'User'} has retried their expired pickup request.`,
+      'order_retried_admin',
+      { orderId }
+    );
 
     res.json({ message: 'Order re-broadcasted successfully' });
   } catch (error) {
@@ -1589,6 +1606,24 @@ router.delete('/:orderId', authenticate, authorize('customer'), async (req: Auth
         'pickup_cancelled',
         { orderId, area: order.generalArea }
       );
+      notificationService.notifyUser(
+        userId,
+        'Pickup Cancelled',
+        'Your pickup request has been successfully cancelled.',
+        'pickup_cancelled',
+        { orderId }
+      );
+
+      // Notify Champ if assigned
+      if (order.assignedScrapChampId) {
+        notificationService.notifyUser(
+          order.assignedScrapChampId.toString(),
+          'Pickup Cancelled 🚨',
+          `Job #${orderId.slice(-6).toUpperCase()} has been cancelled by the customer.`,
+          'pickup_cancelled_champ',
+          { orderId }
+        );
+      }
     } catch (e: any) {
       console.error('[socket] Failed to emit pickup_cancelled', e.message);
     }

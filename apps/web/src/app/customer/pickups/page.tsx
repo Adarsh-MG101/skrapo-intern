@@ -9,8 +9,7 @@ import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/common/Toast';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
-import { Recycle, Trash2, MapPin, ArrowRight, ListTodo, X, ShieldCheck } from 'lucide-react';
-import { API_URL } from '../../config/env';
+import { Recycle, Trash2, MapPin, ListTodo, X, ShieldCheck } from 'lucide-react';
 
 interface Order {
   _id: string;
@@ -25,7 +24,7 @@ interface Order {
 }
 
 export default function CustomerPickupsPage() {
-  const { token } = useAuth();
+  const { token, apiFetch } = useAuth();
   const { socket } = useSocket();
   const { showToast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -45,12 +44,8 @@ export default function CustomerPickupsPage() {
     if (!cancelModal.orderId) return;
     setProcessing(true);
     try {
-      const res = await fetch(`${API_URL}/orders/${cancelModal.orderId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
+      const res = await apiFetch(`/orders/${cancelModal.orderId}`, {
+        method: 'DELETE'
       });
 
       if (res.ok) {
@@ -70,12 +65,8 @@ export default function CustomerPickupsPage() {
 
   const handleRetry = async (orderId: string) => {
     try {
-      const res = await fetch(`${API_URL}/orders/${orderId}/retry`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include'
+      const res = await apiFetch(`/orders/${orderId}/retry`, {
+        method: 'POST'
       });
 
       if (res.ok) {
@@ -94,11 +85,7 @@ export default function CustomerPickupsPage() {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const res = await fetch(`${API_URL}/orders/history`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          credentials: 'include',
+        const res = await apiFetch('/orders/history', {
           cache: 'no-store'
         });
         const data = await res.json();
@@ -124,9 +111,7 @@ export default function CustomerPickupsPage() {
     const handleRefresh = () => {
       const fetchOrders = async () => {
         try {
-          const res = await fetch(`${API_URL}/orders/history`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-            credentials: 'include',
+          const res = await apiFetch('/orders/history', {
             cache: 'no-store'
           });
           const data = await res.json();
@@ -188,12 +173,7 @@ export default function CustomerPickupsPage() {
           ) : (
             <div className="grid gap-2">
               {orders.map((order) => (
-                <div key={order._id} className={`bg-white rounded-xl px-4 py-3 sm:px-6 shadow-sm border ${order.status === 'Expired' ? 'border-amber-200 bg-amber-50/10' : 'border-gray-100'} hover:shadow-md hover:border-brand-100 transition-all animate-fade-in group flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 relative overflow-hidden`}>
-                  {/* Status Badge - PC (pinned far right) */}
-                  <div className="hidden sm:block absolute right-6 top-1/2 -translate-y-1/2">
-                    <StatusBadge status={order.status} />
-                  </div>
-
+                <div key={order._id} className={`bg-white rounded-xl px-4 py-3 sm:px-6 shadow-sm border ${order.status === 'Expired' ? 'border-amber-200 bg-amber-50/10' : 'border-gray-100'} hover:shadow-md hover:border-brand-100 transition-all animate-fade-in group flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0 relative overflow-hidden`}>
                   {/* Expired Flag Indicator */}
                   {order.status === 'Expired' && (
                     <div className="absolute top-0 right-0 bg-brand-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-lg shadow-sm z-10 animate-pulse">
@@ -201,16 +181,17 @@ export default function CustomerPickupsPage() {
                     </div>
                   )}
 
-                  <div className="flex-1 min-w-0 flex items-center gap-3.5 sm:pr-32">
-                     <div className="w-9 h-9 bg-brand-50 rounded-lg flex items-center justify-center text-brand-600 flex-shrink-0">
-                        <Recycle size={18} />
+                  {/* Left: Info */}
+                  <div className="flex-1 min-w-0 flex items-center gap-4">
+                     <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 flex-shrink-0">
+                        <Recycle size={20} />
                      </div>
                      <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-black text-gray-900 truncate">
+                        <h3 className="text-sm sm:text-base font-black text-gray-900 truncate">
                           {order.scrapTypes.join(', ')}
                         </h3>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
-                           <div className="flex items-center gap-1 min-w-0 max-w-full sm:max-w-[300px]">
+                           <div className="flex items-center gap-1.5 min-w-0">
                              <MapPin size={10} className="text-gray-300 flex-shrink-0" />
                              <p className="text-[11px] text-gray-400 font-medium truncate" title={order.exactAddress}>
                                {order.exactAddress}
@@ -225,46 +206,51 @@ export default function CustomerPickupsPage() {
                      </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-5 sm:pr-32">
-                     {/* Status Badge - Phone (bottom left) */}
-                     <div className="sm:hidden flex-shrink-0">
+                  {/* Right: Status & Actions */}
+                  <div className="flex items-center justify-center sm:justify-end gap-4 sm:gap-6 flex-wrap sm:flex-nowrap border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-50">
+                     <div className="flex-shrink-0">
                         <StatusBadge status={order.status} />
                      </div>
-                     <div className="flex items-center gap-4 flex-shrink-0">
+                     
+                     <div className="flex items-center gap-2 flex-shrink-0">
                         {order.status === 'Completed' && (
-                          order.hasFeedback ? (
-                            <span className="text-[10px] font-black text-emerald-600 flex items-center gap-1 uppercase tracking-widest opacity-60">
-                              <ShieldCheck size={12} />
-                              <span className="hidden sm:inline">Reviewed</span>
-                            </span>
-                          ) : (
-                            <Link href={`/customer/feedback/${order._id}`}>
-                              <button className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest">
-                                Rate
-                              </button>
-                            </Link>
-                          )
+                           order.hasFeedback ? (
+                             <div className="bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1">
+                               <ShieldCheck size={12} />
+                               <span className="text-[10px] font-black uppercase tracking-widest">Reviewed</span>
+                             </div>
+                           ) : (
+                             <Link href={`/customer/feedback/${order._id}`}>
+                               <Button variant="success" size="sm" className="rounded-xl px-4 py-1.5 h-auto text-[10px] uppercase tracking-widest leading-none">
+                                 Rate
+                               </Button>
+                             </Link>
+                           )
                         )}
-                         {order.status === 'Expired' && (
-                            <button 
-                              onClick={() => handleRetry(order._id)}
-                              className="text-[11px] font-black text-emerald-600 hover:text-emerald-700 transition-colors uppercase tracking-widest"
-                            >
-                              Retry
-                            </button>
-                         )}
+                        {order.status === 'Expired' && (
+                           <Button 
+                             variant="warning" 
+                             size="sm" 
+                             onClick={() => handleRetry(order._id)}
+                             className="rounded-xl px-4 py-1.5 h-auto text-[10px] uppercase tracking-widest leading-none"
+                           >
+                             Retry
+                           </Button>
+                        )}
                         <Link href={`/customer/pickups/${order._id}`}>
-                           <button className="text-[11px] font-black text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors uppercase tracking-widest">
-                            Details <ArrowRight size={14} />
-                           </button>
+                           <Button variant="secondary" size="sm" className="rounded-xl px-4 py-1.5 h-auto text-[10px] uppercase tracking-widest leading-none border border-brand-200">
+                             Details
+                           </Button>
                         </Link>
                         {!['Accepted', 'Completed', 'Cancelled', 'Expired'].includes(order.status) && (
-                           <button 
+                           <Button 
+                             variant="ghost" 
+                             size="sm" 
                              onClick={() => triggerCancel(order._id, order.status)}
-                             className="text-[11px] font-black text-gray-300 hover:text-red-500 transition-colors uppercase tracking-widest"
+                             className="rounded-xl px-4 py-1.5 h-auto text-[10px] uppercase tracking-widest leading-none text-gray-400 hover:text-red-500 hover:bg-red-50"
                            >
                              Cancel
-                           </button>
+                           </Button>
                         )}
                      </div>
                   </div>

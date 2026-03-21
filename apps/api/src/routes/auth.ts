@@ -143,6 +143,17 @@ router.post('/otp/verify', async (req: Request, res: Response) => {
         role: user.role,
         defaultRoute: getDefaultRoute(user.role),
         pickupAddress: user.pickupAddress,
+        serviceArea: user.serviceArea,
+        serviceRadiusKm: user.serviceRadiusKm,
+        panNumber: user.panNumber,
+        panCardPic: user.panCardPic,
+        aadharNumber: user.aadharNumber,
+        aadharCardPic: user.aadharCardPic,
+        gstNumber: user.gstNumber,
+        gstCardPic: user.gstCardPic,
+        profilePhoto: user.profilePhoto,
+        cardNumber: user.cardNumber,
+        isActive: user.isActive !== false,
       },
     });
   } catch (error: unknown) {
@@ -155,7 +166,7 @@ router.post('/register', async (req: Request, res: Response) => {
   try {
     const { 
       name, email, password, mobileNumber, role: roleCode, googleId, pickupAddress, serviceArea, serviceRadiusKm,
-      panNumber, panCardPic, aadharNumber, aadharCardPic, gstNumber, gstCardPic, profilePhoto
+      panNumber, panCardPic, aadharNumber, aadharCardPic, gstNumber, gstCardPic, profilePhoto, cardNumber
     } = req.body;
 
     if (!name || !mobileNumber || !roleCode) {
@@ -260,6 +271,7 @@ router.post('/register', async (req: Request, res: Response) => {
     if (gstNumber) userDoc.gstNumber = gstNumber;
     if (gstCardPic) userDoc.gstCardPic = gstCardPic;
     if (profilePhoto) userDoc.profilePhoto = profilePhoto;
+    if (cardNumber) userDoc.cardNumber = cardNumber;
 
     const userResult = await usersCol.insertOne(userDoc);
 
@@ -296,6 +308,17 @@ router.post('/register', async (req: Request, res: Response) => {
         role: roleCode,
         defaultRoute: getDefaultRoute(roleCode),
         pickupAddress,
+        serviceArea,
+        serviceRadiusKm,
+        panNumber,
+        panCardPic,
+        aadharNumber,
+        aadharCardPic,
+        gstNumber,
+        gstCardPic,
+        profilePhoto,
+        cardNumber,
+        isActive: true,
       },
     });
   } catch (error: unknown) {
@@ -376,9 +399,21 @@ router.post('/google/login', async (req: Request, res: Response) => {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
+        mobileNumber: user.mobileNumber,
         role: user.role,
         defaultRoute: getDefaultRoute(user.role),
         pickupAddress: user.pickupAddress,
+        serviceArea: user.serviceArea,
+        serviceRadiusKm: user.serviceRadiusKm,
+        panNumber: user.panNumber,
+        panCardPic: user.panCardPic,
+        aadharNumber: user.aadharNumber,
+        aadharCardPic: user.aadharCardPic,
+        gstNumber: user.gstNumber,
+        gstCardPic: user.gstCardPic,
+        profilePhoto: user.profilePhoto,
+        cardNumber: user.cardNumber,
+        isActive: user.isActive !== false,
       },
     });
   } catch (error: any) {
@@ -431,9 +466,20 @@ router.post('/login', async (req: Request, res: Response) => {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
+        mobileNumber: user.mobileNumber,
         role: roleCode,
         defaultRoute: getDefaultRoute(roleCode),
         pickupAddress: user.pickupAddress,
+        serviceArea: user.serviceArea,
+        serviceRadiusKm: user.serviceRadiusKm,
+        panNumber: user.panNumber,
+        panCardPic: user.panCardPic,
+        aadharNumber: user.aadharNumber,
+        aadharCardPic: user.aadharCardPic,
+        gstNumber: user.gstNumber,
+        gstCardPic: user.gstCardPic,
+        profilePhoto: user.profilePhoto,
+        cardNumber: user.cardNumber,
         isActive: user.isActive !== false,
       },
     });
@@ -479,10 +525,59 @@ router.get('/me', authenticate, async (req: AuthenticatedRequest, res: Response)
         role: roleCode,
         defaultRoute: getDefaultRoute(roleCode),
         pickupAddress: user.pickupAddress,
+        serviceArea: user.serviceArea,
+        serviceRadiusKm: user.serviceRadiusKm,
+        panNumber: user.panNumber,
+        panCardPic: user.panCardPic,
+        aadharNumber: user.aadharNumber,
+        aadharCardPic: user.aadharCardPic,
+        gstNumber: user.gstNumber,
+        gstCardPic: user.gstCardPic,
+        profilePhoto: user.profilePhoto,
+        cardNumber: user.cardNumber,
         isActive: user.isActive !== false,
       },
     });
   } catch (error: unknown) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.patch('/profile', authenticate, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const db = getDb();
+    const updateData: any = { updatedAt: new Date() };
+
+    // Whitelist allowed fields
+    const allowedFields = [
+      'name', 'email', 'pickupAddress', 'serviceArea', 'serviceRadiusKm', 
+      'panNumber', 'panCardPic', 'aadharNumber', 'aadharCardPic', 'gstNumber', 'gstCardPic', 'profilePhoto', 'cardNumber'
+    ];
+
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updateData[field] = field === 'serviceRadiusKm' ? Number(req.body[field]) : req.body[field];
+      }
+    }
+
+    const result = await db.collection('users').updateOne(
+      { _id: new ObjectId(req.user.userId) },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    res.json({ message: 'Profile updated successfully' });
+  } catch (error: any) {
+    console.error('[auth/profile] error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

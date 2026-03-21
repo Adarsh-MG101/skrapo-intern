@@ -119,7 +119,7 @@ export default function AdminFeedbackPage() {
                         </div>
                         <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mb-1">Champion Assigned</p>
                         <h4 className="text-lg font-black text-gray-900 tracking-tight mb-6">{f.scrapChamp?.name || 'Unknown Partner'}</h4>
-                        <Link href={`/admin/orders/${f.orderId}`} className="w-full">
+                        <Link href={`/admin/history/${f.orderId}`} className="w-full">
                            <div className="py-3 bg-white rounded-2xl border border-gray-200 text-[11px] font-black text-gray-500 uppercase tracking-widest hover:text-brand-600 hover:border-brand-600 hover:shadow-lg hover:shadow-brand-500/5 transition-all text-center flex items-center justify-center gap-2">
                               View Execution <ArrowRight size={14} />
                            </div>

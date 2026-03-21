@@ -6,7 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 import ProtectedRoute from '../../../components/common/ProtectedRoute';
 import { Button, Input, Loader } from '../../../components/common';
 import { useToast } from '../../../components/common/Toast';
-import { Star, Recycle, AlertCircle, MessageSquare, ArrowRight, UserCircle, Weight, Coins, ShieldCheck, Clock, UserMinus } from 'lucide-react';
+import { Star, Recycle, AlertCircle, MessageSquare, ArrowRight, ArrowLeft, UserCircle, Weight, Coins, ShieldCheck, Clock, UserMinus } from 'lucide-react';
 
 export default function CustomerFeedbackPage() {
   return (
@@ -121,6 +121,15 @@ function FeedbackContent() {
   return (
     <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-3 sm:p-6 lg:p-10">
       <div className="max-w-2xl w-full bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-12 shadow-2xl shadow-brand-500/10 border border-gray-100 animate-fade-in text-center relative overflow-hidden">
+        {/* Back Button */}
+        <button 
+          onClick={() => router.back()}
+          className="absolute top-6 left-6 p-2 rounded-xl hover:bg-gray-50 text-gray-400 hover:text-brand-600 transition-all z-20 flex items-center gap-2 text-xs font-black uppercase tracking-widest"
+        >
+          <ArrowLeft size={18} />
+          <span className="hidden sm:inline">Back</span>
+        </button>
+
         <div className="absolute -left-10 -top-10 opacity-5">
            <Recycle size={200} />
         </div>
@@ -165,7 +174,7 @@ function FeedbackContent() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+                <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                    <Weight size={14} className="text-brand-500" /> Exact Weight (kg)
                 </label>
                 <Input 
@@ -176,7 +185,7 @@ function FeedbackContent() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="block text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+                <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                    <Coins size={14} className="text-brand-500" /> Amount Paid (₹)
                 </label>
                 <Input 
@@ -189,7 +198,7 @@ function FeedbackContent() {
           </div>
 
           <div className="space-y-4">
-              <label className="block text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+              <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                  <UserCircle size={16} className="text-brand-500" /> Pickup Experience
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -217,7 +226,7 @@ function FeedbackContent() {
           </div>
 
           <div className="space-y-3">
-            <label className="block text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
+            <label className="text-sm font-bold text-gray-700 ml-1 flex items-center gap-2">
                <MessageSquare size={16} className="text-brand-500" /> Observations / Compliments
             </label>
             <textarea

@@ -14,6 +14,14 @@ interface User {
   serviceArea?: string;
   serviceRadiusKm?: number;
   isActive?: boolean;
+  panNumber?: string;
+  panCardPic?: string;
+  aadharNumber?: string;
+  aadharCardPic?: string;
+  gstNumber?: string;
+  gstCardPic?: string;
+  profilePhoto?: string;
+  cardNumber?: string;
 }
 
 interface AuthContextType {
@@ -35,8 +43,9 @@ interface AuthContextType {
   requestOTP: (mobileNumber: string) => Promise<{ success: boolean; error?: string }>;
   verifyOTP: (mobileNumber: string, otp: string) => Promise<{ success: boolean; error?: string; defaultRoute?: string; isNewUser?: boolean }>;
   googleLogin: (credential: string) => Promise<{ success: boolean; error?: string; defaultRoute?: string; needsPhone?: boolean; googleData?: { googleId: string; email: string; name: string; picture?: string } }>;
-  logout: () => void;
+  logout: () => Promise<void>;
   apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response>;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -68,11 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const headers: Record<string, string> = {};
-        
-        // MOBILE FIX: Only send Authorization header if the saved token is a real JWT.
-        // Sending 'session_active' or other placeholders causes the backend's jwt.verify()
-        // to fail with 401. On PC, the cookie fallback covers this. On mobile browsers, 
-        // cross-origin cookies are often blocked, so the header is the ONLY auth mechanism.
         if (isValidJWT(savedToken)) {
           headers['Authorization'] = `Bearer ${savedToken}`;
         }
@@ -87,7 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(data.user);
           localStorage.setItem('skrapo_user', JSON.stringify(data.user));
           
-          // Always store the fresh JWT from the server
           if (data.token && isValidJWT(data.token)) {
             setToken(data.token);
             localStorage.setItem('skrapo_token', data.token);
@@ -95,28 +98,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setToken('session_active'); 
           }
         } else if (res.status === 401) {
-          // 401 = definitely invalid session. But only clear if we actually sent credentials.
-          // If we had NO valid token AND no cookie was sent, the 401 is expected — 
-          // don't clear a localStorage session that might just need a re-login with /auth/me.
           if (isValidJWT(savedToken) || !savedToken) {
-            // We sent a real token and it was rejected, OR we never had a session
             console.warn('[Auth] Session invalid (401), clearing...');
             localStorage.removeItem('skrapo_user');
             localStorage.removeItem('skrapo_token');
             setUser(null);
             setToken(null);
-          } else {
-            // We had a non-JWT token (like 'session_active') and the cookie wasn't sent.
-            // This is the mobile edge case. Keep the local session alive — 
-            // the user is likely still logged in, just the cookie wasn't sent.
-            // The individual page's apiFetch calls will use the real token once it's refreshed.
-            console.warn('[Auth] 401 but no valid JWT was sent (likely mobile cookie issue). Keeping local session.');
           }
         }
-        // For 500, network errors, etc — do nothing, keep the local session
       } catch (err) {
         console.error('[Auth] Session check failed (network):', err);
-        // Network error: keep local session alive (offline/slow mobile)
       } finally {
         setIsLoading(false);
       }
@@ -135,10 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        return { success: false, error: data.error || 'Login failed' };
-      }
+      if (!res.ok) return { success: false, error: data.error || 'Login failed' };
 
       localStorage.setItem('skrapo_user', JSON.stringify(data.user));
       const newToken = data.token || 'session_active';
@@ -152,17 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (payload: {
-    name: string;
-    email?: string;
-    mobileNumber: string;
-    password?: string;
-    role: string;
-    googleId?: string;
-    pickupAddress?: string;
-    serviceArea?: string;
-    serviceRadiusKm?: number;
-  }) => {
+  const register = useCallback(async (payload: any) => {
     try {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
@@ -172,10 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const data = await res.json();
-
-      if (!res.ok) {
-        return { success: false, error: data.error || 'Registration failed' };
-      }
+      if (!res.ok) return { success: false, error: data.error || 'Registration failed' };
 
       localStorage.setItem('skrapo_user', JSON.stringify(data.user));
       const newToken = data.token || 'session_active';
@@ -213,12 +188,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: 'include',
       });
       const data = await res.json();
-
       if (!res.ok) return { success: false, error: data.error };
 
-      if (data.isNewUser) {
-        return { success: true, isNewUser: true };
-      }
+      if (data.isNewUser) return { success: true, isNewUser: true };
 
       localStorage.setItem('skrapo_user', JSON.stringify(data.user));
       const newToken = data.token || 'session_active';
@@ -240,7 +212,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: 'include',
       });
       const data = await res.json();
-
       if (!res.ok) return { success: false, error: data.error };
 
       if (data.needsPhone) {
@@ -267,10 +238,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    // Notify server to clear the cookie
-    fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' })
-      .catch(err => console.error('Logout error:', err));
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${API_URL}/auth/logout`, { 
+        method: 'POST', 
+        credentials: 'include',
+        keepalive: true 
+      });
+    } catch (err) {
+      console.error('Logout server call failed:', err);
+    }
       
     localStorage.removeItem('skrapo_user');
     localStorage.removeItem('skrapo_token');
@@ -284,7 +261,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...options.headers,
     } as any;
 
-    // Only send Authorization header with real JWTs
     if (isValidJWT(token)) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -296,17 +272,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: 'include',
       });
 
-      if (res.status === 401) {
-        // Only auto-logout if we actually sent valid credentials and they were rejected.
-        // If no valid JWT was sent (and cookie wasn't sent either on mobile), 
-        // the 401 is a cookie delivery failure, not a real session expiry.
-        if (isValidJWT(token)) {
-          console.warn(`[API] 401 for ${endpoint} with valid JWT. Session expired, logging out.`);
-          logout();
-        } else {
-          console.warn(`[API] 401 for ${endpoint} but no valid JWT was sent. Skipping auto-logout.`);
-        }
-        return res; 
+      if (res.status === 401 && isValidJWT(token)) {
+        console.warn(`[API] 401 for ${endpoint} with valid JWT. Session expired, logging out.`);
+        logout();
       }
 
       return res;
@@ -314,6 +282,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
   }, [token, logout]);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await apiFetch('/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        const updatedUser = data.user;
+        setUser(updatedUser);
+        localStorage.setItem('skrapo_user', JSON.stringify(updatedUser));
+      }
+    } catch (err) {
+      console.error('Failed to refresh user', err);
+    }
+  }, [apiFetch]);
 
   return (
     <AuthContext.Provider
@@ -328,6 +310,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         googleLogin,
         logout,
         apiFetch,
+        refreshUser,
         isAuthenticated: !!token && !!user,
       }}
     >

@@ -1,4 +1,4 @@
-﻿import '../main.css';
+import '../main.css';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './components/common/Toast';
 import { SocketProvider } from './context/SocketContext';
@@ -10,8 +10,8 @@ import { FCMInitializer } from '../components/common/FCMInitializer';
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
 export const metadata = {
-  title: 'Recycle My Bin - Smart Scrap Pickup Scheduling',
-  description: 'Recycle My Bin connects you with scrap champions for hassle-free doorstep scrap collection. Schedule pickups, track orders, and contribute to a greener future.',
+  title: 'Recyclemybin - Smart Scrap Pickup Scheduling',
+  description: 'Recyclemybin connects you with scrap champions for hassle-free doorstep scrap collection. Schedule pickups, track orders, and contribute to a greener future.',
   icons: {
     icon: '/favicon.ico',
   },

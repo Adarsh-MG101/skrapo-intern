@@ -8,7 +8,7 @@ import { StatusBadge, Loader, Button } from '../../components/common';
 import { useToast } from '../../components/common/Toast';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
-import { User, MapPin, Inbox, Zap, ArrowRight, Radio, Ban, Phone, ChevronDown } from 'lucide-react';
+import { User, MapPin, Inbox, Zap, ArrowRight, Radio, Ban, Phone, ChevronDown, Clock } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
 
 interface Order {
@@ -166,6 +166,8 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const [statusFilter, setStatusFilter] = useState('All');
+
   const fetchData = async () => {
     try {
       const res = await apiFetch('/orders/admin');
@@ -173,9 +175,10 @@ export default function AdminOrdersPage() {
         const allOrders: Order[] = await res.json();
         const liveOrders = allOrders.filter(o => {
           const isExpired = o.status === 'Requested' && (new Date(o.createdAt).getTime() + 30 * 60 * 1000 <= Date.now());
-          return !isExpired && ['Requested', 'Assigned', 'Accepted', 'Arrived', 'Picking', 'Problem'].includes(o.status);
+          return !isExpired && ['Requested', 'Assigned', 'Accepted', 'Arrived', 'Arriving', 'Picking', 'Problem'].includes(o.status);
         });
-        setOrders(liveOrders);
+         const sortedLiveOrders = liveOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+         setOrders(sortedLiveOrders);
       }
     } catch (err) {
       console.error('Fetch error:', err);
@@ -183,6 +186,13 @@ export default function AdminOrdersPage() {
       setLoading(false);
     }
   };
+
+  const filteredOrders = orders.filter(o => {
+    if (statusFilter === 'Active') return ['Assigned', 'Accepted', 'Arrived', 'Arriving', 'Picking'].includes(o.status);
+    if (statusFilter === 'Requested') return o.status === 'Requested';
+    if (statusFilter === 'Problem') return o.status === 'Problem';
+    return true; // 'All'
+  });
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -225,115 +235,134 @@ export default function AdminOrdersPage() {
               </h1>
               <p className="text-gray-500 font-medium">Monitor real-time pickup broadcasts and champion engagement.</p>
             </div>
-          </div>
 
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader size="lg" />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Mobile View: Cards */}
-              <div className="grid grid-cols-1 gap-6 md:hidden">
-                {orders.length === 0 ? (
-                  <div className="bg-white rounded-[2rem] p-12 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
-                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
-                      <Inbox size={32} />
-                    </div>
-                    <p className="text-gray-400 font-black uppercase tracking-widest text-[10px]">Queue Clear</p>
-                    <p className="text-gray-900 font-bold mt-1">No pickups in queue</p>
-                  </div>
-                ) : (
-                  orders.map((order) => (
-                    <div key={order._id} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm space-y-4">
-                      <div className="flex justify-between items-start">
-                        <Link href={`/admin/orders/${order._id}`} className="flex-1">
-                          <p className="font-black text-gray-900 leading-tight mb-1">{order.scrapTypes.join(', ')}</p>
-                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-                             {new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+             <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm gap-1 overflow-x-auto no-scrollbar w-full sm:w-auto">
+                {['All', 'Requested', 'Active', 'Problem'].map((f) => (
+                   <button
+                     key={f}
+                     onClick={() => setStatusFilter(f)}
+                     className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest transition-all whitespace-nowrap ${
+                       statusFilter === f 
+                         ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/20' 
+                         : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                     }`}
+                   >
+                     {f}
+                   </button>
+                ))}
+             </div>
+           </div>
+
+           {loading ? (
+             <div className="flex justify-center py-20">
+               <Loader size="lg" />
+             </div>
+           ) : (
+             <div className="space-y-6">
+               {/* Mobile View: Cards */}
+               <div className="grid grid-cols-1 gap-4 md:hidden">
+                 {filteredOrders.length === 0 ? (
+                   <div className="bg-white rounded-[2.5rem] p-12 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
+                     <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
+                       <Inbox size={32} />
+                     </div>
+                     <p className="text-gray-400 font-black uppercase tracking-widest text-[10px]">Queue Clear</p>
+                     <p className="text-gray-900 font-bold mt-1">No pickups in queue</p>
+                     {statusFilter !== 'All' && (
+                       <button onClick={() => setStatusFilter('All')} className="mt-4 text-[10px] font-black text-brand-500 uppercase tracking-widest underline">Show All Orders</button>
+                     )}
+                   </div>
+                 ) : (
+                   filteredOrders.map((order) => (
+                    <div key={order._id} className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm">
+                      <div className="flex justify-between items-start mb-4">
+                        <Link href={`/admin/orders/${order._id}`} className="flex-1 min-w-0 pr-4">
+                          <p className="font-black text-gray-900 leading-tight mb-1 truncate">{order.scrapTypes.join(', ')}</p>
+                          <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
+                             <Clock size={10} className="text-brand-500" />
+                             {new Date(order.scheduledAt).toLocaleDateString()} · {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
                         </Link>
-                        <StatusBadge status={order.status} />
+                        <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
                       </div>
 
-                      <div className="flex items-center gap-3 py-3 border-y border-gray-50">
-                         <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold border border-white"><User size={20} /></div>
-                          <div>
-                             <p className="text-xs font-black text-gray-900">{order.customerDetails?.name || 'Deleted User'}</p>
-                             <p className="text-[10px] font-bold text-brand-600">{order.customerDetails?.mobileNumber || 'N/A'}</p>
-                          </div>
+                      <div className="grid grid-cols-2 gap-3 py-4 border-y border-gray-50">
+                        <div className="flex items-center gap-2">
+                           <div className="w-8 h-8 bg-brand-50 rounded-lg flex items-center justify-center text-brand-600 border border-brand-100 shrink-0"><User size={14} /></div>
+                           <div className="min-w-0">
+                              <p className="text-[10px] font-black text-gray-900 truncate">{order.customerDetails?.name || 'Deleted'}</p>
+                              <p className="text-[9px] font-bold text-gray-400 truncate">{order.customerDetails?.mobileNumber || 'N/A'}</p>
+                           </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 border border-gray-200 shrink-0"><MapPin size={14} /></div>
+                          <p className="text-[10px] text-gray-500 font-medium leading-tight truncate-2-lines">{order.exactAddress}</p>
+                        </div>
                       </div>
 
-                      <div className="flex items-start gap-3">
-                         <MapPin size={16} className="text-gray-300 flex-shrink-0 mt-0.5" />
-                         <p className="text-xs text-gray-500 font-medium leading-relaxed">{order.exactAddress}</p>
-                      </div>
+                      <div className="mt-4 space-y-4">
+                         {/* Metrics row */}
+                         <div className="flex items-center justify-between gap-3">
+                            <div className="flex gap-2">
+                               <div className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl border border-blue-100 flex items-center gap-2" title="Notified">
+                                  <span className="text-[10px] font-black">{order.notifiedChampsCount || 0}</span>
+                                  <span className="text-[8px] font-bold uppercase tracking-widest">Notified</span>
+                               </div>
+                               <div className="bg-red-50 text-red-600 px-3 py-1.5 rounded-xl border border-red-100 flex items-center gap-2" title="Declined">
+                                  <span className="text-[10px] font-black">{order.declinedChampIds?.length || 0}</span>
+                                  <span className="text-[8px] font-bold uppercase tracking-widest">Declined</span>
+                               </div>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={() => fetchEngagement(order._id)} className="h-8 rounded-xl px-3 py-0 text-[9px] uppercase tracking-widest">
+                               Track
+                            </Button>
+                         </div>
 
-                      <div className="pt-2 space-y-4">
-                          {/* Engagement Tracker (Always Visible) */}
-                          <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                             <div className="flex items-center justify-between mb-3">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Champ Engagement</p>
-                                {!order.assignedScrapChampId && order.status === 'Requested' && (
-                                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5">
-                                     <CountdownTimer createdAt={order.createdAt} onExpire={() => fetchData()} />
-                                  </p>
-                                )}
-                             </div>
-                             <div className="flex items-center justify-between">
-                                <div className="flex gap-2">
-                                   <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg shadow-blue-100" title="Notified">
-                                      {order.notifiedChampsCount || 0}
-                                   </div>
-                                   <div className="w-8 h-8 bg-red-600 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg shadow-red-100" title="Declined">
-                                      {order.declinedChampIds?.length || 0}
-                                   </div>
-                                </div>
-                                <button 
-                                  onClick={() => fetchEngagement(order._id)}
-                                  className="px-4 py-2 bg-white rounded-xl border border-gray-200 text-[10px] font-black text-gray-600 uppercase tracking-widest shadow-sm hover:border-brand-500 hover:text-brand-500 transition-all flex items-center justify-center gap-2"
-                                >
-                                  <span>Engagement View</span>
-                                </button>
-                             </div>
-                          </div>
-
-                          {/* Allocation Section */}
-                          <div className="space-y-2">
-                             <div className="px-1 flex justify-between items-center">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Allocation Status</p>
-                                {order.status !== 'Completed' && (
-                                  <button onClick={() => openAssignModal(order._id)} className="text-[9px] font-black text-brand-500 uppercase tracking-widest hover:text-brand-700 underline underline-offset-2">Manual Assign</button>
-                                )}
-                             </div>
+                         {/* Allocation Bar */}
+                         <div className="p-1 bg-gray-50/50 rounded-2xl border border-gray-100">
                              {order.assignedScrapChampId ? (
-                                <div className="flex items-center justify-between bg-emerald-50/50 p-3 rounded-2xl border border-emerald-100">
+                                <div className="flex items-center justify-between bg-white p-2 rounded-xl shadow-sm">
                                    <div className="flex items-center gap-2">
-                                      <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xs border border-white">
+                                      <div className="w-8 h-8 bg-brand-50 rounded-lg flex items-center justify-center text-brand-600 font-black text-[10px] border border-brand-100 overflow-hidden">
                                          {order.champDetails?.name?.charAt(0) || <User size={12} />}
                                       </div>
                                       <div className="flex flex-col">
-                                         <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest leading-none mb-1">Partner Assigned</p>
-                                         <p className="text-xs font-bold text-gray-800">{order.champDetails?.name || 'Partner'}</p>
+                                         <p className="text-[9px] font-bold text-gray-900 leading-tight truncate max-w-[100px]">{order.champDetails?.name || 'Partner'}</p>
+                                         <button onClick={() => openAssignModal(order._id)} className="text-[8px] font-black text-brand-500 uppercase tracking-widest text-left mt-0.5">Change</button>
                                       </div>
                                    </div>
-                                   <StatusBadge status={order.status} />
+                                    <div className="flex items-center gap-2">
+                                       {!order.assignedScrapChampId && order.status === 'Requested' && (
+                                          <div className="text-[9px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg">
+                                             <CountdownTimer createdAt={order.createdAt} onExpire={() => fetchData()} />
+                                          </div>
+                                       )}
+                                       <StatusBadge status={order.status} />
+                                    </div>
                                 </div>
                              ) : (
-                                <div className="bg-white p-3 rounded-2xl border border-gray-100 flex items-center justify-between">
-                                   <div className="flex items-center gap-2">
-                                      <Radio size={16} className="text-blue-500 animate-pulse" />
-                                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Broadcasting Region...</span>
+                                <div className="flex items-center justify-between p-2">
+                                   <div className="flex items-center gap-2 overflow-hidden">
+                                      <Radio size={14} className="text-blue-500 animate-pulse shrink-0" />
+                                      <div className="flex flex-col overflow-hidden">
+                                         <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest truncate">Broadcasting Live</span>
+                                         <div className="text-[9px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+                                            <CountdownTimer createdAt={order.createdAt} onExpire={() => fetchData()} />
+                                            <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse shrink-0" />
+                                         </div>
+                                      </div>
                                    </div>
-                                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                                   <Button variant="primary" size="sm" onClick={() => openAssignModal(order._id)} className="h-8 rounded-xl px-4 py-0 text-[9px] uppercase tracking-widest">
+                                      Assign
+                                   </Button>
                                 </div>
                              )}
-                          </div>
+                         </div>
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
+                   ))
+                 )}
+               </div>
 
               {/* Desktop View: Table */}
               <div className="hidden md:block bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
@@ -350,7 +379,7 @@ export default function AdminOrdersPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                       {orders.length === 0 ? (
+                       {filteredOrders.length === 0 ? (
                          <tr>
                            <td colSpan={6} className="py-20 text-center">
                               <div className="flex flex-col items-center">
@@ -362,14 +391,18 @@ export default function AdminOrdersPage() {
                            </td>
                          </tr>
                        ) : (
-                         orders.map((order) => (
+                         filteredOrders.map((order) => (
                           <tr key={order._id} className="hover:bg-gray-50/30 transition-colors group">
                             <td className="px-4 py-6">
                                <Link href={`/admin/orders/${order._id}`} className="group/link block">
                                  <p className="font-black text-gray-900 group-hover/link:text-brand-600 transition-colors tracking-tight text-base mb-1 truncate max-w-[150px]">{order.scrapTypes.join(', ')}</p>
-                                 <p className="text-[10px] text-gray-400 font-black flex items-center gap-1.5 uppercase tracking-widest">
+                                 <p className="text-[10px] text-gray-400 font-black flex items-center gap-1.5 uppercase tracking-widest truncate">
                                    <ArrowRight size={10} className="text-brand-500 flex-shrink-0" />
-                                   <span className="truncate">{new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                   {new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                 </p>
+                                 <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1 flex items-center gap-1.5 opacity-70">
+                                   <Clock size={10} className="text-blue-400" />
+                                   Placed: {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                  </p>
                                </Link>
                             </td>
@@ -405,7 +438,7 @@ export default function AdminOrdersPage() {
                             </td>
                             <td className="px-4 py-6">
                                <div className="relative group/status flex items-center">
-                                 <StatusBadge status={order.status} />
+                                 <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
                                  <select 
                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                                    value={order.status}

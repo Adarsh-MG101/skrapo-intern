@@ -19,6 +19,7 @@ import {
   CircleOff, 
   ImageOff, 
   Calendar,
+  Zap,
   IndianRupee,
   Scale,
   Phone,
@@ -69,6 +70,7 @@ export default function AdminOrderDetailsPage() {
     orderId: null,
     data: null
   });
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [loadingEngagement, setLoadingEngagement] = useState(false);
 
   const { apiFetch } = useAuth();
@@ -131,7 +133,10 @@ export default function AdminOrderDetailsPage() {
             </button>
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-white/50 px-3 py-1.5 rounded-xl border border-gray-100 shadow-sm">ID: {order._id.slice(-6).toUpperCase()}</span>
-               <StatusBadge status={order.status} />
+               <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100/50 shadow-sm flex items-center gap-2">
+                  <Clock size={12} /> Placed: {new Date(order.createdAt).toLocaleDateString()} @ {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+               </span>
+               <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
             </div>
           </div>
 
@@ -147,7 +152,10 @@ export default function AdminOrderDetailsPage() {
                             {order.scrapTypes.join(', ')}
                          </h1>
                          
-                         <div className="aspect-[4/3] bg-gray-50 rounded-[2rem] overflow-hidden border-4 border-white shadow-lg relative group">
+                         <div 
+                           className={`aspect-[4/3] bg-gray-50 rounded-[2rem] overflow-hidden border-4 border-white shadow-lg relative group ${order.photoUrl && order.status !== 'Cancelled' ? 'cursor-zoom-in' : ''}`}
+                           onClick={() => order.photoUrl && order.status !== 'Cancelled' && setSelectedPhoto(order.photoUrl)}
+                         >
                             {order.status === 'Cancelled' ? (
                                <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400 p-8 text-center">
                                    <CircleOff size={64} className="mb-4 opacity-20" />
@@ -155,7 +163,14 @@ export default function AdminOrderDetailsPage() {
                                    <p className="text-[10px] font-bold mt-1 max-w-[140px]">Customer cancelled this pickup request</p>
                                </div>
                             ) : order.photoUrl ? (
-                               <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                               <>
+                                 <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                    <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl translate-y-2 group-hover:translate-y-0 transition-all">
+                                       <Zap size={14} className="text-brand-500 fill-brand-500" /> Click to enlarge
+                                    </div>
+                                 </div>
+                               </>
                             ) : (
                                <div className="w-full h-full flex flex-col items-center justify-center text-gray-200 bg-gray-50">
                                    <ImageOff size={80} strokeWidth={1.5} />
@@ -424,6 +439,43 @@ export default function AdminOrderDetailsPage() {
             </div>
           </div>
         ) : null}
+      </Modal>
+
+      {/* Full Photo Modal */}
+      <Modal
+        isOpen={!!selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+        title="Scrap Evidence"
+        size="xl"
+      >
+        <div className="flex flex-col items-center">
+            {selectedPhoto && (
+              <div className="w-full rounded-[2rem] overflow-hidden border-4 border-white shadow-2xl relative">
+                <img src={selectedPhoto} alt="Full Scrap View" className="w-full h-auto object-contain max-h-[70vh]" />
+                <div className="absolute top-4 right-4 bg-brand-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg border border-brand-400/50">
+                   Full Quality
+                </div>
+              </div>
+            )}
+            <div className="mt-6 flex gap-4 w-full">
+               <Button variant="ghost" fullWidth onClick={() => setSelectedPhoto(null)} className="rounded-xl py-4 font-black uppercase tracking-widest">Close Preview</Button>
+               {selectedPhoto && (
+                 <Button 
+                   variant="primary" 
+                   fullWidth 
+                   className="rounded-xl py-4 font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                   onClick={() => {
+                     const link = document.createElement('a');
+                     link.href = selectedPhoto;
+                     link.download = `scrap-evidence-${id}.jpg`;
+                     link.click();
+                   }}
+                 >
+                    Download Image
+                 </Button>
+               )}
+            </div>
+        </div>
       </Modal>
     </ProtectedRoute>
   );

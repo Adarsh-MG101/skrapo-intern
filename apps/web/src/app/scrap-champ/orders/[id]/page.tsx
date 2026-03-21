@@ -41,6 +41,7 @@ interface Order {
   exactAddress?: string;
   location?: { lat: number, lng: number };
   photoUrl?: string;
+  hasDeclined?: boolean;
 }
 
 export default function OrderDecisionPage() {
@@ -61,10 +62,12 @@ function OrderDetails() {
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrder = async () => {
       try {
+        console.log(`[OrderDetail] Fetching order with ID: ${id}`);
         const res = await apiFetch(`/orders/scrap-champ/${id}`);
         setErrorStatus(res.status);
         const data = await res.json();
@@ -73,8 +76,9 @@ function OrderDetails() {
         } else if (res.status !== 401 && res.status !== 410 && res.status !== 403) {
           showToast(data.error || 'Failed to fetch order', 'error');
         }
-      } catch (err) {
-        showToast('Connection failed', 'error');
+      } catch (err: any) {
+        console.error('[OrderDetail] Fetch failed:', err);
+        showToast('Connection failed: ' + (err.message || ''), 'error');
       } finally {
         setLoading(false);
       }
@@ -210,9 +214,19 @@ function OrderDetails() {
               
               {/* Left Column: Image & Basic Info */}
               <div className="w-full lg:w-[380px] p-5 sm:p-8 lg:border-r border-gray-50">
-                  <div className="aspect-[4/3] bg-gray-50 rounded-[1.5rem] overflow-hidden border-4 border-white shadow-lg relative group mb-6">
+                  <div 
+                    className={`aspect-[4/3] bg-gray-50 rounded-[1.5rem] overflow-hidden border-4 border-white shadow-lg relative group mb-6 ${order.photoUrl ? 'cursor-zoom-in' : ''}`}
+                    onClick={() => order.photoUrl && setSelectedPhoto(order.photoUrl)}
+                  >
                     {order.photoUrl ? (
-                        <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover" />
+                        <>
+                          <img src={order.photoUrl} alt="Scrap" className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                             <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl translate-y-2 group-hover:translate-y-0 transition-all">
+                                <Zap size={14} className="text-brand-500 fill-brand-500" /> Clear View
+                             </div>
+                          </div>
+                        </>
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-200">
                             <Truck size={48} strokeWidth={1} />
@@ -322,8 +336,7 @@ function OrderDetails() {
                           </Link>
                       </div>
                     )}
-
-                    {(order.status === 'Requested' || order.status === 'Assigned') && (
+                    {(order.status === 'Requested' || order.status === 'Assigned') && !order.hasDeclined && (
                       <div className="flex gap-3 pt-4 border-t border-gray-100">
                         <Button 
                             variant="primary" 
@@ -343,6 +356,16 @@ function OrderDetails() {
                         </Button>
                       </div>
                     )}
+
+                    {order.hasDeclined && order.status !== 'Accepted' && order.status !== 'Completed' && (
+                      <div className="bg-red-50 border border-red-100 p-5 rounded-2xl text-center">
+                          <p className="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1 text-center">Engagement Archive</p>
+                          <h3 className="text-lg font-black text-gray-900 mb-2 tracking-tight">Mission Declined</h3>
+                          <p className="text-[11px] text-gray-400 font-medium mb-4 leading-relaxed max-w-[200px] mx-auto">
+                            You opted out of this pickup on {new Date(order.scheduledAt).toLocaleDateString()}.
+                          </p>
+                      </div>
+                    )}
                   </div>
               </div>
             </div>
@@ -350,7 +373,7 @@ function OrderDetails() {
 
         {/* Sticky Mobile Footer for Essential Actions */}
         {order.status === 'Accepted' && (
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-gray-100 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] z-50 flex gap-3 animate-slide-up">
+          <div className="lg:hidden fixed bottom-[72px] left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-gray-100 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] z-[100] flex gap-3 animate-slide-up">
             <Button 
               variant="ghost" 
               className="bg-gray-100 text-gray-800 font-black text-[11px] uppercase tracking-[0.15em] flex-1 py-4 flex gap-2 rounded-xl"
@@ -400,6 +423,28 @@ function OrderDetails() {
           </div>
           <h3 className="text-3xl font-black text-gray-900 mb-3 tracking-tighter">Are you sure?</h3>
           <p className="text-gray-500 font-medium leading-relaxed max-w-[280px] mx-auto">Please confirm that you have successfully collected the scrap items and finalized the transaction at the doorstep.</p>
+        </div>
+      </Modal>
+
+      {/* Full Photo Modal */}
+      <Modal
+        isOpen={!!selectedPhoto}
+        onClose={() => setSelectedPhoto(null)}
+        title="Scrap Evidence"
+        size="xl"
+      >
+        <div className="flex flex-col items-center">
+            {selectedPhoto && (
+              <div className="w-full rounded-[2rem] overflow-hidden border-4 border-white shadow-2xl relative">
+                <img src={selectedPhoto} alt="Full Scrap View" className="w-full h-auto object-contain max-h-[70vh]" />
+                <div className="absolute top-4 right-4 bg-brand-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg border border-brand-400/50">
+                   Mission Data
+                </div>
+              </div>
+            )}
+            <div className="mt-6 w-full">
+               <Button variant="ghost" fullWidth onClick={() => setSelectedPhoto(null)} className="rounded-xl py-4 font-black uppercase tracking-widest">Close Preview</Button>
+            </div>
         </div>
       </Modal>
 

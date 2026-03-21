@@ -12,3 +12,5 @@ export * from './EmptyState';
 export * from './Toast';
 export { default as ProtectedRoute } from './ProtectedRoute';
 export * from './Sidebar';
+export { default as NotificationBell } from './NotificationBell';
+export { default as Header } from './Header';

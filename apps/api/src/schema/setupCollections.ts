@@ -60,7 +60,15 @@ async function setupUsersCollection(db: Db): Promise<void> {
             coordinates: { bsonType: 'array', description: '[longitude, latitude]' },
           },
         },
-        serviceRadiusKm:  { bsonType: 'number', description: 'Service radius in km (default 5)' },
+        serviceRadiusKm:  { bsonType: ['double', 'int', 'long'], description: 'Service radius in km (default 5)' },
+        panNumber:        { bsonType: 'string' },
+        panCardPic:       { bsonType: 'string' },
+        aadharNumber:     { bsonType: 'string' },
+        aadharCardPic:    { bsonType: 'string' },
+        gstNumber:        { bsonType: 'string' },
+        gstCardPic:       { bsonType: 'string' },
+        profilePhoto:     { bsonType: 'string' },
+        cardNumber:       { bsonType: 'string', description: 'Unique Scrap Champ Card Number' },
         createdAt:        { bsonType: 'date' },
         updatedAt:        { bsonType: 'date' },
       },
@@ -122,25 +130,32 @@ async function setupUserRolesCollection(db: Db): Promise<void> {
 }
 
 async function setupOrdersCollection(db: Db): Promise<void> {
-  const ORDER_STATUSES = ['New', 'Requested', 'Assigned', 'Accepted', 'Completed', 'Problem', 'Cancelled'];
+  const ORDER_STATUSES = ['New', 'Requested', 'Assigned', 'Accepted', 'Arrived', 'Picking', 'Completed', 'Problem', 'Cancelled', 'Expired'];
 
   const validator = {
     $jsonSchema: {
       bsonType: 'object',
       required: ['customerId', 'scrapTypes', 'scheduledAt', 'status', 'createdAt', 'updatedAt'],
       properties: {
-        customerId:            { bsonType: 'objectId', description: 'Ref -> users._id (customer)' },
-        scrapTypes:            { bsonType: 'array',    description: 'Selected scrap types with optional extra text' },
-        estimatedWeight:       { bsonType: 'object',   description: '{ [scrapType]: estimatedKg }' },
-        photoUrl:              { bsonType: 'string' },
-        scheduledAt:           { bsonType: 'date',     description: 'Pickup slot start' },
-        scheduledSlotDuration: { bsonType: 'number',   description: 'Duration in hours (default 1)' },
-        generalArea:           { bsonType: 'string' },
-        exactAddress:          { bsonType: 'string' },
-        assignedScrapChampId:  { bsonType: ['objectId', 'null'], description: 'Ref -> users._id (scrapChamp)' },
+        customerId:            { bsonType: 'objectId' },
+        scrapTypes:            { bsonType: 'array' },
+        estimatedWeight:       { bsonType: 'object' },
+        photoUrl:              { bsonType: ['string', 'null'] },
+        scheduledAt:           { bsonType: 'date' },
+        timeSlot:              { bsonType: ['string', 'null'] },
+        scheduledSlotDuration: { bsonType: ['double', 'int', 'long'] },
+        generalArea:           { bsonType: ['string', 'null'] },
+        exactAddress:          { bsonType: ['string', 'null'] },
+        location:              { bsonType: ['object', 'null'] },
+        assignedScrapChampId:  { bsonType: ['objectId', 'null'] },
+        declinedChampIds:      { bsonType: 'array', items: { bsonType: 'objectId' } },
+        notifiedChampsCount:   { bsonType: ['double', 'int', 'long'] },
+        viewCount:             { bsonType: ['double', 'int', 'long'] },
+        lastViewedAt:          { bsonType: ['date', 'null'] },
+        adminNotifiedOfDelay:  { bsonType: 'bool' },
         status:                { bsonType: 'string', enum: ORDER_STATUSES },
         problemNotes:          { bsonType: ['string', 'null'] },
-        reminderSentAt:        { bsonType: 'date',     description: 'When pickup reminder SMS was sent' },
+        reminderSentAt:        { bsonType: ['date', 'null'] },
         createdAt:             { bsonType: 'date' },
         updatedAt:             { bsonType: 'date' },
       },
@@ -167,8 +182,8 @@ async function setupFeedbackCollection(db: Db): Promise<void> {
         orderId:             { bsonType: 'objectId', description: 'Ref -> orders._id' },
         customerId:          { bsonType: 'objectId', description: 'Ref -> users._id (customer)' },
         rating:              { bsonType: 'int',      minimum: 1, maximum: 5 },
-        weight:              { bsonType: ['double', 'number', 'null'] },
-        price:               { bsonType: ['double', 'number', 'null'] },
+        weight:              { bsonType: ['double', 'int', 'long', 'null'] },
+        price:               { bsonType: ['double', 'int', 'long', 'null'] },
         behavior:            { bsonType: ['string', 'null'], enum: ['Professional', 'Friendly', 'Late', 'Unprofessional', null] },
         comments:            { bsonType: ['string', 'null'] },
         createdAt:           { bsonType: 'date' },
@@ -248,6 +263,32 @@ async function setupAuthSessionsCollection(db: Db): Promise<void> {
   console.log('[schema] authSessions indexes ensured');
 }
 
+async function setupNotificationsCollection(db: Db): Promise<void> {
+  const validator = {
+    $jsonSchema: {
+      bsonType: 'object',
+      required: ['userId', 'title', 'message', 'isRead', 'createdAt'],
+      properties: {
+        userId:    { bsonType: 'objectId', description: 'Ref -> users._id (recipient)' },
+        title:     { bsonType: 'string' },
+        message:   { bsonType: 'string' },
+        type:      { bsonType: 'string', enum: ['Info', 'Success', 'Warning', 'Error'] },
+        metadata:  { bsonType: 'object', description: 'Generic metadata (e.g. orderId)' },
+        isRead:    { bsonType: 'bool' },
+        createdAt: { bsonType: 'date' },
+      },
+    },
+  };
+
+  await ensureCollection(db, 'notifications', validator);
+
+  const col = db.collection('notifications');
+  await col.createIndex({ userId: 1 });
+  await col.createIndex({ createdAt: -1 });
+  await col.createIndex({ isRead: 1 });
+  console.log('[schema] notifications indexes ensured');
+}
+
 /* ================================================================== */
 /*  Public entry point                                                 */
 /* ================================================================== */
@@ -276,6 +317,9 @@ export async function setupSchema(db: Db): Promise<void> {
     
     console.log('[schema] Processing: authSessions');
     await setupAuthSessionsCollection(db);
+
+    console.log('[schema] Processing: notifications');
+    await setupNotificationsCollection(db);
 
     console.log('[schema] All collections & indexes ready ✓');
   } catch (err: any) {

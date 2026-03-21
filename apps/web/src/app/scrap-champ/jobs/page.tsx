@@ -53,8 +53,15 @@ export default function ScrapChampJobsPage() {
         const availableJobs = await availRes.json();
         
         const combined = [...myJobs, ...availableJobs].sort((a, b) => {
+          const isNewA = a.status === 'Requested' || a.status === 'Assigned';
+          const isNewB = b.status === 'Requested' || b.status === 'Assigned';
+          
+          if (isNewA && !isNewB) return -1;
+          if (!isNewA && isNewB) return 1;
+          
           if (a.status === 'Accepted' && b.status !== 'Accepted') return -1;
           if (a.status !== 'Accepted' && b.status === 'Accepted') return 1;
+          
           return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
         });
         
@@ -192,9 +199,9 @@ export default function ScrapChampJobsPage() {
                     {isAcceptedByOther && (
                       <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] z-10 flex items-center justify-center p-4 text-center">
                         <div className="bg-gray-900 text-white px-8 py-4 rounded-[1.5rem] font-black shadow-2xl border-4 border-gray-800 flex flex-col items-center gap-1">
-                          <Ban size={20} className="text-red-500" strokeWidth={3} />
-                          <span className="tracking-[0.15em] text-xs">UNAVAILABLE</span>
-                          <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest text-center">Claimed by partner: {isAcceptedByOther}</p>
+                           <Ban size={20} className="text-red-500" strokeWidth={3} />
+                           <span className="tracking-[0.15em] text-xs">UNAVAILABLE</span>
+                           <p className="text-[7px] font-bold text-gray-400 uppercase tracking-widest text-center">Claimed by partner: {isAcceptedByOther}</p>
                         </div>
                       </div>
                     )}
@@ -203,25 +210,25 @@ export default function ScrapChampJobsPage() {
                       {/* Top Row: Date, Status, Tag */}
                       <div className="flex items-center gap-4">
                         <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl flex flex-col items-center justify-center border-2 transition-all group-hover:bg-brand-600 group-hover:text-white bg-brand-50 border-white text-brand-600 shadow-md flex-shrink-0">
-                          <span className="text-[8px] font-black uppercase leading-none tracking-widest mb-1 opacity-60">
-                            {new Date(job.scheduledAt).toLocaleString('default', { month: 'short' })}
-                          </span>
-                          <span className="text-xl md:text-2xl font-black leading-none tracking-tighter">
-                            {new Date(job.scheduledAt).getDate()}
-                          </span>
+                           <span className="text-[8px] font-black uppercase leading-none tracking-widest mb-1 opacity-60">
+                             {new Date(job.scheduledAt).toLocaleString('default', { month: 'short' })}
+                           </span>
+                           <span className="text-xl md:text-2xl font-black leading-none tracking-tighter">
+                             {new Date(job.scheduledAt).getDate()}
+                           </span>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                            <StatusBadge status={job.status} />
-                            {isRequested && (
-                              <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-blue-100 flex items-center gap-1">
-                                <Zap size={8} fill="currentColor" /> Pool Mission
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="text-base md:text-xl font-black text-gray-900 leading-tight line-clamp-1">
-                            {job.scrapTypes.join(', ')}
-                          </h3>
+                           <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                             <StatusBadge status={job.status} />
+                             {isRequested && (
+                               <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-blue-100 flex items-center gap-1">
+                                 <Zap size={8} fill="currentColor" /> Pool Mission
+                               </span>
+                             )}
+                           </div>
+                           <h3 className="text-base md:text-xl font-black text-gray-900 leading-tight line-clamp-1">
+                             {job.scrapTypes.join(', ')}
+                           </h3>
                         </div>
                       </div>
 
@@ -254,53 +261,64 @@ export default function ScrapChampJobsPage() {
                       {/* Action Row */}
                       <div className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-gray-100/50 mt-1">
                          {job.status === 'Accepted' && (
-                           <Button 
-                             variant="ghost" 
-                             className="flex-1 py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 flex items-center justify-center gap-2 shadow-sm"
-                             onClick={(e) => {
-                               e.preventDefault();
-                               const dest = job.location 
-                                 ? `${job.location.lat},${job.location.lng}` 
-                                 : encodeURIComponent(job.exactAddress || "");
-                               window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
-                             }}
-                           >
-                              <Navigation size={16} /> GPS Navigate
-                           </Button>
+                           <div className="flex gap-2.5 flex-1">
+                             <Button 
+                               variant="ghost" 
+                               className="flex-[2] py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 flex items-center justify-center gap-2 shadow-sm"
+                               onClick={(e) => {
+                                 e.preventDefault();
+                                 const dest = job.location 
+                                   ? `${job.location.lat},${job.location.lng}` 
+                                   : encodeURIComponent(job.exactAddress || "");
+                                 window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest}`, '_blank');
+                               }}
+                             >
+                                <Navigation size={16} /> GPS Navigate
+                             </Button>
+                             <Link href={`/scrap-champ/orders/${job._id}`} className="flex-1">
+                                <Button 
+                                   variant="ghost" 
+                                   fullWidth
+                                   className="py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-brand-100 text-brand-600 hover:bg-brand-50 flex items-center justify-center gap-2 shadow-sm"
+                                >
+                                   Details <ArrowRight size={16} />
+                                </Button>
+                             </Link>
+                           </div>
                          )}
                          
-                         {isRequested ? (
-                            <div className="flex gap-2.5 flex-1">
-                               <Button 
-                                 variant="primary" 
-                                 onClick={() => handleDecision(job._id, 'accept')}
-                                 disabled={processingId === job._id}
-                                 className="flex-[3] py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-brand-500/20 bg-brand-600 hover:bg-brand-700 px-6 flex items-center justify-center gap-2 group/claim"
-                               >
-                                  {processingId === job._id ? 'Processing...' : (
-                                    <>Claim Mission <Zap size={14} className="fill-current group-hover:scale-110 transition-transform" /> </>
-                                  )}
-                               </Button>
-                               <Button 
+                         {(job.status === 'Requested' || job.status === 'Assigned') ? (
+                             <div className="flex gap-2.5 flex-1">
+                                <Button 
+                                  variant="primary" 
+                                  onClick={() => handleDecision(job._id, 'accept')}
+                                  disabled={processingId === job._id}
+                                  className="flex-1 py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 bg-emerald-600 hover:bg-emerald-700 px-6 flex items-center justify-center gap-2 group/claim"
+                                >
+                                   {processingId === job._id ? 'Processing...' : (
+                                     <>ACCEPT <Zap size={14} className="fill-current group-hover:scale-110 transition-transform" /> </>
+                                   )}
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  onClick={() => handleDecision(job._id, 'deny')}
+                                  disabled={processingId === job._id}
+                                  className="flex-1 py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-red-100 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 flex items-center justify-center gap-2 transition-all"
+                                >
+                                   <XSquare size={18} /> DECLINE
+                                </Button>
+                             </div>
+                          ) : job.status !== 'Accepted' && (
+                            <Link href={`/scrap-champ/orders/${job._id}`} className="flex-1 block">
+                              <Button 
                                  variant="ghost" 
-                                 onClick={() => handleDecision(job._id, 'deny')}
-                                 disabled={processingId === job._id}
-                                 className="flex-1 py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-gray-100 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-100 flex items-center justify-center"
-                               >
-                                  <XSquare size={18} />
-                               </Button>
-                            </div>
-                         ) : (
-                           <Link href={`/scrap-champ/orders/${job._id}`} className="flex-1 block">
-                             <Button 
-                                variant="ghost" 
-                                fullWidth
-                                className="py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-gray-100 hover:bg-brand-50 hover:text-brand-600 bg-white flex items-center justify-center gap-2 shadow-sm"
-                             >
-                                View Order <ArrowRight size={16} />
-                             </Button>
-                           </Link>
-                         )}
+                                 fullWidth
+                                 className="py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-gray-100 hover:bg-brand-50 hover:text-brand-600 bg-white flex items-center justify-center gap-2 shadow-sm"
+                              >
+                                 View Order <ArrowRight size={16} />
+                              </Button>
+                            </Link>
+                          )}
                       </div>
                     </div>
                   </div>

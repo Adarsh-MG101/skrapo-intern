@@ -44,6 +44,7 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
     gstNumber: '',
     gstCardPic: null as string | null,
     profilePhoto: null as string | null,
+    cardNumber: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -71,6 +72,7 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
         gstNumber: '',
         gstCardPic: null,
         profilePhoto: null,
+        cardNumber: '',
       });
       setError('');
       setFieldErrors({});
@@ -183,6 +185,7 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
           gstNumber: formData.gstNumber,
           gstCardPic: formData.gstCardPic,
           profilePhoto: formData.profilePhoto,
+          cardNumber: formData.cardNumber,
         }),
       });
 
@@ -230,14 +233,9 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
                 Mobile Number <span className="text-red-500">*</span>
               </label>
               <div className="flex gap-2">
-                <select
-                  value={formData.countryCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, countryCode: e.target.value }))}
-                  className="px-3 py-3 border-2 border-gray-100 rounded-2xl focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 outline-none transition-all text-gray-900 bg-white shadow-sm font-bold text-sm"
-                >
-                  <option value="+91">+91 (IN)</option>
-                  <option value="+92">+92 (PK)</option>
-                </select>
+                <div className="px-4 py-3 border-2 border-gray-100 rounded-2xl bg-gray-50 text-gray-500 font-bold text-sm flex items-center justify-center min-w-[70px] shadow-sm">
+                  +91
+                </div>
                 <div className="flex-1">
                   <Input 
                     value={formData.mobileNumber}
@@ -304,8 +302,7 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
                {/* Aadhar */}
                <div className="grid md:grid-cols-2 gap-6 items-end">
                   <Input 
-                    label="Aadhar Card Number"
-                    required
+                    label="Aadhar Card Number (Optional)"
                     placeholder="12-digit Aadhar number"
                     maxLength={12}
                     value={formData.aadharNumber}
@@ -322,8 +319,7 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
                {/* PAN */}
                <div className="grid md:grid-cols-2 gap-6 items-end">
                   <Input 
-                    label="PAN Card Number"
-                    required
+                    label="PAN Card Number (Optional)"
                     placeholder="PAN number (e.g. ABCDE1234F)"
                     maxLength={10}
                     className="uppercase"
@@ -341,8 +337,7 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
                {/* GST */}
                <div className="grid md:grid-cols-2 gap-6 items-end">
                   <Input 
-                    label="GST Number"
-                    required
+                    label="GST Number (Optional)"
                     placeholder="GSTIN"
                     maxLength={15}
                     className="uppercase"
@@ -355,6 +350,16 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
                     </div>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'gstCardPic')} />
                   </label>
+               </div>
+               
+               {/* Card Number */}
+               <div className="grid md:grid-cols-2 gap-6 items-end">
+                  <Input 
+                    label="Worker ID / Card Number (Optional)"
+                    placeholder="Enter official Scrapo ID"
+                    value={formData.cardNumber}
+                    onChange={(e) => setFormData({...formData, cardNumber: e.target.value})}
+                  />
                </div>
             </div>
           </div>

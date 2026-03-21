@@ -50,7 +50,7 @@ const NAV_CONFIG = {
     { name: 'Dashboard', href: '/scrap-champ', icon: <TrendingUp size={20} strokeWidth={2.5} /> },
     { name: 'Active Jobs', href: '/scrap-champ/jobs', icon: <Truck size={20} strokeWidth={2.5} /> },
     { name: 'Job History', href: '/scrap-champ/history', icon: <History size={20} strokeWidth={2.5} /> },
-    { name: 'My Profile/Earnings', href: '/scrap-champ/profile', disabled: true, icon: <User size={20} strokeWidth={2.5} /> },
+    { name: 'My Profile/Earnings', href: '/scrap-champ/profile', icon: <User size={20} strokeWidth={2.5} /> },
   ],
 };
 
@@ -201,7 +201,7 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
                 <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div className="flex flex-col whitespace-nowrap justify-center">
-                <span className="text-2xl font-black text-gray-900 tracking-tighter leading-none">Recycle My Bin</span>
+                <span className="text-2xl font-black text-gray-900 tracking-tighter leading-none">Recyclemybin</span>
               </div>
             </div>
 

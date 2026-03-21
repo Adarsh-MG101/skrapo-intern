@@ -64,7 +64,7 @@ export default function ForbiddenPage() {
           <div className="w-6 h-6 bg-brand-500 rounded-full flex items-center justify-center">
             <RecycleIcon className="w-3 h-3 text-white" />
           </div>
-          <span className="text-sm font-medium">Recycle My Bin</span>
+          <span className="text-sm font-medium">Recyclemybin</span>
         </div>
       </div>
     </div>

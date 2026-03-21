@@ -61,7 +61,7 @@ function AdminDashboardContent() {
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">
               Control Center <LayoutDashboard className="inline-block text-brand-500 ml-2" size={36} strokeWidth={3} />
             </h1>
-            <p className="text-gray-500 mt-2 text-lg font-medium">Monitoring Recycle My Bin operations and scrap ecosystem.</p>
+            <p className="text-gray-500 mt-2 text-lg font-medium">Monitoring Recyclemybin operations and scrap ecosystem.</p>
           </div>
           <div className="md:hidden flex items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-gray-100 pr-6">
             <div className="w-12 h-12 bg-brand-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-500/20">
@@ -93,7 +93,7 @@ function AdminDashboardContent() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <Link href="/admin/orders" className="group">
              <div className="h-full bg-brand-600 rounded-[2.5rem] p-10 text-white shadow-xl shadow-brand-500/20 hover:shadow-brand-500/40 transition-all hover:-translate-y-2 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform">
@@ -120,18 +120,34 @@ function AdminDashboardContent() {
              </div>
           </Link>
 
-          <Link href="/admin/settings" className="group">
-             <div className="h-full bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-125 transition-transform text-gray-400">
-                   <Settings2 size={80} strokeWidth={2.5} />
+          <Link href="/admin/history" className="group">
+             <div className="h-full bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all hover:-translate-y-2 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-125 transition-transform text-gray-400">
+                   <Clock size={60} strokeWidth={2.5} />
                 </div>
-                <h3 className="text-2xl font-black text-gray-900 mb-2">System Config</h3>
-                <p className="text-gray-500 font-medium mb-8">Manage app roles, areas, and SMS templates.</p>
-                <div className="inline-flex items-center px-6 py-2 bg-gray-50 rounded-xl border border-gray-100 text-gray-600 font-bold text-xs uppercase tracking-widest hover:bg-gray-100 transition-colors">
-                   Settings
+                <h3 className="text-xl font-black text-gray-900 mb-2">Operation History</h3>
+                <p className="text-gray-500 text-sm font-medium mb-8">Full records of all past pickups and transactions.</p>
+                <div className="inline-flex items-center px-6 py-2 bg-gray-50 rounded-xl border border-gray-100 text-gray-600 font-bold text-[10px] uppercase tracking-widest hover:bg-gray-100 transition-colors">
+                   View Logs
                 </div>
              </div>
           </Link>
+
+          <div className="group relative opacity-60">
+             <div className="h-full bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm relative overflow-hidden">
+                <div className="absolute top-4 right-6 px-3 py-1 bg-gray-100 text-gray-400 rounded-full text-[8px] font-black uppercase tracking-widest border border-gray-200 z-10">
+                   Soon
+                </div>
+                <div className="absolute top-0 right-0 p-6 opacity-5 text-gray-400">
+                   <Settings2 size={60} strokeWidth={2.5} />
+                </div>
+                <h3 className="text-xl font-black text-gray-900 mb-2">System Config</h3>
+                <p className="text-gray-500 text-sm font-medium mb-8">Manage app roles, areas, and SMS templates.</p>
+                <div className="inline-flex items-center px-6 py-2 bg-gray-50 rounded-xl border border-gray-100 text-gray-400 font-bold text-[10px] uppercase tracking-widest cursor-not-allowed">
+                   Inactive
+                </div>
+             </div>
+          </div>
         </div>
 
         {/* Recent Activity */}

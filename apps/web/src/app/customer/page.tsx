@@ -117,15 +117,21 @@ function CustomerDashboardContent() {
           </div>
         </Link>
 
-        <Link href="/customer/profile" className="group">
-          <div className="h-full bg-white rounded-[2.5rem] p-8 border border-gray-100 hover:border-brand-100 shadow-sm hover:shadow-xl transition-all hover:-translate-y-2">
-            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-emerald-100 text-emerald-600">
+        <div className="group opacity-60 relative">
+          <div className="h-full bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm relative overflow-hidden">
+             <div className="absolute top-4 right-6 px-3 py-1 bg-gray-100 text-gray-400 rounded-full text-[8px] font-black uppercase tracking-widest border border-gray-200 z-10">
+                Soon
+             </div>
+            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100 text-emerald-600">
               <Sprout size={32} strokeWidth={2.5} />
             </div>
             <h3 className="text-2xl font-black text-gray-900 mb-2">Impact Profile</h3>
-            <p className="text-gray-400 font-medium leading-relaxed">See your environmental impact and basic profile</p>
+            <p className="text-gray-400 font-medium leading-relaxed mb-6">See your environmental impact and basic profile</p>
+            <div className="inline-flex items-center px-6 py-2 bg-gray-50 rounded-xl border border-gray-100 text-gray-400 font-bold text-[10px] uppercase tracking-widest cursor-not-allowed">
+               Inactive
+            </div>
           </div>
-        </Link>
+        </div>
       </div>
 
       {/* Stats Summary */}

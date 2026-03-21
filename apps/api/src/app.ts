@@ -1,10 +1,11 @@
-﻿import express from 'express';
+import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { isDatabaseConnected } from './config/db';
 import authRoutes from './routes/auth';
 import ordersRoutes from './routes/orders';
 import feedbackRoutes from './routes/feedback';
+import notificationsRoutes from './routes/notifications';
 
 export const app = express();
 
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use('/auth', authRoutes);
 app.use('/orders', ordersRoutes);
 app.use('/feedback', feedbackRoutes);
+app.use('/notifications', notificationsRoutes);
 
 // Health check
 app.get('/', (_req, res) => {

@@ -52,7 +52,7 @@ function RegisterContent() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+91');
+  const [countryCode] = useState('+91');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState('customer');
@@ -273,7 +273,7 @@ function RegisterContent() {
           <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-float backdrop-blur-sm">
             <Recycle className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-4xl font-extrabold text-white mb-4">Join Recycle My Bin</h1>
+          <h1 className="text-4xl font-extrabold text-white mb-4">Join Recyclemybin</h1>
           <p className="text-brand-100 text-lg max-w-sm mx-auto leading-relaxed">
             Create your account and start making a difference. Every piece of scrap recycled counts!
           </p>
@@ -303,7 +303,7 @@ function RegisterContent() {
             <div className="w-10 h-10 bg-brand-500 rounded-full flex items-center justify-center shadow-lg">
               <Recycle className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-800">Recycle My Bin</span>
+            <span className="text-2xl font-bold text-gray-800">Recyclemybin</span>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
@@ -312,7 +312,7 @@ function RegisterContent() {
                 {isGoogleAuth ? 'Finish Setup' : 'Create Account'}
               </h2>
               <p className="text-gray-500 mt-2">
-                {isGoogleAuth ? 'Just a few more details' : 'Get started with Recycle My Bin today'}
+                {isGoogleAuth ? 'Just a few more details' : 'Get started with Recyclemybin today'}
               </p>
             </div>
 
@@ -391,14 +391,9 @@ function RegisterContent() {
                   Mobile Number <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-2">
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    className="px-3 py-3 border-2 border-gray-200 rounded-xl focus:border-brand-500 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-gray-900 bg-white"
-                  >
-                    <option value="+91">+91 (IN)</option>
-                    <option value="+92">+92 (PK)</option>
-                  </select>
+                  <div className="px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-gray-600 font-bold flex items-center justify-center min-w-[70px]">
+                    +91
+                  </div>
                   <div className="relative flex-1">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                       <Phone className="w-5 h-5" />

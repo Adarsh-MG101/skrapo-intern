@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
-import { StatusBadge, Loader, EmptyState } from '../../components/common';
+import { StatusBadge, Loader, Button, EmptyState } from '../../components/common';
 import Link from 'next/link';
 import { API_URL } from '../../config/env';
 import { 
@@ -131,13 +131,18 @@ export default function ScrapChampHistoryPage() {
                      <div className="sm:hidden flex-shrink-0">
                         <StatusBadge status={job.status} />
                      </div>
-                     <div className="flex items-center gap-4 flex-shrink-0">
-                        <Link href={`/scrap-champ/orders/${job._id}`} className="ml-auto">
-                           <button className="text-[11px] font-black text-brand-600 hover:text-brand-700 flex items-center gap-1 transition-colors uppercase tracking-widest">
-                            Receipt <ArrowRight size={14} />
-                           </button>
+                      <div className="flex items-center gap-4 flex-shrink-0">
+                        <Link href={`/scrap-champ/orders/${job._id}`} className="ml-auto w-full sm:w-auto">
+                           <Button 
+                              variant={job.status === 'Completed' ? 'secondary' : 'ghost'}
+                              size="sm"
+                              className="rounded-xl px-4 py-3 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 border border-gray-100 group-hover:border-brand-100"
+                           >
+                              {job.status === 'Completed' ? 'Receipt' : 'Review Mission'} 
+                              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                           </Button>
                         </Link>
-                     </div>
+                      </div>
                   </div>
                 </div>
               ))}
