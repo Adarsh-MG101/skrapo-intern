@@ -118,10 +118,12 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
             console.log(`[broadcast-timer] Order ${orderId} still requested. Retrying broadcast (Attempt ${retryCount + 1}/${maxRetries})...`);
             
             // Notify admin about the retry
-            emitAndLog('admin_room', 'broadcast_retry', {
-              orderId,
-              message: `No champ accepted Order #${orderId.slice(-6).toUpperCase()} within ${timeoutMin}m. Re-sending broadcast (Attempt ${retryCount + 1}/${maxRetries}).`
-            });
+            notificationService.notifyAdmins(
+              'Pickup Re-broadcast 🔄',
+              `No champ accepted Order #${orderId.slice(-6).toUpperCase()} within ${timeoutMin}m. Re-sending broadcast (Attempt ${retryCount + 1}/${maxRetries}).`,
+              'broadcast_retry',
+              { orderId, attempt: retryCount + 1, maxRetries }
+            );
             
             await broadcastToChamps(orderId, customerAddress, retryCount + 1);
           } else {
@@ -134,10 +136,12 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
             );
 
             // Notify admin
-            emitAndLog('admin_room', 'broadcast_exhausted', {
-              orderId,
-              message: `🚨 Order #${orderId.slice(-6).toUpperCase()} expired. No champ accepted within 30m.`
-            });
+            notificationService.notifyAdmins(
+              'Order Expired ⚠️',
+              `Order #${orderId.slice(-6).toUpperCase()} expired. No champ accepted within ${maxRetries * timeoutMin}m.`,
+              'broadcast_exhausted',
+              { orderId }
+            );
 
             // Notify customer
             if (currentOrder.customerId) {
@@ -1339,6 +1343,15 @@ router.post('/scrap-champ/:orderId/decision', authenticate, authorize('scrapCham
           champ.name, 
           orderId, 
           new Date(order.scheduledAt)
+        );
+
+        // Persistent in-app notification for the customer
+        notificationService.notifyUser(
+          order.customerId.toString(),
+          'Champion Assigned! ♻️',
+          `${champ.name} has been assigned for your pickup. They will arrive at the scheduled time.`,
+          'order_accepted_customer',
+          { orderId, champName: champ.name }
         );
         
         // Track event
