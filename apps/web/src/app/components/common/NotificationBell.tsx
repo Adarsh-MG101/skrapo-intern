@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Info, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Bell, Info, CheckCircle, AlertTriangle, AlertCircle, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 
@@ -34,6 +34,20 @@ const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fallback setup on first interaction to bypass "user gesture" restrictions on some browsers
+  const handleBellClick = () => {
+    setIsOpen(!isOpen);
+    
+    // Attempt registration on click if not already successful
+    if (!localStorage.getItem('fcm_registered')) {
+      import('../../../utils/fcm').then(({ setupFCM }) => {
+        setupFCM(apiFetch).then((token: string | null) => {
+          if (token) localStorage.setItem('fcm_registered', 'true');
+        });
+      });
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -130,7 +144,7 @@ const NotificationBell = () => {
   return (
     <div className="relative" ref={dropdownRef}>
       <button 
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleBellClick}
         className="p-2 mr-2 rounded-xl hover:bg-gray-100 transition-colors relative group"
         aria-label="Notifications"
       >
@@ -143,77 +157,93 @@ const NotificationBell = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-[-60px] md:right-0 mt-3 w-[280px] sm:w-80 md:w-96 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-[100] animate-in slide-in-from-top-2 duration-200">
-          <div className="px-5 py-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-black text-gray-900 text-sm uppercase tracking-widest">Notifications</h3>
-            <div className="flex gap-3">
-              {unreadCount > 0 && (
-                <button 
-                  onClick={markAllAsRead}
-                  className="text-[9px] font-black text-brand-600 uppercase tracking-widest hover:text-brand-700 underline underline-offset-2"
-                >
-                  Mark all read
-                </button>
-              )}
-              {notifications.length > 0 && (
-                <button 
-                  onClick={clearAllNotifications}
-                  className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:text-red-700 underline underline-offset-2"
-                >
-                  Clear all
-                </button>
-              )}
-            </div>
-          </div>
+        <>
+          {/* Mobile backdrop overlay */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-[99] md:hidden"
+            onClick={() => setIsOpen(false)}
+          />
 
-          <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
-            {notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-4 border border-gray-100">
-                   <Bell size={24} strokeWidth={1.5} />
+          <div className="fixed inset-x-0 top-[56px] bottom-[80px] z-[100] md:absolute md:inset-auto md:right-0 md:top-auto md:bottom-auto md:mt-3 md:w-96 bg-white md:rounded-3xl md:shadow-2xl md:border md:border-gray-100 overflow-hidden flex flex-col md:max-h-[80vh]">
+            <div className="px-5 py-4 bg-gray-50/50 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <h3 className="font-black text-gray-900 text-sm uppercase tracking-widest">Notifications</h3>
+                <div className="flex gap-3 ml-2 border-l border-gray-200 pl-3">
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={markAllAsRead}
+                      className="text-[9px] font-black text-brand-600 uppercase tracking-widest hover:text-brand-700 underline underline-offset-2"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                  {notifications.length > 0 && (
+                    <button 
+                      onClick={clearAllNotifications}
+                      className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:text-red-700 underline underline-offset-2"
+                    >
+                      Clear all
+                    </button>
+                  )}
                 </div>
-                <p className="text-gray-900 font-bold mb-1">Stay Tuned!</p>
-                <p className="text-xs text-gray-500 font-medium leading-relaxed">When you get updates about your orders, they'll show up here.</p>
               </div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {notifications.map((notification, index) => (
-                  <div 
-                    key={notification._id || index}
-                    className={`block p-4 transition-colors hover:bg-gray-50 relative group cursor-pointer ${!notification.isRead ? 'bg-brand-50/10' : ''}`}
-                    onClick={() => !notification.isRead && markAsRead(notification._id)}
-                  >
-                    <div className="flex gap-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border bg-white ${!notification.isRead ? 'border-brand-100 shadow-sm' : 'border-gray-50'}`}>
-                        {getIcon(notification.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-1">
-                           <p className={`text-xs font-black text-gray-900 truncate pr-4 ${!notification.isRead ? 'text-brand-700' : ''}`}>
-                             {notification.title}
-                           </p>
-                           {!notification.isRead && (
-                             <div className="w-1.5 h-1.5 bg-brand-500 rounded-full flex-shrink-0 animate-pulse mt-1.5" />
-                           )}
+              <button 
+                onClick={() => setIsOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-200 transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <X size={18} strokeWidth={3} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                  <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-4 border border-gray-100">
+                     <Bell size={24} strokeWidth={1.5} />
+                  </div>
+                  <p className="text-gray-900 font-bold mb-1">Stay Tuned!</p>
+                  <p className="text-xs text-gray-500 font-medium leading-relaxed">When you get updates about your orders, they'll show up here.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-50">
+                  {notifications.map((notification, index) => (
+                    <div 
+                      key={notification._id || index}
+                      className={`block p-4 transition-colors hover:bg-gray-50 relative group cursor-pointer ${!notification.isRead ? 'bg-brand-50/10' : ''}`}
+                      onClick={() => !notification.isRead && markAsRead(notification._id)}
+                    >
+                      <div className="flex gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border bg-white ${!notification.isRead ? 'border-brand-100 shadow-sm' : 'border-gray-50'}`}>
+                          {getIcon(notification.type)}
                         </div>
-                        <p className="text-[11px] text-gray-500 font-medium leading-relaxed mb-1.5">
-                          {notification.message}
-                        </p>
-                        <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest leading-none">
-                           {formatDistanceToNowCustom(notification.createdAt)}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start mb-1">
+                             <p className={`text-xs font-black text-gray-900 truncate pr-4 ${!notification.isRead ? 'text-brand-700' : ''}`}>
+                               {notification.title}
+                             </p>
+                             {!notification.isRead && (
+                               <div className="w-1.5 h-1.5 bg-brand-500 rounded-full flex-shrink-0 animate-pulse mt-1.5" />
+                             )}
+                          </div>
+                          <p className="text-[11px] text-gray-500 font-medium leading-relaxed mb-1.5 line-clamp-2">
+                            {notification.message}
+                          </p>
+                          <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest leading-none">
+                             {formatDistanceToNowCustom(notification.createdAt)}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="p-3 bg-gray-50/30 border-t border-gray-100 text-center flex-shrink-0">
+               <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest opacity-50">End of Feed</span>
+            </div>
           </div>
-          
-          <div className="p-3 bg-gray-50/30 border-t border-gray-100 text-center">
-             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest opacity-50">End of Feed</span>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

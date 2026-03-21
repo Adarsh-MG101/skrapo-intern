@@ -1,11 +1,18 @@
 import * as admin from 'firebase-admin';
 
 // Initialize Firebase Admin SDK
-const projectId = process.env.FIREBASE_PROJECT_ID;
-const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
+const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+// Handle both escaped (\n as literal chars) and real newlines in the private key
+let privateKey = process.env.FIREBASE_PRIVATE_KEY?.trim();
+if (privateKey) {
+  // If dotenv left literal \n sequences, convert them to real newlines
+  privateKey = privateKey.replace(/\\n/g, '\n');
+}
 
-if (projectId && clientEmail && privateKey) {
+console.log(`[Firebase] Init check — projectId: ${projectId ? '✓' : '✗'}, clientEmail: ${clientEmail ? clientEmail.substring(0, 20) + '...' : '✗'}, privateKey: ${privateKey ? '✓ (' + privateKey.length + ' chars)' : '✗'}`);
+
+if (projectId && clientEmail && privateKey && !admin.apps.length) {
   try {
     admin.initializeApp({
       credential: admin.credential.cert({
@@ -18,6 +25,8 @@ if (projectId && clientEmail && privateKey) {
   } catch (error) {
     console.error('❌ Failed to initialize Firebase Admin SDK:', error);
   }
+} else if (admin.apps.length) {
+  console.log('ℹ️ Firebase Admin SDK already initialized');
 } else {
   console.log('⚠️ Firebase credentials missing. Push notifications will be disabled.');
 }

@@ -614,6 +614,7 @@ router.post('/fcm-token', authenticate, async (req: AuthenticatedRequest, res: R
     const userId = new ObjectId(req.user!.userId);
 
     // Save token to user document (using an array to support multiple devices)
+    console.log(`[auth/fcm-token] Saving token for user ${userId.toString()}`);
     await db.collection('users').updateOne(
       { _id: userId },
       { $addToSet: { fcmTokens: token } as any }
