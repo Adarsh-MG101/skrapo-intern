@@ -13,6 +13,7 @@ interface DateTimePickerProps {
   type?: 'date' | 'time';
   min?: string;
   isToday?: boolean;
+  allowPastDates?: boolean;
   error?: string;
   className?: string;
 }
@@ -25,6 +26,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   type = 'date',
   min,
   isToday,
+  allowPastDates = false,
   error,
   className = ''
 }) => {
@@ -157,14 +159,22 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                 const today = new Date();
                 const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                 
-                let isPast = min ? isoDate < min : false;
+                let isPast = false;
                 
-                // Special check for "Today": If past 3:30 PM, Today is disabled
-                if (isoDate === todayIso) {
-                  const cutoff = new Date(today);
-                  cutoff.setHours(15, 30, 0, 0);
-                  if (today.getTime() >= cutoff.getTime()) {
+                // If past dates ARE NOT allowed, restrict to min date or future (if no min provided)
+                if (!allowPastDates) {
+                  const defaultMinStr = min || todayIso;
+                  if (isoDate < defaultMinStr) {
                     isPast = true;
+                  }
+                  
+                  // Special check for "Today": If past 3:30 PM, Today is disabled for booking
+                  if (isoDate === todayIso) {
+                    const cutoff = new Date(today);
+                    cutoff.setHours(15, 30, 0, 0);
+                    if (today.getTime() >= cutoff.getTime()) {
+                      isPast = true;
+                    }
                   }
                 }
                 
@@ -199,8 +209,10 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                   const cutoff = new Date(today);
                   cutoff.setHours(15, 30, 0, 0);
                   
-                  // If today is disabled, "Go to Today" actually goes to tomorrow
-                  const targetDate = today.getTime() >= cutoff.getTime() 
+                  // If today is disabled for booking, "Go to Today" actually goes to tomorrow
+                  // But if we allow past dates (e.g. for history), it should always go to today
+                  const shouldGoToTomorrow = !allowPastDates && today.getTime() >= cutoff.getTime();
+                  const targetDate = shouldGoToTomorrow
                     ? new Date(today.getTime() + 24 * 60 * 60 * 1000) 
                     : today;
                     
@@ -213,7 +225,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
                >
                  {(() => {
                    const now = new Date();
-                   return (now.getHours() > 15 || (now.getHours() === 15 && now.getMinutes() >= 30)) ? 'Available From Tomorrow' : 'Go to Today';
+                   const isAfterCutoff = now.getHours() > 15 || (now.getHours() === 15 && now.getMinutes() >= 30);
+                   if (allowPastDates) return 'Go to Today';
+                   return isAfterCutoff ? 'Available From Tomorrow' : 'Go to Today';
                  })()}
                </button>
             </div>

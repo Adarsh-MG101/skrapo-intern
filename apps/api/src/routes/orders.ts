@@ -367,13 +367,13 @@ router.get('/admin', authenticate, authorize('admin'), async (req: Authenticated
     if (startDate || endDate) {
       query.scheduledAt = {};
       if (startDate) {
-        query.scheduledAt.$gte = new Date(startDate as string).toISOString();
+        query.scheduledAt.$gte = new Date(startDate as string);
       }
       if (endDate) {
         // End of the selected day
         const end = new Date(endDate as string);
         end.setHours(23, 59, 59, 999);
-        query.scheduledAt.$lte = end.toISOString();
+        query.scheduledAt.$lte = end;
       }
     }
 

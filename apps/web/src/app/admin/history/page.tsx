@@ -86,7 +86,7 @@ export default function AdminHistoryPage() {
 
     let matchesStatus = true;
     if (status === 'All') {
-      matchesStatus = !['Requested', 'Problem'].includes(displayStatus);
+      matchesStatus = true; // Show everything for 'All'
     } else if (status === 'Active') {
       matchesStatus = ['Requested', 'Assigned', 'Accepted', 'Arrived', 'Arriving', 'Picking', 'Problem'].includes(displayStatus);
     } else {
@@ -149,14 +149,14 @@ export default function AdminHistoryPage() {
              <div className="flex flex-col sm:flex-row items-end gap-6 w-full lg:w-auto h-full">
                 <div className="w-full sm:w-64">
                    <DateTimePicker 
-                      label="Start Date"
+                      label="Start Date" allowPastDates={true}
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
                    />
                 </div>
                 <div className="w-full sm:w-64">
                    <DateTimePicker 
-                      label="End Date"
+                      label="End Date" allowPastDates={true}
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                    />
