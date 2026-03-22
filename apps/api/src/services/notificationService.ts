@@ -36,7 +36,7 @@ export class NotificationService {
           user.fcmTokens,
           title,
           message,
-          metadata
+          { ...metadata, targetUserId: userId.toString() }
         );
       }
     } catch (pushErr) {

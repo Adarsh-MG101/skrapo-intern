@@ -52,6 +52,7 @@ export default function BottomNav() {
 
   const [adminOrderCount, setAdminOrderCount] = useState(0);
   const [champJobCount, setChampJobCount] = useState(0);
+  const [customerNotiCount, setCustomerNotiCount] = useState(0);
   const [showLogoutPrompt, setShowLogoutPrompt] = useState(false);
 
   const currentNavItems = user?.role ? (NAV_CONFIG as any)[user.role] || [] : [];
@@ -70,6 +71,13 @@ export default function BottomNav() {
         if (res.ok) {
           const data = await res.json();
           setChampJobCount(data.total || 0);
+        }
+      } else if (user.role === 'customer' && pathname !== '/customer/pickups') {
+        const res = await apiFetch('/notifications');
+        if (res.ok) {
+          const data = await res.json();
+          const unread = data.filter((n: any) => !n.isRead).length;
+          setCustomerNotiCount(unread);
         }
       }
     } catch (err) {
@@ -90,6 +98,10 @@ export default function BottomNav() {
     socket.on('order_completed', handleSync);
     socket.on('new_job_assigned', handleSync);
     socket.on('new_available_job', handleSync);
+    socket.on('notification', handleSync);
+    socket.on('order_accepted_customer', handleSync);
+    socket.on('order_completed_customer', handleSync);
+    socket.on('order_status_update', handleSync);
 
     return () => {
       socket.off('new_pickup_request', handleSync);
@@ -100,6 +112,10 @@ export default function BottomNav() {
       socket.off('order_completed', handleSync);
       socket.off('new_job_assigned', handleSync);
       socket.off('new_available_job', handleSync);
+      socket.off('notification', handleSync);
+      socket.off('order_accepted_customer', handleSync);
+      socket.off('order_completed_customer', handleSync);
+      socket.off('order_status_update', handleSync);
     };
   }, [socket, loadCounts]);
 
@@ -110,6 +126,10 @@ export default function BottomNav() {
   useEffect(() => {
     if (pathname === '/admin/orders') setAdminOrderCount(0);
     if (pathname === '/scrap-champ/jobs') setChampJobCount(0);
+    if (pathname === '/customer/pickups') {
+      // Mark as read or just clear UI count
+      setCustomerNotiCount(0);
+    }
   }, [pathname]);
 
   const handleLogout = () => setShowLogoutPrompt(true);
@@ -128,6 +148,7 @@ export default function BottomNav() {
   const getBadge = (href: string): number => {
     if (href === '/admin/orders') return adminOrderCount;
     if (href === '/scrap-champ/jobs') return champJobCount;
+    if (href === '/customer/pickups') return customerNotiCount;
     return 0;
   };
 

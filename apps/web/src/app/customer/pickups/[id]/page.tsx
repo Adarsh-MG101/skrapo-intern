@@ -241,7 +241,7 @@ export default function CustomerOrderDetailsPage() {
           </div>
 
           <div className="mt-12 text-center text-gray-400 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
-             Need Assistance? <span className="text-brand-500 hover:text-brand-700 cursor-pointer transition-colors border-b-2 border-brand-100 pb-0.5">Contact Support</span>
+             Need Assistance? <a href="tel:+916366317690" className="text-brand-500 hover:text-brand-700 cursor-pointer transition-colors border-b-2 border-brand-100 pb-0.5">Contact Support</a>
           </div>
         </div>
        </div>

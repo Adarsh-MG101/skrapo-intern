@@ -259,6 +259,13 @@ export const SchedulePickupFlow: React.FC = () => {
       }
 
       const uniqueTypes = Array.from(new Set(finalCategories));
+      
+      // Mandatory Weight Check: Every selected category must have a weight entered
+      const missingWeights = selectedCategories.filter(cat => !formData.itemWeights[cat] || parseFloat(formData.itemWeights[cat]) < 0.1);
+      if (missingWeights.length > 0) {
+        throw new Error(`Please enter weights for all items: ${missingWeights.join(', ')}`);
+      }
+
       const parsedWeights = Object.fromEntries(
          Object.entries(formData.itemWeights).map(([k, v]) => [k, parseFloat(v) || 0])
       );
@@ -597,7 +604,8 @@ export const SchedulePickupFlow: React.FC = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                   {selectedCategories.map(cat => (
                     <Input 
-                      key={cat} label={cat} placeholder="e.g. 5" type="number" min="0" step="0.1" value={formData.itemWeights[cat] || ''}
+                      key={cat} label={cat} placeholder="e.g. 5" type="number" min="0.1" step="0.1" required
+                      value={formData.itemWeights[cat] || ''}
                       onChange={(e) => setFormData({...formData, itemWeights: {...formData.itemWeights, [cat]: e.target.value}})}
                       className="bg-white rounded-xl border-2"
                     />

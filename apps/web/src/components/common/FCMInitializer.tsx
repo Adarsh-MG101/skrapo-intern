@@ -31,13 +31,19 @@ export const FCMInitializer = () => {
         });
 
         // Foreground listener — shows in-app toast when push arrives while app is open.
-        // Deduplicate: track the last notification to avoid showing the same one twice
-        // (which can happen when both socket and FCM fire for the same event).
         const unsubscribe = onMessageListener((payload: any) => {
             console.log('[FCM] Foreground message:', payload);
             
             const title = payload.notification?.title || payload.data?.title;
             const body = payload.notification?.body || payload.data?.body;
+            const targetUserId = payload.data?.targetUserId;
+            
+            // Security/Privacy Filter: Only show toast if intended for this specific user
+            // Note: user.id comes from useAuth
+            if (targetUserId && targetUserId !== user.id) {
+                console.log(`[FCM] Ignoring notification intended for another user (${targetUserId})`);
+                return;
+            }
             
             if (title && body) {
                 // Create a simple dedup key from title + body
@@ -48,7 +54,7 @@ export const FCMInitializer = () => {
                 }
                 lastNotificationId.current = notifId;
                 
-                // Clear the dedup key after 5 seconds so same-content notifications can show again later
+                // Clear the dedup key after 5 seconds
                 setTimeout(() => {
                     if (lastNotificationId.current === notifId) {
                         lastNotificationId.current = '';
