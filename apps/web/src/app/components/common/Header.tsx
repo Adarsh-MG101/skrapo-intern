@@ -3,10 +3,10 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { NotificationBell } from './index';
-import { UserCircle, ChevronDown } from 'lucide-react';
+import { UserCircle, ChevronDown, LogOut } from 'lucide-react';
 
 const Header = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
 
@@ -26,7 +26,7 @@ const Header = () => {
         <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-sm border border-gray-100 overflow-hidden">
           <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
         </div>
-        <span className="text-xl font-black text-gray-900 tracking-tight ml-2">Recyclemybin</span>
+        <span className="text-2xl font-black text-gray-900 tracking-tight">Recyclemybin</span>
       </div>
       
       <div className="flex items-center gap-3">
@@ -71,6 +71,18 @@ const Header = () => {
                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
                     {user.role === 'scrapChamp' ? 'Scrap Champ' : user.role === 'admin' ? 'Administrator' : 'Customer'}
                     </p>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      logout();
+                    }}
+                    className="w-full py-2.5 flex items-center justify-center gap-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all font-black text-[10px] uppercase tracking-widest"
+                  >
+                    <LogOut size={16} strokeWidth={2.5} /> Sign Out
+                  </button>
                 </div>
               </div>
             )}

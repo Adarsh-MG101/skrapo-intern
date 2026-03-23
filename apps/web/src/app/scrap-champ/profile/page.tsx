@@ -239,14 +239,14 @@ function ScrapChampProfileContent() {
     <div className="min-h-screen bg-gray-50/30 pb-32">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-30 px-4 py-4 sm:py-6 shadow-sm">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <Link href="/scrap-champ">
               <Button variant="ghost" className="p-2 sm:p-3 rounded-2xl bg-gray-50 text-gray-500 hover:bg-brand-50 hover:text-brand-600 border-none transition-all">
-                <ArrowLeft size={20} />
+                <ArrowLeft size={20} className="sm:w-5 sm:h-5 w-4 h-4" />
               </Button>
             </Link>
-            <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tighter">My <span className="text-brand-600">Profile</span></h1>
+            <h1 className="text-lg sm:text-2xl font-black text-gray-900 tracking-tighter truncate">My <span className="text-brand-600">Profile</span></h1>
           </div>
           <Button 
             variant="primary" 

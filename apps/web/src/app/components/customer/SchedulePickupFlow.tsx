@@ -362,10 +362,14 @@ export const SchedulePickupFlow: React.FC = () => {
                 const Icon = s.icon;
                 
                 return (
-                  <div key={s.id} className="relative z-10 flex flex-col items-center group">
+                  <div 
+                    key={s.id} 
+                    className={`relative z-10 flex flex-col items-center group ${isCompleted ? 'cursor-pointer' : ''}`}
+                    onClick={() => isCompleted && setStep(s.id)}
+                  >
                     <div className={`
                       w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-500 border-2
-                      ${isCompleted ? 'bg-brand-500 border-brand-500 text-white shadow-lg shadow-brand-500/20' : 
+                      ${isCompleted ? 'bg-brand-500 border-brand-500 text-white shadow-lg shadow-brand-500/20 group-hover:scale-105 active:scale-95' : 
                         isActive ? 'bg-white border-brand-500 text-brand-600 shadow-xl shadow-brand-500/10 scale-110' : 
                         'bg-white border-gray-100 text-gray-400'}
                     `}>
@@ -389,7 +393,7 @@ export const SchedulePickupFlow: React.FC = () => {
               
               {!capturedImage ? (
                 <>
-                  <h2 className="text-3xl font-black text-gray-900 mb-8 tracking-tight">Show us what you're recycling</h2>
+                  <h2 className="text-3xl font-black text-gray-900 mb-8 tracking-tight">Upload a photo of your recyclables!</h2>
                   
                   {showCamera ? (
                     <div className="w-full max-w-md mx-auto animate-scale-in">
@@ -429,7 +433,7 @@ export const SchedulePickupFlow: React.FC = () => {
                         onClick={() => setStep(2)}
                         className="w-full py-4 text-gray-400 hover:text-gray-600 font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 group"
                       >
-                         Skip for now <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                         Continue without photo <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </div>
                   )}
@@ -484,22 +488,29 @@ export const SchedulePickupFlow: React.FC = () => {
                 </div>
 
                 {isDropdownOpen && (
-                  <div className="absolute z-50 mt-4 w-full bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden animate-scale-in">
-                    <div className="p-4 bg-gray-50/50 border-b border-gray-100">
-                      <div className="relative">
+                  <div className="absolute z-50 mt-4 w-full bg-white rounded-[2rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.25)] border border-gray-100 overflow-hidden animate-scale-in">
+                    <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex items-center gap-3">
+                      <div className="relative flex-1">
                         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input 
                           autoFocus
                           type="text"
-                          placeholder="Type to filter categories..."
+                          placeholder="Search items..."
                           className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-brand-300 transition-all font-bold text-sm"
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
                         />
                       </div>
+                      <Button 
+                         variant="primary" 
+                         onClick={() => setIsDropdownOpen(false)}
+                         className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md hover:shadow-lg active:scale-95 whitespace-nowrap"
+                      >
+                         Done
+                      </Button>
                     </div>
-                    <div className="max-h-[320px] overflow-y-auto p-3 scrollbar-hide">
+                    <div className="max-h-[60vh] overflow-y-auto p-3 scrollbar-hide">
                       {scrapCategories
                         .filter(cat => cat.label.toLowerCase().includes(searchTerm.toLowerCase()))
                         .map((cat) => (
@@ -577,11 +588,11 @@ export const SchedulePickupFlow: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex justify-between items-center bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
-                <Button variant="ghost" onClick={() => setStep(1)} className="rounded-xl flex gap-2">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+                <Button variant="secondary" onClick={() => setStep(1)} fullWidth className="sm:w-auto rounded-xl flex gap-2 border-2 border-brand-100/50 py-4">
                    <ArrowLeft size={18} /> Back
                 </Button>
-                <Button onClick={() => setStep(3)} disabled={selectedCategories.length === 0} size="lg" className="px-12 rounded-xl shadow-lg shadow-brand-500/20" rightIcon={<ChevronRight size={20} />}>
+                <Button onClick={() => setStep(3)} disabled={selectedCategories.length === 0} size="lg" fullWidth className="sm:w-auto rounded-xl shadow-lg shadow-brand-500/20 py-4" rightIcon={<ChevronRight size={20} />}>
                    Next Details
                 </Button>
               </div>
@@ -594,23 +605,45 @@ export const SchedulePickupFlow: React.FC = () => {
                 <h2 className="text-3xl font-black text-gray-900 tracking-tight">Pickup Logistics</h2>
               </div>
 
-              <div className="mb-10 p-8 bg-gray-50/50 rounded-[2.5rem] border border-gray-100">
+               <div className="mb-10 p-4 sm:p-8 bg-gray-50/50 rounded-[2.5rem] border border-gray-100">
                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-6 flex items-center justify-between">
                    <div className="flex items-center gap-2">
                       <Scale size={16} className="text-brand-500" /> Estimated Weights (kg)
                    </div>
                    <span className="text-brand-600 lowercase font-medium">Min 10kg total required</span>
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                  {selectedCategories.map(cat => (
-                    <Input 
-                      key={cat} label={cat} placeholder="e.g. 5" type="number" min="0.1" step="0.1" required
-                      value={formData.itemWeights[cat] || ''}
-                      onChange={(e) => setFormData({...formData, itemWeights: {...formData.itemWeights, [cat]: e.target.value}})}
-                      className="bg-white rounded-xl border-2"
-                    />
-                  ))}
-                </div>
+                 <div className="space-y-4">
+                   {selectedCategories.map(catId => {
+                     const cat = scrapCategories.find(c => c.id === catId);
+                     if (!cat) return null;
+                     const Icon = cat.Icon;
+                     return (
+                       <div key={cat.id} className="flex items-center gap-4 bg-white p-2 sm:p-3 rounded-2xl border border-gray-100 shadow-sm hover:border-brand-200 transition-all">
+                         <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
+                           <div className={`p-2 rounded-xl ${cat.color} bg-white shadow-sm flex-shrink-0`}>
+                             <Icon size={16} />
+                           </div>
+                           <span className="font-extrabold text-gray-900 text-[13px] leading-tight flex-1">
+                             {cat.label}
+                           </span>
+                         </div>
+                         <div className="w-24 sm:w-40 flex-shrink-0">
+                           <Input 
+                             placeholder="0.0" 
+                             type="number" 
+                             min="0.1" 
+                             step="0.1" 
+                             required
+                             value={formData.itemWeights[cat.id] || ''}
+                             onChange={(e) => setFormData({...formData, itemWeights: {...formData.itemWeights, [cat.id]: e.target.value}})}
+                             className="bg-brand-50/30 rounded-xl border-brand-100 border-2 focus:bg-white pr-10 text-right font-black py-2.5 text-sm text-brand-700 placeholder:text-brand-300"
+                             rightIcon={<span className="text-[9px] font-black text-brand-600 uppercase tracking-widest">kg</span>}
+                           />
+                         </div>
+                       </div>
+                     );
+                   })}
+                 </div>
 
                 <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
                   <div>
@@ -667,7 +700,7 @@ export const SchedulePickupFlow: React.FC = () => {
               </div>
 
               <div className="flex flex-col md:flex-row gap-4 p-6 bg-gray-50/50 rounded-3xl border border-gray-100">
-                <Button type="button" variant="ghost" onClick={() => setStep(2)} className="flex gap-2 rounded-xl">
+                <Button type="button" variant="secondary" onClick={() => setStep(2)} className="flex gap-2 rounded-xl border-2 border-brand-100/50">
                    <ChevronLeft size={20} /> Categories
                 </Button>
                 <Button 

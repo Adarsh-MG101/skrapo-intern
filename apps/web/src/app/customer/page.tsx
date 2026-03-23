@@ -16,6 +16,7 @@ import {
   Sparkles,
   ArrowRight
 } from 'lucide-react';
+import { Button } from '../components/common';
 
 interface Stats {
   total: number;
@@ -76,89 +77,71 @@ function CustomerDashboardContent() {
   return (
     <div className="p-4 md:p-8 lg:p-10 bg-gray-50/20 min-h-screen">
       {/* Welcome */}
-      <div className="mb-10 animate-fade-in flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-            Welcome back, <span className="text-brand-600 font-black">{user?.name?.split(' ')[0]}</span>! <Sparkles className="text-brand-500 fill-brand-400" />
-          </h1>
-          <p className="text-gray-500 mt-2 text-lg font-medium">Ready to make a difference with recycling today?</p>
-        </div>
-        <div className="md:hidden flex items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-gray-100 pr-6">
-          <div className="w-12 h-12 bg-brand-500 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-brand-500/20 border border-brand-400">
-             {user?.name?.[0].toUpperCase()}
-          </div>
-          <div className="text-left leading-tight">
-            <p className="text-sm font-black text-gray-900">{user?.name}</p>
-            <p className="text-[10px] font-black text-brand-600 uppercase tracking-widest mt-0.5">{user?.role}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid md:grid-cols-3 gap-8 mb-12">
-        <Link href="/customer/schedule" className="group">
-          <div className="h-full bg-brand-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-brand-500/20 hover:shadow-brand-500/40 transition-all hover:-translate-y-2 relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform" />
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform backdrop-blur-md border border-white/20">
-              <CalendarRange size={32} strokeWidth={2.5} />
-            </div>
-            <h3 className="text-2xl font-black mb-2">Schedule Pickup</h3>
-            <p className="text-brand-100 font-medium leading-relaxed">Book a new scrap collection at your doorstep</p>
-          </div>
-        </Link>
-
-        <Link href="/customer/pickups" className="group">
-          <div className="h-full bg-white rounded-[2.5rem] p-8 border border-gray-100 hover:border-brand-100 shadow-sm hover:shadow-xl transition-all hover:-translate-y-2">
-            <div className="w-16 h-16 bg-brand-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-brand-100 text-brand-600">
-              <ClipboardList size={32} strokeWidth={2.5} />
-            </div>
-            <h3 className="text-2xl font-black text-gray-900 mb-2">My Recycles</h3>
-            <p className="text-gray-400 font-medium leading-relaxed">Track and manage your ongoing recycling orders</p>
-          </div>
-        </Link>
-
-        <div className="group opacity-60 relative">
-          <div className="h-full bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm relative overflow-hidden">
-             <div className="absolute top-4 right-6 px-3 py-1 bg-gray-100 text-gray-400 rounded-full text-[8px] font-black uppercase tracking-widest border border-gray-200 z-10">
-                Soon
-             </div>
-            <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 border border-emerald-100 text-emerald-600">
-              <Sprout size={32} strokeWidth={2.5} />
-            </div>
-            <h3 className="text-2xl font-black text-gray-900 mb-2">Impact Profile</h3>
-            <p className="text-gray-400 font-medium leading-relaxed mb-6">See your environmental impact and basic profile</p>
-            <div className="inline-flex items-center px-6 py-2 bg-gray-50 rounded-xl border border-gray-100 text-gray-400 font-bold text-[10px] uppercase tracking-widest cursor-not-allowed">
-               Inactive
-            </div>
-          </div>
-        </div>
+      <div className="mb-10 animate-fade-in">
+        <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight leading-tight">
+          Welcome back,<br className="sm:hidden" />
+          <span className="text-brand-600 font-black inline-flex items-center gap-2 mt-1 sm:mt-0">
+            {user?.name?.split(' ')[0]}! <Sparkles className="text-brand-500 fill-brand-400" />
+          </span>
+        </h1>
+        <p className="text-gray-500 mt-2 text-base sm:text-lg font-medium">Ready to make a difference with recycling today?</p>
       </div>
 
       {/* Stats Summary */}
-      <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3 tracking-tight">
-        <span className="w-2 h-8 bg-brand-500 rounded-full" />
-        Activity Summary
-      </h2>
-      
       {loading ? (
         <div className="flex justify-center py-10"><Loader size="lg" /></div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-12 animate-fade-in">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mb-10 sm:mb-16 animate-fade-in">
           {[
-            { label: 'Total Scraps', value: stats.total, Icon: Package, color: 'text-brand-600', bg: 'bg-brand-50' },
-            { label: 'Pending', value: stats.pending, Icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-            { label: 'Completed', value: stats.completed, Icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          ].map((stat) => (
-            <div key={stat.label} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className={`w-12 h-12 ${stat.bg} ${stat.color} rounded-2xl flex items-center justify-center mb-4 border border-white shadow-sm`}>
-                <stat.Icon size={24} strokeWidth={3} />
+            { label: 'Total Scraps', value: stats.total, Icon: Package, color: 'text-brand-600', bg: 'bg-brand-50', border: 'border-brand-100' },
+            { label: 'Pending', value: stats.pending, Icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
+            { label: 'Completed', value: stats.completed, Icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+          ].map((stat, index) => (
+            <div key={stat.label} className="bg-white rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 group overflow-hidden" style={{ animationDelay: `${index * 100}ms` }}>
+              <div className={`w-10 h-10 sm:w-14 sm:h-14 ${stat.bg} ${stat.color} rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-neutral-100 shadow-inner border ${stat.border} group-hover:scale-110 transition-transform`}>
+                <stat.Icon size={20} className="sm:w-7 sm:h-7" strokeWidth={2.5} />
               </div>
-              <div className="text-3xl font-black text-gray-900">{stat.value}</div>
-              <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1.5">{stat.label}</div>
+              <div className="text-xl sm:text-3xl font-black text-gray-900 mb-0.5">{stat.value}</div>
+              <div className="text-[10px] uppercase font-black tracking-widest text-gray-400">{stat.label}</div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-12 mb-10">
+        <Link href="/customer/schedule" className="group block h-full">
+          <div className="bg-brand-600 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-14 text-white shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 relative overflow-hidden h-full flex flex-col justify-between border border-brand-500 min-h-[220px] sm:min-h-[280px]">
+            <div className="absolute -right-8 -top-8 opacity-10 group-hover:scale-125 group-hover:-rotate-12 transition-all duration-700 pointer-events-none">
+              <CalendarRange size={140} className="sm:w-[220px] sm:h-[220px]" strokeWidth={1} />
+            </div>
+            <div className="relative z-10">
+              <h3 className="text-2xl sm:text-4xl font-black mb-2 sm:mb-6 tracking-tight">Schedule Pickup</h3>
+              <p className="text-brand-50 font-medium text-xs sm:text-lg mb-6 sm:mb-10 max-w-full leading-snug sm:leading-relaxed">Book a new scrap collection right at your doorstep.</p>
+            </div>
+            <Button variant="ghost" className="bg-white/10 border-white/20 text-white hover:bg-white hover:text-brand-600 px-6 sm:px-10 py-4 sm:py-6 rounded-xl sm:rounded-2xl text-xs sm:text-lg flex gap-2 w-fit relative z-10 transition-colors">
+              Book Now <ArrowRight size={16} />
+            </Button>
+          </div>
+        </Link>
+
+        <Link href="/customer/pickups" className="group block h-full">
+          <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-14 border border-gray-100 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 relative overflow-hidden h-full flex flex-col justify-between min-h-[220px] sm:min-h-[280px]">
+             <div className="absolute -right-8 -top-8 opacity-5 group-hover:scale-125 group-hover:rotate-12 transition-all duration-700 text-gray-900 pointer-events-none">
+              <ClipboardList size={140} className="sm:w-[220px] sm:h-[220px]" strokeWidth={1} />
+             </div>
+             <div className="relative z-10">
+                <h3 className="text-2xl sm:text-4xl font-black text-gray-900 mb-2 sm:mb-6 tracking-tight">My Recycles</h3>
+                <p className="text-gray-500 font-medium text-xs sm:text-lg mb-6 sm:mb-10 max-w-full leading-snug sm:leading-relaxed">Track and manage your ongoing recycling orders securely.</p>
+             </div>
+             <Button variant="primary" className="px-6 sm:px-10 py-4 sm:py-6 rounded-xl sm:rounded-2xl text-xs sm:text-lg flex gap-2 shadow-lg shadow-brand-500/10 w-fit relative z-10">
+               Track Activity <ArrowRight size={16} />
+             </Button>
+          </div>
+        </Link>
+      </div>
+
+
 
       {/* Empty state or impact banner */}
       {!loading && stats.total === 0 ? (

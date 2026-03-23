@@ -89,22 +89,22 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
           readOnly
           placeholder={type === 'date' ? 'Choose Date' : 'Choose Time'}
           error={error}
-          className="pointer-events-none group-hover:border-emerald-300 transition-colors bg-white shadow-sm"
+          className="pointer-events-none group-hover:border-emerald-300 transition-colors bg-white shadow-sm text-[11px] font-bold placeholder:text-[10.5px] placeholder:font-black placeholder:uppercase placeholder:tracking-tighter py-2.5"
           leftIcon={
             type === 'date' ? (
-              <svg className="w-5 h-5 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             ) : (
-              <svg className="w-5 h-5 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 text-gray-400 group-hover:text-brand-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             )
           }
           rightIcon={
             value && (
-              <div className="bg-emerald-50 w-6 h-6 rounded-full flex items-center justify-center animate-scale-in">
-                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <div className="bg-emerald-50 w-5 h-5 rounded-full flex items-center justify-center animate-scale-in">
+                <svg className="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>

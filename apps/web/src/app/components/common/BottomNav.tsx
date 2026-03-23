@@ -2,23 +2,20 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import {
   LayoutDashboard,
   CalendarPlus,
   ClipboardList,
-  CreditCard,
-  LifeBuoy,
   Zap,
   Users,
   History,
-  MessageSquare,
   TrendingUp,
   Truck,
   User,
-  LogOut,
+  MessageSquare,
 } from 'lucide-react';
 
 const NAV_CONFIG = {
@@ -26,15 +23,15 @@ const NAV_CONFIG = {
     { name: 'Home', href: '/customer', icon: LayoutDashboard },
     { name: 'Schedule', href: '/customer/schedule', icon: CalendarPlus },
     { name: 'Pickups', href: '/customer/pickups', icon: ClipboardList },
-    { name: 'Payments', href: '/customer/payments', disabled: true, icon: CreditCard },
-    { name: 'Support', href: '/customer/support', disabled: true, icon: LifeBuoy },
+    { name: 'Profile', href: '/customer/profile', icon: User },
   ],
   admin: [
-    { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Allocation', href: '/admin/orders', icon: Zap },
+    { name: 'Home', href: '/admin', icon: LayoutDashboard },
+    { name: 'Queue', href: '/admin/orders', icon: Zap },
+    { name: 'Feed', href: '/admin/feedback', icon: MessageSquare },
     { name: 'Champs', href: '/admin/champs', icon: Users },
-    { name: 'History', href: '/admin/history', icon: History },
-    { name: 'Feedback', href: '/admin/feedback', icon: MessageSquare },
+    { name: 'Logs', href: '/admin/history', icon: History },
+    { name: 'Profile', href: '/admin/profile', icon: User },
   ],
   scrapChamp: [
     { name: 'Dashboard', href: '/scrap-champ', icon: TrendingUp },
@@ -46,14 +43,12 @@ const NAV_CONFIG = {
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout, apiFetch } = useAuth();
+  const { user, apiFetch } = useAuth();
   const { socket } = useSocket();
 
   const [adminOrderCount, setAdminOrderCount] = useState(0);
   const [champJobCount, setChampJobCount] = useState(0);
   const [customerNotiCount, setCustomerNotiCount] = useState(0);
-  const [showLogoutPrompt, setShowLogoutPrompt] = useState(false);
 
   const currentNavItems = user?.role ? (NAV_CONFIG as any)[user.role] || [] : [];
 
@@ -132,15 +127,7 @@ export default function BottomNav() {
     }
   }, [pathname]);
 
-  const handleLogout = () => setShowLogoutPrompt(true);
-  const confirmLogout = async () => {
-    await logout();
-    router.replace('/login');
-  };
-  const cancelLogout = () => setShowLogoutPrompt(false);
-
-  // Build nav items: replace the last disabled item with logout for customer,
-  // or add logout at the end for scrapChamp (which only has 4 items)
+  // Build nav items:
   // For admin, we have 5 items + we keep them as is (Settings is removed since disabled) and add logout
   // Actually, let's keep it simple: show all non-disabled items + a logout item
   // But we need to keep the count manageable for bottom nav (max ~5 items)
@@ -208,56 +195,8 @@ export default function BottomNav() {
               </Link>
             );
           })}
-          {/* Logout button */}
-          <button
-            className="btm-nav-item btm-nav-logout"
-            onClick={handleLogout}
-          >
-            <div className="btm-nav-icon-wrap">
-              <LogOut size={22} strokeWidth={2} />
-            </div>
-            <span className="btm-nav-label">Logout</span>
-          </button>
         </div>
       </nav>
-
-      {/* Logout Confirmation Modal */}
-      {showLogoutPrompt && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div
-            className="bg-white rounded-[32px] shadow-2xl max-w-sm w-full p-8 animate-zoom-in border border-gray-100"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-red-500 shadow-inner">
-              <LogOut size={40} strokeWidth={2.5} />
-            </div>
-
-            <h3 className="text-2xl font-black text-gray-900 text-center mb-2 tracking-tight">
-              Sign Out?
-            </h3>
-            <p className="text-gray-500 text-center mb-8 leading-relaxed font-medium">
-              Are you sure you want to sign out of your account? You will need
-              to log in again to access your dashboard.
-            </p>
-
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={confirmLogout}
-                className="w-full py-4 bg-red-500 text-white font-black rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/25 active:scale-95 flex items-center justify-center gap-2"
-              >
-                <LogOut size={20} strokeWidth={3} />
-                Yes, Sign Out
-              </button>
-              <button
-                onClick={cancelLogout}
-                className="w-full py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl hover:bg-gray-100 transition-all active:scale-95 text-sm uppercase tracking-widest"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <style jsx global>{`
         /* Bottom Navigation Bar */
