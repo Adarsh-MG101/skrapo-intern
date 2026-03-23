@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { ProtectedRoute, Button, Input } from '../../components/common';
-import { User, Mail, MapPin, Phone, LogOut, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Phone, LogOut, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export default function AdminProfilePage() {
   const { user, logout } = useAuth();
