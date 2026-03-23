@@ -108,7 +108,10 @@ export default function ScrapChampJobsPage() {
     };
 
     socket.on('new_job_assigned', handleRefresh);
+    socket.on('new_job_assigned_manual', handleRefresh);
     socket.on('new_available_job', handleRefresh);
+    socket.on('orderAssigned', handleRefresh);
+    socket.on('pickup_cancelled', handleRefresh); // Refresh if a job is cancelled by user/admin
     
     const handleAcceptedByOther = (data: any) => {
       if (user?.id && data.acceptedByUserId !== user.id) {
@@ -120,7 +123,10 @@ export default function ScrapChampJobsPage() {
     
     return () => {
       socket.off('new_job_assigned', handleRefresh);
+      socket.off('new_job_assigned_manual', handleRefresh);
       socket.off('new_available_job', handleRefresh);
+      socket.off('orderAssigned', handleRefresh);
+      socket.off('pickup_cancelled', handleRefresh);
       socket.off('order_accepted_by_other', handleAcceptedByOther);
     };
   }, [socket, user]);
@@ -259,12 +265,12 @@ export default function ScrapChampJobsPage() {
                       </div>
                       
                       {/* Action Row */}
-                      <div className="flex flex-col sm:flex-row gap-2.5 pt-4 border-t border-gray-100/50 mt-1">
+                      <div className="flex flex-col gap-2.5 pt-4 border-t border-gray-100/50 mt-1">
                          {job.status === 'Accepted' && (
-                           <div className="flex gap-2.5 flex-1">
+                           <div className="flex flex-col sm:flex-row gap-2.5 flex-1">
                              <Button 
                                variant="ghost" 
-                               className="flex-[2] py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 flex items-center justify-center gap-2 shadow-sm"
+                               className="flex-1 py-3.5 sm:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest border-2 border-emerald-100 text-emerald-600 hover:bg-emerald-50 flex items-center justify-center gap-2 shadow-sm"
                                onClick={(e) => {
                                  e.preventDefault();
                                  const dest = job.location 
@@ -288,7 +294,7 @@ export default function ScrapChampJobsPage() {
                          )}
                          
                          {(job.status === 'Requested' || job.status === 'Assigned') ? (
-                             <div className="flex gap-2.5 flex-1">
+                             <div className="flex flex-col sm:flex-row gap-2.5 flex-1">
                                 <Button 
                                   variant="primary" 
                                   onClick={() => handleDecision(job._id, 'accept')}
