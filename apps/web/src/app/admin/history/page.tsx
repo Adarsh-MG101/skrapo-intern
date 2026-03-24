@@ -215,83 +215,85 @@ export default function AdminHistoryPage() {
             <div className="space-y-6">
               
               {/* Desktop Table View */}
-              <div className="hidden md:block bg-white rounded-[3rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
+              <div className="hidden md:block bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-gray-50/50 border-b border-gray-100">
-                        <th className="px-4 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Customer & Address</th>
-                        <th className="px-4 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Pickup Time</th>
-                        <th className="px-4 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Assigned Champ</th>
-                        <th className="px-4 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Details</th>
-                        <th className="px-4 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Customer & Address</th>
+                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Pickup Time</th>
+                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Assigned Champ</th>
+                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Actions</th>
+                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
                       {currentItems.map((order) => (
-                        <tr key={order._id} className="hover:bg-gray-50/30 transition-all group">
-                          <td className="px-4 py-5 min-w-[200px] text-left">
-                            <div className="flex items-center gap-4">
-                               <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 shadow-inner border border-white flex-shrink-0">
-                                  <User size={24} />
+                        <tr key={order._id} className="hover:bg-gray-50/30 transition-all group border-b border-gray-50 last:border-0">
+                          <td className="px-4 py-4 min-w-[200px] text-left">
+                            <div className="flex items-center gap-3">
+                               <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 shadow-inner border border-white flex-shrink-0">
+                                  <User size={20} />
                                </div>
                                <div className="min-w-0">
-                                  <p className="font-black text-gray-900 mb-0.5 text-lg truncate">{order.customerDetails?.name || 'Deleted User'}</p>
-                                  <p className="text-[11px] text-brand-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5 truncate">
-                                     <Phone size={12} className="text-brand-500 shrink-0" /> {order.customerDetails?.mobileNumber || 'N/A'}
+                                  <p className="font-black text-gray-900 mb-0.5 text-base truncate">{order.customerDetails?.name || 'Deleted User'}</p>
+                                  <p className="text-[10px] text-brand-600 font-bold uppercase tracking-wider flex items-center gap-1.5 truncate">
+                                     <Phone size={10} className="text-brand-500 shrink-0" /> {order.customerDetails?.mobileNumber || 'N/A'}
                                   </p>
-                                   <p className="text-[11px] text-gray-400 font-bold leading-tight max-w-[200px] truncate group-hover:text-gray-600 transition-colors" title={order.exactAddress}>
+                                   <p className="text-[10px] text-gray-400 font-bold leading-tight max-w-[200px] truncate group-hover:text-gray-600 transition-colors" title={order.exactAddress}>
                                       {order.exactAddress}
                                    </p>
-                                   <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-2 flex items-center gap-1 opacity-60">
+                                   <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1 opacity-60">
                                       <Clock size={10} /> Placed: {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                    </p>
                                 </div>
                             </div>
                           </td>
-                          <td className="px-4 py-5 whitespace-nowrap text-left">
-                             <div className="space-y-1.5 p-4 bg-gray-50/50 rounded-2xl border border-gray-50 group-hover:bg-white group-hover:border-gray-100 transition-all">
-                                <p className="text-[11px] font-black text-gray-900 flex items-center gap-2">
-                                   <Calendar size={14} className="text-gray-400" />
+                          <td className="px-4 py-4 whitespace-nowrap text-left">
+                             <div className="space-y-1 p-3 bg-gray-50/50 rounded-xl border border-gray-50 group-hover:bg-white group-hover:border-gray-100 transition-all">
+                                <p className="text-[10px] font-black text-gray-900 flex items-center gap-2">
+                                   <Calendar size={12} className="text-gray-400" />
                                    {new Date(order.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </p>
-                                 <p className="text-[10px] text-brand-600 font-black uppercase tracking-widest flex items-center gap-2">
-                                    <Clock size={14} className="text-brand-500" />
+                                 <p className="text-[9px] text-brand-600 font-black uppercase tracking-widest flex items-center gap-2">
+                                    <Clock size={12} className="text-brand-500" />
                                     {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                  </p>
                               </div>
                           </td>
-                          <td className="px-4 py-5 text-left min-w-[160px]">
+                          <td className="px-4 py-4 text-left min-w-[160px]">
                             {order.champDetails ? (
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-700 font-black text-sm ring-4 ring-brand-50 ring-inset shadow-inner border border-white flex-shrink-0">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center text-brand-700 font-black text-xs ring-4 ring-brand-50 ring-inset shadow-inner border border-white flex-shrink-0">
                                   {order.champDetails.name.charAt(0)}
                                 </div>
                                 <div className="min-w-0">
-                                   <p className="text-sm font-black text-gray-900 truncate">{order.champDetails.name}</p>
-                                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Partner</p>
+                                   <p className="text-xs font-black text-gray-900 truncate">{order.champDetails.name}</p>
+                                   <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Partner</p>
                                 </div>
                               </div>
                             ) : order.assignedScrapChampId ? (
-                              <div className="flex items-center gap-3 opacity-60">
-                                <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 font-bold text-sm flex-shrink-0">?</div>
-                                <p className="text-xs font-bold text-gray-400 italic">No Reference</p>
+                              <div className="flex items-center gap-2.5 opacity-60">
+                                <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold text-xs flex-shrink-0">?</div>
+                                <p className="text-[10px] font-bold text-gray-400 italic">No Ref</p>
                               </div>
                             ) : (
-                              <div className="inline-flex items-center px-4 py-2 bg-gray-50 rounded-xl text-[10px] text-gray-400 font-black uppercase tracking-widest italic border border-dashed border-gray-200">
+                              <div className="inline-flex items-center px-3 py-1.5 bg-gray-50 rounded-lg text-[9px] text-gray-400 font-black uppercase tracking-widest italic border border-dashed border-gray-200">
                                 Unassigned
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-5 text-center">
+                          <td className="px-4 py-4 text-center">
                              <Link href={`/admin/history/${order._id}`}>
-                                <button className="px-4 py-3 bg-gray-900 text-white hover:bg-black text-[10px] font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-gray-200 transition-all active:scale-95 whitespace-nowrap flex items-center gap-2 mx-auto">
-                                   View Record <ArrowRight size={12} />
+                                <button className="px-4 py-2 bg-gray-900 text-white hover:bg-black text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-gray-200 transition-all active:scale-95 whitespace-nowrap flex items-center gap-2 mx-auto">
+                                   Inspect <ArrowRight size={10} />
                                 </button>
                              </Link>
                           </td>
-                          <td className="px-4 py-5 text-center">
-                            <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
+                          <td className="px-4 py-4 text-center">
+                            <div className="transform scale-90">
+                              <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
+                            </div>
                           </td>
                         </tr>
                       ))}

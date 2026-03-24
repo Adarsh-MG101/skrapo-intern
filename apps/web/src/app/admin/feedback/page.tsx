@@ -166,32 +166,32 @@ export default function AdminFeedbackPage() {
               ) : (
                 <>
                   {currentItems.map((f) => (
-                    <div key={f._id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center justify-between hover:border-brand-200 transition-all group active:scale-[0.99]">
-                       <div className="flex items-center gap-4 flex-1 min-w-0">
-                          <div className={`w-1 h-8 rounded-full flex-shrink-0 ${f.rating >= 4 ? 'bg-emerald-500' : f.rating >= 2.5 ? 'bg-amber-500' : 'bg-red-500'}`} />
+                    <div key={f._id} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex items-center justify-between hover:border-brand-200 transition-all group active:scale-[0.99]">
+                       <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className={`w-1 h-6 rounded-full flex-shrink-0 ${f.rating >= 4 ? 'bg-emerald-500' : f.rating >= 2.5 ? 'bg-amber-500' : 'bg-red-500'}`} />
                           <div className="min-w-0">
-                             <h4 className="text-sm font-black text-gray-900 tracking-tight flex items-center gap-2 truncate">
+                             <h4 className="text-xs font-black text-gray-900 tracking-tight flex items-center gap-2 truncate uppercase">
                                 {f.customer?.name}
                                 <div className="flex gap-0.5 opacity-60">
                                    {[...Array(5)].map((_, i) => (
                                      <Star 
                                         key={i} 
-                                        size={8} 
+                                        size={7} 
                                         className={`${i < f.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-100'}`}
                                         strokeWidth={3}
                                      />
                                    ))}
                                 </div>
                              </h4>
-                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-                                {new Date(f.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'long', year: 'numeric' })}, {new Date(f.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                                {new Date(f.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}, {new Date(f.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                              </p>
                           </div>
                        </div>
 
-                       <div className="flex items-center gap-4">
+                       <div className="flex items-center gap-3">
                           <Link href={`/admin/orders/${f.orderId}`}>
-                            <button className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-[9px] font-black text-gray-400 uppercase tracking-widest hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all">
+                            <button className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-[8px] font-black text-gray-400 uppercase tracking-widest hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all">
                                Inspect
                             </button>
                           </Link>
