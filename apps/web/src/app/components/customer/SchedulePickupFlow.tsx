@@ -16,9 +16,7 @@ import {
   Video, 
   MapPin, 
   Hand,
-  ShieldCheck,
   Scale,
-  Wallet,
   ArrowRight,
   ArrowLeft,
   Clock,
@@ -313,8 +311,8 @@ export const SchedulePickupFlow: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10">
-      <div className="flex-1 min-w-0">
+    <div className="max-w-3xl mx-auto flex flex-col gap-10">
+      <div className="w-full">
         {step === 1 && (
           <div className="mb-3 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6">
             <div>
@@ -744,52 +742,6 @@ export const SchedulePickupFlow: React.FC = () => {
         </div>
       </div>
 
-      <div className="lg:w-[380px] space-y-8 flex-shrink-0">
-        <div className="bg-brand-600 rounded-[2.5rem] p-8 text-white shadow-2xl shadow-brand-500/30 relative overflow-hidden group border border-brand-500">
-          <div className="absolute -right-4 -top-4 opacity-10 group-hover:scale-125 group-hover:rotate-12 transition-all duration-700">
-             <ShieldCheck size={160} />
-          </div>
-          <h3 className="text-2xl font-black mb-8 leading-tight relative z-10">Recyclemybin Assurance</h3>
-          <ul className="space-y-8 relative z-10">
-            {[
-              { title: 'Verified Network', desc: 'Background-checked partners only.', Icon: ShieldCheck },
-              { title: 'Digital Precision', desc: 'Pre-calibrated weighing metrics.', Icon: Scale },
-              { title: 'Direct Payments', desc: 'Secure cash or digital transfers.', Icon: Wallet },
-            ].map((item, i) => (
-              <li key={i} className="flex gap-4">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center flex-shrink-0 border border-white/20">
-                  <item.Icon size={20} />
-                </div>
-                <div>
-                  <p className="font-extrabold text-lg leading-tight mb-1">{item.title}</p>
-                  <p className="text-brand-100 text-sm font-medium leading-snug">{item.desc}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="bg-white rounded-[2.5rem] overflow-hidden border border-gray-100 shadow-sm p-2 group hover:shadow-lg transition-all">
-          <div className="bg-gray-50 aspect-video rounded-[2rem] relative flex items-center justify-center overflow-hidden">
-             <div className="absolute inset-0 bg-brand-500/5 group-hover:bg-transparent transition-colors" />
-             <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-brand-600 shadow-xl border-4 border-brand-50 group-hover:scale-110 transition-transform relative z-10">
-               <MapPin size={28} />
-             </div>
-             <div className="absolute top-4 left-4 flex gap-1">
-                <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse" />
-                <div className="w-2 h-2 bg-brand-200 rounded-full" />
-             </div>
-          </div>
-          <div className="p-6">
-            <p className="text-[10px] font-black uppercase tracking-widest text-brand-600 mb-2">Network Status</p>
-            <p className="text-gray-900 font-black text-lg mb-1 leading-tight">Live Coverage Active</p>
-            <p className="text-gray-400 text-sm font-bold flex items-center gap-2">
-               Ready in <span className="text-brand-600 text-base font-black">12-15</span> minutes
-            </p>
-          </div>
-        </div>
-
-      </div>
     </div>
   );
 };

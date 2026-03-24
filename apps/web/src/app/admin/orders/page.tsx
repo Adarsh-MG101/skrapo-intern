@@ -6,10 +6,46 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { StatusBadge, Loader, Button } from '../../components/common';
 import { useToast } from '../../components/common/Toast';
-import { getTimeSlotLabel } from '../../utils/dateTime';
-import Link from 'next/link';
-import { User, MapPin, Inbox, Zap, ArrowRight, Radio, Ban, Phone, ChevronDown, Clock } from 'lucide-react';
+import { User, Inbox, Zap, Ban, Phone, FileText, Layers, Droplets, Cpu, Package, Recycle, ArrowRight, Timer } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
+
+const getTimeSlotLabel = (slot: string) => {
+  if (slot.includes('-')) return slot;
+  const labels: { [key: string]: string } = {
+    'morning': '09:00 AM - 12:00 PM',
+    'afternoon': '12:00 PM - 03:30 PM',
+    'evening': '03:30 PM - 06:30 PM'
+  };
+  return labels[slot] || slot;
+};
+
+const ExpiryTimer = ({ createdAt }: { createdAt: string }) => {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
+  useEffect(() => {
+    const calculate = () => {
+      const expiry = new Date(createdAt).getTime() + 30 * 60 * 1000;
+      const diff = Math.max(0, expiry - Date.now());
+      setTimeLeft(diff);
+    };
+
+    calculate();
+    const interval = setInterval(calculate, 1000);
+    return () => clearInterval(interval);
+  }, [createdAt]);
+
+  if (timeLeft === 0) return null;
+
+  const mins = Math.floor(timeLeft / 60000);
+  const secs = Math.floor((timeLeft % 60000) / 1000);
+
+  return (
+    <span className="flex items-center gap-1 text-red-500 font-black bg-red-50 px-1.5 py-0.5 rounded-md border border-red-100/50 text-[9px] tracking-tight">
+      <Timer size={10} />
+      {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+    </span>
+  );
+};
 
 interface Order {
   _id: string;
@@ -31,41 +67,6 @@ interface Order {
     name: string;
   };
 }
-
-const CountdownTimer: React.FC<{ createdAt: string; onExpire?: () => void }> = ({ createdAt, onExpire }) => {
-  const [timeLeft, setTimeLeft] = useState<string>('');
-
-  useEffect(() => {
-    let hasExpired = false;
-    const calculateTime = () => {
-      if (hasExpired) return;
-      const start = new Date(createdAt).getTime();
-      const end = start + 30 * 60 * 1000;
-      const now = Date.now();
-      const diff = end - now;
-
-      if (diff <= 0) {
-        hasExpired = true;
-        setTimeLeft('Expired');
-        if (onExpire) {
-          // slight delay to prevent react state update warnings during render
-          setTimeout(onExpire, 100);
-        }
-        return;
-      }
-
-      const mins = Math.floor(diff / 60000);
-      const secs = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`${mins}:${secs.toString().padStart(2, '0')}`);
-    };
-
-    calculateTime();
-    const timer = setInterval(calculateTime, 1000);
-    return () => clearInterval(timer);
-  }, [createdAt, onExpire]);
-
-  return <span className="font-black tabular-nums">{timeLeft}</span>;
-};
 
 export default function AdminOrdersPage() {
   const { apiFetch, isLoading, isAuthenticated } = useAuth();
@@ -147,26 +148,9 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const updateStatus = async (orderId: string, newStatus: string) => {
-    try {
-      const res = await apiFetch(`/orders/admin/${orderId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (res.ok) {
-        showToast(`Status updated to ${newStatus}`, 'success');
-        fetchData();
-      } else {
-        const data = await res.json();
-        showToast(data.error || 'Failed to update status', 'error');
-      }
-    } catch (err) {
-      showToast('Error updating status', 'error');
-    }
-  };
-
   const [statusFilter, setStatusFilter] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchData = async () => {
     try {
@@ -193,6 +177,28 @@ export default function AdminOrdersPage() {
     if (statusFilter === 'Problem') return o.status === 'Problem';
     return true; // 'All'
   });
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const getPageNumbers = () => {
+    const maxVisible = 3;
+    let start = Math.max(1, currentPage - 1);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -226,14 +232,14 @@ export default function AdminOrdersPage() {
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
-      <div className="p-4 md:p-8 lg:p-10 bg-gray-50/30 min-h-screen">
+      <div className="p-2 md:p-6 bg-gray-50/30 min-h-screen">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
-                 Allocation Center <Zap className="text-brand-500 fill-brand-500" size={28} />
+              <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
+                 Allocation Center <Zap className="text-brand-500 fill-brand-500" size={24} />
               </h1>
-              <p className="text-gray-500 font-medium">Monitor real-time pickup broadcasts and champion engagement.</p>
+              <p className="text-xs text-gray-500 font-medium">Real-time pickup broadcasts and engagement.</p>
             </div>
 
              <div className="flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm gap-1 overflow-x-auto no-scrollbar w-full sm:w-auto">
@@ -243,7 +249,7 @@ export default function AdminOrdersPage() {
                      onClick={() => setStatusFilter(f)}
                      className={`flex-1 sm:flex-none px-3 sm:px-5 py-2 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-wider sm:tracking-widest transition-all whitespace-nowrap ${
                        statusFilter === f 
-                         ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/20' 
+                         ? 'bg-gray-900 text-white shadow-lg shadow-gray-900/10 scale-[1.02]' 
                          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                      }`}
                    >
@@ -258,237 +264,143 @@ export default function AdminOrdersPage() {
                <Loader size="lg" />
              </div>
            ) : (
-             <div className="space-y-6">
-               {/* Mobile View: Cards */}
-               <div className="grid grid-cols-1 gap-4 md:hidden">
-                 {filteredOrders.length === 0 ? (
-                   <div className="bg-white rounded-[2.5rem] p-12 border border-gray-100 shadow-sm flex flex-col items-center justify-center text-center">
-                     <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
-                       <Inbox size={32} />
-                     </div>
-                     <p className="text-gray-400 font-black uppercase tracking-widest text-[10px]">Queue Clear</p>
-                     <p className="text-gray-900 font-bold mt-1">No pickups in queue</p>
-                     {statusFilter !== 'All' && (
-                       <button onClick={() => setStatusFilter('All')} className="mt-4 text-[10px] font-black text-brand-500 uppercase tracking-widest underline">Show All Orders</button>
-                     )}
-                   </div>
-                 ) : (
-                   filteredOrders.map((order) => (
-                    <div key={order._id} className="bg-white rounded-[2rem] p-5 border border-gray-100 shadow-sm">
-                      <div className="flex justify-between items-start mb-4">
-                        <Link href={`/admin/orders/${order._id}`} className="flex-1 min-w-0 pr-4">
-                          <p className="font-black text-gray-900 leading-tight mb-1 truncate">{order.scrapTypes.join(', ')}</p>
-                          <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
-                             <Clock size={10} className="text-brand-500" />
-                             {new Date(order.scheduledAt).toLocaleDateString()} · {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+             <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {currentItems.length === 0 ? (
+                <div className="col-span-full bg-white rounded-[2.5rem] py-24 text-center border border-gray-100 shadow-sm flex flex-col items-center">
+                  <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
+                    <Inbox size={40} />
+                  </div>
+                  <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Queue Clear</p>
+                </div>
+              ) : (
+                currentItems.map((order) => {
+                  const material = order.scrapTypes[0] || 'Scrap';
+                  const isExpired = order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now());
+                  
+                  // Icon Logic
+                  let Icon = Recycle;
+                  let iconBg = 'bg-gray-50';
+                  let iconColor = 'text-gray-500';
+                  
+                  if (material.toLowerCase().includes('paper')) { Icon = FileText; iconBg = 'bg-blue-50'; iconColor = 'text-blue-500'; }
+                  else if (material.toLowerCase().includes('metal')) { Icon = Layers; iconBg = 'bg-slate-50'; iconColor = 'text-slate-500'; }
+                  else if (material.toLowerCase().includes('plastic')) { Icon = Droplets; iconBg = 'bg-emerald-50'; iconColor = 'text-emerald-500'; }
+                  else if (material.toLowerCase().includes('electronic') || material.toLowerCase().includes('e-waste')) { Icon = Cpu; iconBg = 'bg-orange-50'; iconColor = 'text-orange-500'; }
+                  else if (material.toLowerCase().includes('cardboard')) { Icon = Package; iconBg = 'bg-amber-50'; iconColor = 'text-amber-500'; }
+
+                  const displayStatus = isExpired ? 'Expired' : order.status;
+
+                  return (
+                    <div 
+                      key={order._id} 
+                      onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                      className="bg-white rounded-3xl p-3.5 border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-brand-500/5 transition-all group relative overflow-hidden flex flex-col cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 ${iconBg} rounded-xl flex items-center justify-center ${iconColor} shadow-sm border border-white group-hover:scale-110 transition-transform duration-300`}>
+                            <Icon size={18} />
                           </div>
-                        </Link>
-                        <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
+                          <div className="min-w-0">
+                            <h3 className="font-black text-gray-900 text-[11px] uppercase truncate max-w-[100px] leading-tight mb-0.5">
+                              {order.scrapTypes.join(', ')}
+                            </h3>
+                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[150px] flex items-center gap-1.5">
+                              {order.customerDetails?.name || 'User'} 
+                              <span className="text-blue-600 lowercase font-bold tracking-tight px-1.5 py-0.5 bg-blue-50 rounded-md">
+                                placed at {new Date(order.createdAt).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' })} • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                        <StatusBadge status={displayStatus} />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 py-4 border-y border-gray-50">
-                        <div className="flex items-center gap-2">
-                           <div className="w-8 h-8 bg-brand-50 rounded-lg flex items-center justify-center text-brand-600 border border-brand-100 shrink-0"><User size={14} /></div>
-                           <div className="min-w-0">
-                              <p className="text-[10px] font-black text-gray-900 truncate">{order.customerDetails?.name || 'Deleted'}</p>
-                              <p className="text-[9px] font-bold text-gray-400 truncate">{order.customerDetails?.mobileNumber || 'N/A'}</p>
-                           </div>
+                      <div className="mb-3 flex-1 px-2.5 py-2 bg-gray-50/30 rounded-2xl border border-gray-100/50">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Schedule</span>
+                          {order.status === 'Requested' && !isExpired && (
+                            <ExpiryTimer createdAt={order.createdAt} />
+                          )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center text-gray-400 border border-gray-200 shrink-0"><MapPin size={14} /></div>
-                          <p className="text-[10px] text-gray-500 font-medium leading-tight truncate-2-lines">{order.exactAddress}</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[11px] font-black text-gray-800 tracking-tight whitespace-nowrap">
+                            {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : 'Urgent'}
+                          </p>
+                          <p className="text-[8px] font-medium text-gray-400 truncate italic grow text-right" title={order.exactAddress}>
+                            {order.exactAddress}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="mt-4 space-y-4">
-                         {/* Metrics row */}
-                         <div className="flex items-center justify-between gap-3">
-                            <div className="flex gap-2">
-                               <div className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl border border-blue-100 flex items-center gap-2" title="Notified">
-                                  <span className="text-[10px] font-black">{order.notifiedChampsCount || 0}</span>
-                                  <span className="text-[8px] font-bold uppercase tracking-widest">Notified</span>
-                               </div>
-                               <div className="bg-red-50 text-red-600 px-3 py-1.5 rounded-xl border border-red-100 flex items-center gap-2" title="Declined">
-                                  <span className="text-[10px] font-black">{order.declinedChampIds?.length || 0}</span>
-                                  <span className="text-[8px] font-bold uppercase tracking-widest">Declined</span>
-                               </div>
-                            </div>
-                            <Button variant="outline" size="sm" onClick={() => fetchEngagement(order._id)} className="h-8 rounded-xl px-3 py-0 text-[9px] uppercase tracking-widest">
-                               Track
-                            </Button>
-                         </div>
-
-                         {/* Allocation Bar */}
-                         <div className="p-1 bg-gray-50/50 rounded-2xl border border-gray-100">
-                             {order.assignedScrapChampId ? (
-                                <div className="flex items-center justify-between bg-white p-2 rounded-xl shadow-sm">
-                                   <div className="flex items-center gap-2">
-                                      <div className="w-8 h-8 bg-brand-50 rounded-lg flex items-center justify-center text-brand-600 font-black text-[10px] border border-brand-100 overflow-hidden">
-                                         {order.champDetails?.name?.charAt(0) || <User size={12} />}
-                                      </div>
-                                      <div className="flex flex-col">
-                                         <p className="text-[9px] font-bold text-gray-900 leading-tight truncate max-w-[100px]">{order.champDetails?.name || 'Partner'}</p>
-                                         <button onClick={() => openAssignModal(order._id)} className="text-[8px] font-black text-brand-500 uppercase tracking-widest text-left mt-0.5">Change</button>
-                                      </div>
-                                   </div>
-
-                                </div>
-                             ) : (
-                                <div className="flex items-center justify-between p-2">
-                                   <div className="flex items-center gap-2 overflow-hidden">
-                                      <Radio size={14} className="text-blue-500 animate-pulse shrink-0" />
-                                      <div className="flex flex-col overflow-hidden">
-                                         <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest truncate">Broadcasting Live</span>
-                                         <div className="text-[9px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
-                                            <CountdownTimer createdAt={order.createdAt} onExpire={() => fetchData()} />
-                                            <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse shrink-0" />
-                                         </div>
-                                      </div>
-                                   </div>
-                                   <Button variant="primary" size="sm" onClick={() => openAssignModal(order._id)} className="h-8 rounded-xl px-4 py-0 text-[9px] uppercase tracking-widest">
-                                      Assign
-                                   </Button>
-                                </div>
-                             )}
-                         </div>
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        {order.status === 'Requested' ? (
+                          <button 
+                            onClick={() => openAssignModal(order._id)}
+                            className="flex-1 py-2.5 bg-[#6b8e61] text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-[#6b8e61]/20 hover:scale-105 active:scale-95 transition-all"
+                          >
+                            Assign
+                          </button>
+                        ) : order.status === 'Problem' ? (
+                          <button 
+                             onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                             className="flex-1 py-2.5 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-all"
+                          >
+                            Fix
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => fetchEngagement(order._id)}
+                            className="flex-1 py-2.5 bg-white text-brand-600 border border-brand-500/20 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-brand-50 active:scale-95 transition-all"
+                          >
+                            Track
+                          </button>
+                        )}
                       </div>
                     </div>
-                   ))
-                 )}
-               </div>
+                  );                })
+              )}
+            </div>
 
-              {/* Desktop View: Table */}
-              <div className="hidden md:block bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-gray-50/50 border-b border-gray-100">
-                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Order Info</th>
-                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Customer</th>
-                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Address</th>
-                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Engagement</th>
-                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Status</th>
-                        <th className="px-4 py-6 text-xs font-black text-gray-400 uppercase tracking-widest">Allocation</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                       {filteredOrders.length === 0 ? (
-                         <tr>
-                           <td colSpan={6} className="py-20 text-center">
-                              <div className="flex flex-col items-center">
-                                <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
-                                  <Inbox size={40} />
-                                </div>
-                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Queue Clear</p>
-                              </div>
-                           </td>
-                         </tr>
-                       ) : (
-                         filteredOrders.map((order) => (
-                          <tr key={order._id} className="hover:bg-gray-50/30 transition-colors group">
-                            <td className="px-4 py-6">
-                               <Link href={`/admin/orders/${order._id}`} className="group/link block">
-                                 <p className="font-black text-gray-900 group-hover/link:text-brand-600 transition-colors tracking-tight text-base mb-1 truncate max-w-[150px]">{order.scrapTypes.join(', ')}</p>
-                                 <p className="text-[10px] text-gray-400 font-black flex items-center gap-1.5 uppercase tracking-widest truncate">
-                                   <ArrowRight size={10} className="text-brand-500 flex-shrink-0" />
-                                   {new Date(order.scheduledAt).toLocaleDateString()} @ {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                 </p>
-                                 <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1 flex items-center gap-1.5 opacity-70">
-                                   <Clock size={10} className="text-blue-400" />
-                                   Placed: {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                 </p>
-                               </Link>
-                            </td>
-                            <td className="px-4 py-6">
-                              <div className="flex items-center gap-3">
-                                 <div className="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 border border-brand-100 flex-shrink-0"><User size={18} /></div>
-                                 <div className="min-w-0 max-w-[150px]">
-                                   <p className="font-black text-gray-900 leading-tight truncate">{order.customerDetails?.name || 'Deleted User'}</p>
-                                   <p className="text-[10px] text-brand-600 font-bold tracking-wider mt-0.5 truncate">{order.customerDetails?.mobileNumber || 'N/A'}</p>
-                                 </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-6 max-w-[180px]">
-                              <p className="text-[13px] text-gray-500 font-medium truncate group-hover:text-gray-900 transition-colors" title={order.exactAddress}>
-                                {order.exactAddress}
-                              </p>
-                            </td>
-                            <td className="px-4 py-6">
-                                <div className="flex justify-center gap-2 mb-3">
-                                   <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg shadow-blue-100" title="Notified">
-                                      {order.notifiedChampsCount || 0}
-                                   </div>
-                                   <div className="w-8 h-8 bg-red-600 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg shadow-red-100" title="Declined">
-                                      {order.declinedChampIds?.length || 0}
-                                   </div>
-                                </div>
-                               <button 
-                                 onClick={() => fetchEngagement(order._id)}
-                                 className="mt-2 w-full py-1.5 px-2 bg-white rounded-lg border border-gray-100 text-[9px] font-black text-gray-400 uppercase tracking-widest hover:border-blue-200 hover:text-blue-600 transition-all shadow-sm"
-                               >
-                                 Engagement View
-                               </button>
-                            </td>
-                            <td className="px-4 py-6">
-                               <div className="relative group/status flex items-center">
-                                 <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
-                                 <select 
-                                   className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                                   value={order.status}
-                                   onChange={(e) => updateStatus(order._id, e.target.value)}
-                                 >
-                                   <option value="Requested">Requested</option>
-                                   <option value="Accepted">Accepted</option>
-                                   <option value="Cancelled">Rejected (Cancel)</option>
-                                   <option value="Problem">Problem</option>
-                                 </select>
-                                 <ChevronDown size={14} className="text-gray-400 ml-1 opacity-0 group-hover/status:opacity-100 transition-opacity" />
-                               </div>
-                            </td>
-                            <td className="px-4 py-6">
-                              {order.assignedScrapChampId ? (
-                                <div className="flex items-center gap-3">
-                                   <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-700 font-black text-xs border border-emerald-100 shadow-sm flex-shrink-0">
-                                     {order.champDetails?.name?.charAt(0) || <User size={16} />}
-                                   </div>
-                                   <div className="min-w-0 max-w-[150px]">
-                                     <p className="text-xs font-black text-gray-900 leading-none mb-1.5 truncate">{order.champDetails?.name || 'Partner'}</p>
-                                     <div className="flex items-center gap-2">
-                                        {order.status !== 'Completed' && (
-                                           <button onClick={() => openAssignModal(order._id)} className="text-[9px] font-black text-brand-500 hover:text-brand-700 uppercase tracking-widest underline underline-offset-2">Reassign</button>
-                                        )}
-                                     </div>
-                                   </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-4">
-                                   <div className="relative flex-shrink-0">
-                                      <div className="w-10 h-10 bg-gray-50 rounded-2xl flex items-center justify-center text-blue-500 border border-gray-100 shadow-inner">
-                                         <Radio size={20} className="animate-pulse" />
-                                      </div>
-                                   </div>
-                                   <div className="flex flex-col min-w-0">
-                                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none truncate flex items-center justify-between">
-                                         Broadcasting
-                                         <button onClick={() => openAssignModal(order._id)} className="text-[9px] font-black text-brand-500 uppercase tracking-widest underline underline-offset-2 ml-4">Assign Now</button>
-                                      </span>
-                                      <span className="text-[10px] font-bold text-blue-600 mt-1.5 flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-                                         Live Now <span className="w-1 h-1 bg-blue-500 rounded-full animate-pulse flex-shrink-0" />
-                                         <span className="ml-1 text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">
-                                            <CountdownTimer createdAt={order.createdAt} onExpire={() => fetchData()} />
-                                         </span>
-                                      </span>
-                                   </div>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        ))
-                       )}
-                    </tbody>
-                  </table>
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-8 pb-4 flex justify-center">
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => paginate(currentPage - 1)}
+                    className="w-10 h-10 flex-shrink-0 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-brand-600 hover:border-brand-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm group"
+                  >
+                    <ArrowRight size={20} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
+                  </button>
+                  
+                  <div className="flex gap-2">
+                    {getPageNumbers().map((number) => (
+                      <button
+                        key={number}
+                        onClick={() => paginate(number)}
+                        className={`w-10 h-10 flex-shrink-0 rounded-xl font-black text-xs transition-all tracking-tighter shadow-sm border ${
+                          currentPage === number
+                            ? 'bg-brand-600 text-white border-brand-600 shadow-brand-500/20'
+                            : 'bg-white text-gray-600 border-gray-100 hover:border-brand-200 hover:text-brand-600'
+                        }`}
+                      >
+                        {number}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => paginate(currentPage + 1)}
+                    className="w-10 h-10 flex-shrink-0 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-brand-600 hover:border-brand-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm group"
+                  >
+                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                  </button>
                 </div>
               </div>
+            )}
             </div>
           )}
         </div>

@@ -19,7 +19,7 @@ export default function ProtectedRoute({ children, allowedRoles }: ProtectedRout
         const currentPath = window.location.pathname + window.location.search;
         router.replace(`/login?redirect=${encodeURIComponent(currentPath)}`);
       } else if (user && !allowedRoles.includes(user.role)) {
-        router.replace('/forbidden');
+        router.replace(user.defaultRoute || '/');
       }
     }
   }, [isLoading, isAuthenticated, user, allowedRoles, router]);
