@@ -270,8 +270,8 @@ function RegisterContent() {
           <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-brand-400/20 rounded-full blur-2xl"></div>
         </div>
         <div className="relative text-center animate-fade-in">
-          <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-8 animate-float backdrop-blur-sm">
-            <Recycle className="w-12 h-12 text-white" />
+          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-8 animate-float shadow-xl border border-white/20 overflow-hidden">
+            <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-4xl font-extrabold text-white mb-4">Join Recyclemybin</h1>
           <p className="text-brand-100 text-lg max-w-sm mx-auto leading-relaxed">
@@ -300,8 +300,8 @@ function RegisterContent() {
         <div className="w-full max-w-md animate-fade-in">
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-6 justify-center">
-            <div className="w-10 h-10 bg-brand-500 rounded-full flex items-center justify-center shadow-lg">
-              <Recycle className="w-5 h-5 text-white" />
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg overflow-hidden border border-gray-100">
+              <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <span className="text-2xl font-bold text-gray-800">Recyclemybin</span>
           </div>

@@ -49,35 +49,35 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* Navigation */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-lg shadow-md' : 'bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden border border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white rounded-full flex items-center justify-center shadow-md overflow-hidden border border-gray-100 flex-shrink-0">
               <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
-            <span className="text-2xl font-bold text-gray-800">Recyclemybin</span>
+            <span className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter block leading-none">Recyclemybin</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             {isAuthenticated ? (
               <Link
                 href={user?.defaultRoute || '/'}
-                className="px-4 py-2 sm:px-6 sm:py-2.5 bg-brand-500 text-white font-bold rounded-full hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20 hover:-translate-y-0.5 text-sm sm:text-base flex items-center gap-2"
+                className="px-3 py-2 sm:px-6 sm:py-3 bg-brand-600 text-white text-[9px] sm:text-xs font-black uppercase tracking-widest rounded-xl sm:rounded-2xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/10 hover:-translate-y-0.5 flex items-center gap-1.5"
               >
-                Go to Dashboard
-                <ArrowRight className="w-4 h-4" />
+                Dashboard
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={3.5} />
               </Link>
             ) : (
               <>
                 <Link
-                  href="/login"
-                  className="px-4 py-2 sm:px-5 sm:py-2.5 text-brand-700 font-bold hover:bg-brand-50 rounded-full transition-all text-sm sm:text-base border border-brand-100/50 sm:border-transparent"
+                  href="/register"
+                  className="px-2 py-2 sm:px-5 sm:py-3 text-gray-500 text-[9px] sm:text-xs font-black uppercase tracking-widest hover:text-brand-600 transition-all"
                 >
-                  Sign In
+                  Join
                 </Link>
                 <Link
-                  href="/register"
-                  className="px-4 py-2 sm:px-6 sm:py-2.5 bg-brand-500 text-white font-bold rounded-full hover:bg-brand-600 transition-all shadow-lg shadow-brand-500/20 hover:-translate-y-0.5 text-sm sm:text-base"
+                  href="/login"
+                  className="px-4 py-2 sm:px-6 sm:py-3 bg-brand-600 text-white text-[9px] sm:text-xs font-black uppercase tracking-widest rounded-xl sm:rounded-2xl hover:bg-brand-700 transition-all shadow-lg shadow-brand-500/10 hover:-translate-y-0.5 whitespace-nowrap"
                 >
-                  Get Started
+                  Login
                 </Link>
               </>
             )}
@@ -86,16 +86,16 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+      <section className="relative pt-16 pb-12 px-6 overflow-hidden">
         <LeafPattern />
         <div className="max-w-7xl mx-auto relative">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-50 rounded-full mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-50 rounded-full mb-0">
                 <span className="w-2 h-2 bg-brand-500 rounded-full animate-pulse"></span>
                 <span className="text-brand-700 text-sm font-medium">Eco-friendly scrap management</span>
               </div>
-              <h1 className="text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
+              <h1 className="text-5xl lg:text-6xl font-black text-gray-900 leading-none mb-0 tracking-tighter">
                 Turn Your Scrap Into{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-brand-700">
                   Green Value
@@ -313,10 +313,10 @@ export default function LandingPage() {
               </p>
               <Link
                 href="/register"
-                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-brand-700 font-bold rounded-2xl hover:bg-brand-50 transition-all shadow-xl hover:-translate-y-1 text-lg"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-900 text-[10px] sm:text-xs font-black uppercase tracking-widest rounded-xl hover:bg-gray-50 transition-all shadow-xl hover:-translate-y-1"
               >
-                Create Your Account
-                <ArrowRight className="w-5 h-5" />
+                Create Account
+                <ArrowRight className="w-4 h-4" strokeWidth={3} />
               </Link>
             </div>
           </div>
@@ -333,10 +333,10 @@ export default function LandingPage() {
               </div>
               <span className="text-lg font-bold text-white">Recyclemybin</span>
             </div>
-            <div className="flex items-center gap-6 text-sm">
-              <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
+            <div className="flex items-center gap-6 text-[10px] sm:text-xs font-black uppercase tracking-widest">
+              <a href="#how-it-works" className="hover:text-white transition-colors">Process</a>
               <Link href="/login" className="hover:text-white transition-colors">Sign In</Link>
-              <Link href="/register" className="hover:text-white transition-colors">Register</Link>
+              <Link href="/register" className="hover:text-white transition-colors">Join</Link>
             </div>
             <p className="text-sm">
               © {new Date().getFullYear()} Recyclemybin. All rights reserved.
