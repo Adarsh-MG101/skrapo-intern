@@ -306,9 +306,9 @@ export default function AdminOrdersPage() {
                             <h3 className="font-black text-gray-900 text-[11px] uppercase truncate max-w-[100px] leading-tight mb-0.5">
                               {order.scrapTypes.join(', ')}
                             </h3>
-                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[150px] flex items-center gap-1.5">
+                            <p className="text-[8px] sm:text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[180px] sm:max-w-none flex items-center gap-1">
                               {order.customerDetails?.name || 'User'} 
-                              <span className="text-blue-600 lowercase font-bold tracking-tight px-1.5 py-0.5 bg-blue-50 rounded-md">
+                              <span className="text-blue-600 lowercase font-bold tracking-tighter px-1 py-0.5 bg-blue-50 rounded-md shrink-0">
                                 placed at {new Date(order.createdAt).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' })} • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
                               </span>
                             </p>

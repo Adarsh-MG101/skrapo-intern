@@ -44,7 +44,6 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
     gstNumber: '',
     gstCardPic: null as string | null,
     profilePhoto: null as string | null,
-    cardNumber: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -72,7 +71,6 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
         gstNumber: '',
         gstCardPic: null,
         profilePhoto: null,
-        cardNumber: '',
       });
       setError('');
       setFieldErrors({});
@@ -185,7 +183,6 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
           gstNumber: formData.gstNumber,
           gstCardPic: formData.gstCardPic,
           profilePhoto: formData.profilePhoto,
-          cardNumber: formData.cardNumber,
         }),
       });
 
@@ -239,9 +236,13 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
                 <div className="flex-1">
                   <Input 
                     value={formData.mobileNumber}
-                    placeholder="9876543210"
+                    placeholder="10 digits"
+                    maxLength={10}
                     error={fieldErrors.mobileNumber}
-                    onChange={(e) => setFormData({...formData, mobileNumber: e.target.value.replace(/\D/g, '')})}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      setFormData({...formData, mobileNumber: val});
+                    }}
                     className="!py-[0.85rem]"
                   />
                 </div>
@@ -350,16 +351,6 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
                     </div>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'gstCardPic')} />
                   </label>
-               </div>
-               
-               {/* Card Number */}
-               <div className="grid md:grid-cols-2 gap-6 items-end">
-                  <Input 
-                    label="Worker ID / Card Number (Optional)"
-                    placeholder="Enter official Scrapo ID"
-                    value={formData.cardNumber}
-                    onChange={(e) => setFormData({...formData, cardNumber: e.target.value})}
-                  />
                </div>
             </div>
           </div>
