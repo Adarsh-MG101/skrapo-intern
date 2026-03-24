@@ -33,6 +33,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
               placeholder:text-gray-400 placeholder:font-medium
               hover:border-brand-200
               focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10
+              text-base md:text-sm
               ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/10' : ''}
               ${leftIcon ? 'pl-11' : ''}
               ${rightIcon ? 'pr-11' : ''}

@@ -19,7 +19,6 @@ import {
   ShieldCheck,
   Scale,
   Wallet,
-  Sparkles,
   ArrowRight,
   ArrowLeft,
   Clock,
@@ -27,6 +26,7 @@ import {
   Check,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Cpu,
   Battery,
   Box,
@@ -97,6 +97,18 @@ export const SchedulePickupFlow: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const currentTotalWeight = Object.values(formData.itemWeights).reduce((sum, v) => sum + (parseFloat(v) || 0), 0);
+  
+  const handleReset = () => {
+    setStep(1);
+    setCapturedImage(null);
+    setSelectedCategories([]);
+    setCustomScrapTypes('');
+    setFormData(prev => ({
+      ...prev,
+      itemWeights: {},
+      location: null
+    }));
+  };
 
   useEffect(() => {
     if (user?.pickupAddress && !initializedRef.current) {
@@ -303,51 +315,33 @@ export const SchedulePickupFlow: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10">
       <div className="flex-1 min-w-0">
-        <div className="mb-12 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6">
-          <div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-4 flex items-center gap-3">
-              {user?.pickupAddress ? (
-                <>Welcome back, <span className="text-brand-600">{user.name.split(' ')[0]}</span>! <Hand className="text-brand-500" /></>
-              ) : "Let's Clean Up"}
-            </h1>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-gray-500 font-medium text-lg leading-tight">
-                {user?.pickupAddress ? "Ready for another pickup?" : "Eco-friendly scrap collection at your doorstep."}
-              </p>
-              {user?.pickupAddress && (
-                <span className="inline-flex items-center px-3 py-1 bg-brand-50 text-brand-600 text-[10px] font-black uppercase tracking-widest rounded-xl border border-brand-100 animate-pulse gap-1.5 shadow-sm">
-                  <Sparkles size={12} fill="currentColor" /> Quick Start: Profile Loaded
-                </span>
-              )}
+        {step === 1 && (
+          <div className="mb-3 flex flex-col sm:flex-row sm:justify-between sm:items-end gap-6">
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                {user?.pickupAddress ? (
+                  <>
+                    <span>Welcome back,</span>
+                    <span className="text-brand-600 inline-flex items-center gap-2">{user.name.split(' ')[0]}! <Hand className="text-brand-500" /></span>
+                  </>
+                ) : "Let's Clean Up"}
+              </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-gray-500 font-medium text-lg leading-tight">
+                  {user?.pickupAddress ? "Ready for another pickup?" : "Eco-friendly scrap collection at your doorstep."}
+                </p>
+              </div>
             </div>
           </div>
-          {step !== 1 && step !== 4 && (
-            <button 
-              onClick={() => {
-                setStep(1);
-                setCapturedImage(null);
-                setSelectedCategories([]);
-                setCustomScrapTypes('');
-                setFormData(prev => ({
-                  ...prev,
-                  itemWeights: {},
-                  location: null
-                }));
-              }} 
-              className="mx-auto sm:mx-0 px-6 py-2.5 rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50 transition-all font-black text-xs uppercase tracking-widest border border-red-50 flex items-center gap-2"
-            >
-              <Trash2 size={16} /> Cancel Pickup
-            </button>
-          )}
-        </div>
+        )}
 
-        <div className="bg-white rounded-[2.5rem] p-6 sm:p-10 shadow-xl shadow-gray-200/50 border border-gray-100 relative overflow-hidden">
+        <div className="bg-white rounded-[2.5rem] p-4 sm:p-6 shadow-xl shadow-gray-200/50 border border-gray-100 relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-5">
              <Package size={120} />
           </div>
 
           {/* Stepper Logic */}
-          <div className="mb-12 relative">
+          <div className="mb-4 relative">
             <div className="flex items-center justify-between relative max-w-2xl mx-auto px-4">
               {/* Progress Line */}
               <div className="absolute top-[20px] left-10 right-10 h-0.5 bg-gray-100 -translate-y-1/2 z-0" />
@@ -357,7 +351,7 @@ export const SchedulePickupFlow: React.FC = () => {
               />
               
               {flowSteps.map((s) => {
-                const isCompleted = step > s.id;
+                const isCompleted = step > s.id || (step === 4 && s.id === 4);
                 const isActive = step === s.id;
                 const Icon = s.icon;
                 
@@ -465,26 +459,25 @@ export const SchedulePickupFlow: React.FC = () => {
 
           {step === 2 && (
             <div className="animate-fade-in relative">
-              <div className="flex items-center gap-4 mb-10">
+              <div className="flex items-center gap-4 mb-3">
                 <h2 className="text-3xl font-black text-gray-900 tracking-tight">Select Scrap Categories</h2>
               </div>
               
               {/* Custom Multi-select Dropdown */}
-              <div className="relative mb-8" ref={dropdownRef}>
+              <div className={`relative ${selectedCategories.length > 0 ? 'mb-8' : 'mb-3'}`} ref={dropdownRef}>
                 <div 
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className={`
-                    w-full bg-white border-2 rounded-[1.5rem] p-5 flex items-center justify-between cursor-pointer transition-all duration-300
+                    w-full bg-white border-2 rounded-[1.5rem] p-4 flex items-center justify-between cursor-pointer transition-all duration-300
                     ${isDropdownOpen ? 'border-brand-500 ring-4 ring-brand-500/10' : 'border-gray-100 hover:border-brand-200'}
                   `}
                 >
                   <div className="flex items-center gap-4 text-gray-400">
-                    <Search size={22} className={isDropdownOpen ? 'text-brand-500' : ''} />
-                    <span className={`font-bold ${isDropdownOpen ? 'text-gray-900' : 'text-gray-400'}`}>
+                    <span className={`text-[11px] font-black uppercase tracking-[0.15em] ${isDropdownOpen ? 'text-gray-900' : 'text-gray-400'}`}>
                        {selectedCategories.length > 0 ? `${selectedCategories.length} Categories Selected` : 'Search or pick scrap items...'}
                     </span>
                   </div>
-                  <ChevronRight size={20} className={`text-gray-300 transition-transform duration-300 ${isDropdownOpen ? 'rotate-90 text-brand-500' : ''}`} />
+                  <ChevronDown size={20} className={`text-gray-300 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180 text-brand-500' : ''}`} />
                 </div>
 
                 {isDropdownOpen && (
@@ -496,7 +489,7 @@ export const SchedulePickupFlow: React.FC = () => {
                           autoFocus
                           type="text"
                           placeholder="Search items..."
-                          className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-brand-300 transition-all font-bold text-sm"
+                          className="w-full bg-white border-2 border-gray-100 rounded-xl pl-11 pr-4 py-3 outline-none focus:border-brand-300 transition-all font-bold text-base md:text-sm placeholder:text-[10px] placeholder:font-black placeholder:uppercase placeholder:tracking-[0.15em]"
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
@@ -554,7 +547,7 @@ export const SchedulePickupFlow: React.FC = () => {
               </div>
 
               {/* Selected Categories Tags */}
-              <div className="flex flex-wrap gap-3 mb-12 min-h-[40px]">
+              <div className={`flex flex-wrap gap-3 ${selectedCategories.length > 0 ? 'mb-12 mt-4' : 'mb-0 mt-0'} min-h-[40px]`}>
                 {selectedCategories.map(catId => {
                   const cat = scrapCategories.find(c => c.id === catId);
                   if (!cat) return null;
@@ -588,10 +581,15 @@ export const SchedulePickupFlow: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
-                <Button variant="secondary" onClick={() => setStep(1)} fullWidth className="sm:w-auto rounded-xl flex gap-2 border-2 border-brand-100/50 py-4">
-                   <ArrowLeft size={18} /> Back
-                </Button>
+              <div className={`flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50 p-6 rounded-3xl border border-gray-100 ${selectedCategories.length > 0 ? 'mt-12' : 'mt-4'}`}>
+                <div className="flex gap-3 w-full sm:w-auto">
+                   <Button variant="secondary" onClick={() => setStep(1)} fullWidth className="sm:w-auto rounded-xl flex gap-2 border-2 border-brand-100/50 py-4">
+                      <ArrowLeft size={18} /> Back
+                   </Button>
+                   <Button variant="ghost" onClick={handleReset} fullWidth className="sm:w-auto rounded-xl flex gap-2 border-2 border-red-50 text-red-500 hover:bg-red-50 py-4">
+                      <Trash2 size={18} /> Cancel
+                   </Button>
+                </div>
                 <Button onClick={() => setStep(3)} disabled={selectedCategories.length === 0} size="lg" fullWidth className="sm:w-auto rounded-xl shadow-lg shadow-brand-500/20 py-4" rightIcon={<ChevronRight size={20} />}>
                    Next Details
                 </Button>
@@ -601,12 +599,12 @@ export const SchedulePickupFlow: React.FC = () => {
 
           {step === 3 && (
             <form onSubmit={handleSubmit} className="animate-fade-in">
-              <div className="flex items-center gap-4 mb-10">
+              <div className="flex items-center gap-4 mb-3">
                 <h2 className="text-3xl font-black text-gray-900 tracking-tight">Pickup Logistics</h2>
               </div>
 
-               <div className="mb-10 p-4 sm:p-8 bg-gray-50/50 rounded-[2.5rem] border border-gray-100">
-                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-6 flex items-center justify-between">
+               <div className="mb-4 p-3 sm:p-5 bg-gray-50/50 rounded-[2.5rem] border border-gray-100">
+                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.15em] mb-4 flex items-center justify-between">
                    <div className="flex items-center gap-2">
                       <Scale size={16} className="text-brand-500" /> Estimated Weights (kg)
                    </div>
@@ -636,7 +634,7 @@ export const SchedulePickupFlow: React.FC = () => {
                              required
                              value={formData.itemWeights[cat.id] || ''}
                              onChange={(e) => setFormData({...formData, itemWeights: {...formData.itemWeights, [cat.id]: e.target.value}})}
-                             className="bg-brand-50/30 rounded-xl border-brand-100 border-2 focus:bg-white pr-10 text-right font-black py-2.5 text-sm text-brand-700 placeholder:text-brand-300"
+                             className="bg-brand-50/30 rounded-xl border-brand-100 border-2 focus:bg-white pr-10 text-right font-black py-2.5 text-base md:text-sm text-brand-700 placeholder:text-brand-300"
                              rightIcon={<span className="text-[9px] font-black text-brand-600 uppercase tracking-widest">kg</span>}
                            />
                          </div>
@@ -685,7 +683,7 @@ export const SchedulePickupFlow: React.FC = () => {
                    <MapPin size={16} className="text-brand-500" /> Detailed Address <span className="text-red-500">*</span>
                 </label>
                 <textarea 
-                  className="w-full bg-white border-2 border-gray-100 rounded-2xl px-5 py-4 outline-none transition-all duration-200 placeholder:text-gray-300 placeholder:font-medium hover:border-brand-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 min-h-[140px] text-gray-900"
+                  className="w-full bg-white border-2 border-gray-100 rounded-2xl px-5 py-4 outline-none transition-all duration-200 placeholder:text-gray-300 placeholder:font-medium hover:border-brand-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 min-h-[140px] text-gray-900 text-base md:text-sm"
                   placeholder="Appartment, Street, Landmark details..."
                   value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})}
                 />
@@ -700,12 +698,17 @@ export const SchedulePickupFlow: React.FC = () => {
               </div>
 
               <div className="flex flex-col md:flex-row gap-4 p-6 bg-gray-50/50 rounded-3xl border border-gray-100">
-                <Button type="button" variant="secondary" onClick={() => setStep(2)} className="flex gap-2 rounded-xl border-2 border-brand-100/50">
-                   <ChevronLeft size={20} /> Categories
-                </Button>
+                <div className="flex gap-3 w-full sm:w-auto flex-1">
+                   <Button type="button" variant="secondary" onClick={() => setStep(2)} className="flex-1 sm:flex-none rounded-xl border-2 border-brand-100/50 py-4 gap-2">
+                      <ChevronLeft size={20} /> Categories
+                   </Button>
+                   <Button type="button" variant="ghost" onClick={handleReset} className="flex-1 sm:flex-none rounded-xl border-2 border-red-50 text-red-500 hover:bg-red-50 py-4 gap-2">
+                       <Trash2 size={20} /> Cancel
+                   </Button>
+                </div>
                 <Button 
                   type="submit" fullWidth size="lg" variant="primary" disabled={loading || currentTotalWeight < 10}
-                  className="rounded-xl shadow-xl shadow-brand-500/20"
+                  className="rounded-xl shadow-xl shadow-brand-500/20 md:w-auto"
                   leftIcon={loading ? <Loader size="sm" /> : <Clock size={20} />}
                 >
                   {currentTotalWeight < 10 ? `Need ${(10 - currentTotalWeight).toFixed(1)}kg more` : (loading ? 'Scheduling...' : 'Finalize Pickup Booking')}

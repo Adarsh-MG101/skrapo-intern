@@ -331,14 +331,7 @@ export default function AdminOrdersPage() {
                                          <button onClick={() => openAssignModal(order._id)} className="text-[8px] font-black text-brand-500 uppercase tracking-widest text-left mt-0.5">Change</button>
                                       </div>
                                    </div>
-                                    <div className="flex items-center gap-2">
-                                       {!order.assignedScrapChampId && order.status === 'Requested' && (
-                                          <div className="text-[9px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg">
-                                             <CountdownTimer createdAt={order.createdAt} onExpire={() => fetchData()} />
-                                          </div>
-                                       )}
-                                       <StatusBadge status={order.status} />
-                                    </div>
+
                                 </div>
                              ) : (
                                 <div className="flex items-center justify-between p-2">

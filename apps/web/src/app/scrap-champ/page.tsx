@@ -53,8 +53,9 @@ function ScrapChampDashboardContent() {
       <main className="w-full max-w-7xl mx-auto px-4 py-6 sm:py-12 border-x-0 overflow-hidden">
         <div className="mb-8 sm:mb-10 animate-fade-in flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter flex items-center gap-2 truncate">
-              Hi, <span className="text-brand-600">{user?.name.split(' ')[0]}</span>! <Hand className="text-brand-500 flex-shrink-0" size={24} />
+            <h1 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>Hi,</span>
+              <span className="text-brand-600 inline-flex items-center gap-2">{user?.name.split(' ')[0]}! <Hand className="text-brand-500 flex-shrink-0" size={24} /></span>
             </h1>
             <p className="text-gray-500 font-medium text-sm sm:text-lg mt-1 sm:mt-3">Ready to collect and earn today?</p>
           </div>

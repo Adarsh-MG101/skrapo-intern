@@ -78,9 +78,9 @@ function CustomerDashboardContent() {
     <div className="p-4 md:p-8 lg:p-10 bg-gray-50/20 min-h-screen">
       {/* Welcome */}
       <div className="mb-10 animate-fade-in">
-        <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight leading-tight">
-          Welcome back,<br className="sm:hidden" />
-          <span className="text-brand-600 font-black inline-flex items-center gap-2 mt-1 sm:mt-0">
+        <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight leading-tight flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span>Welcome back,</span>
+          <span className="text-brand-600 font-black inline-flex items-center gap-2">
             {user?.name?.split(' ')[0]}! <Sparkles className="text-brand-500 fill-brand-400" />
           </span>
         </h1>
