@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
-import { StatusBadge, Loader, Button, CustomSelect } from '../../components/common';
+import { StatusBadge, Loader } from '../../components/common';
 import { useToast } from '../../components/common/Toast';
 import { User, Inbox, Zap, Ban, Phone, FileText, Layers, Droplets, Cpu, Package, Recycle, ArrowRight, Timer } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
@@ -94,14 +94,7 @@ export default function AdminOrdersPage() {
   const [loadingEngagement, setLoadingEngagement] = useState(false);
 
   // Manual Assignment State
-  const [assignModal, setAssignModal] = useState({
-    isOpen: false,
-    loading: false,
-    champs: [] as any[],
-    selectedChampId: '',
-    selectedOrderId: '',
-    submitting: false
-  });
+
 
   const fetchEngagement = async (orderId: string) => {
     setLoadingEngagement(true);
@@ -119,46 +112,7 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const openAssignModal = async (orderId: string) => {
-    setAssignModal(prev => ({ ...prev, isOpen: true, loading: true, selectedOrderId: orderId }));
-    try {
-      const res = await apiFetch('/orders/admin/scrap-champs');
-      if (res.ok) {
-        const champs = await res.json();
-        const activeChamps = champs.filter((c: any) => c.isActive !== false);
-        setAssignModal(prev => ({ ...prev, champs: activeChamps, loading: false }));
-      }
-    } catch (err) {
-      showToast('Failed to fetch champs', 'error');
-      setAssignModal(prev => ({ ...prev, isOpen: false }));
-    }
-  };
 
-  const handleManualAssign = async () => {
-    if (!assignModal.selectedChampId || !assignModal.selectedOrderId) return;
-    setAssignModal(prev => ({ ...prev, submitting: true }));
-    try {
-      const res = await apiFetch(`/orders/admin/${assignModal.selectedOrderId}/assign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ champId: assignModal.selectedChampId })
-      });
-      if (res.ok) {
-        showToast('Champion assigned successfully!', 'success');
-        setAssignModal(prev => ({ ...prev, isOpen: false, submitting: false, selectedChampId: '', selectedOrderId: '' }));
-        fetchData();
-      } else {
-        const data = await res.json();
-        showToast(data.error || 'Assignment failed', 'error');
-        setAssignModal(prev => ({ ...prev, submitting: false }));
-      }
-    } catch (err) {
-      showToast('Assignment error', 'error');
-      setAssignModal(prev => ({ ...prev, submitting: false }));
-    }
-  };
 
   const handleBroadcast = async (orderId: string) => {
     try {
@@ -330,9 +284,9 @@ export default function AdminOrdersPage() {
                     <div 
                       key={order._id} 
                       onClick={() => window.location.href = `/admin/orders/${order._id}`}
-                      className={`bg-white rounded-3xl p-3.5 border shadow-sm hover:shadow-xl hover:shadow-brand-500/5 transition-all group relative overflow-hidden flex flex-col cursor-pointer ${
+                      className={`bg-white rounded-3xl p-3.5 border shadow-sm hover:shadow-xl hover:shadow-brand-500/5 transition-all group relative overflow-hidden flex flex-col cursor-pointer isolate transform-gpu ${
                         needsAttention 
-                          ? 'border-red-400 animate-pulse ring-2 ring-red-300/50' 
+                          ? 'border-red-500 bg-red-50/20 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.25)]' 
                           : 'border-gray-100'
                       }`}
                     >
@@ -383,10 +337,10 @@ export default function AdminOrdersPage() {
                             <Zap size={10} className="fill-white" /> Broadcast
                           </button>
                           <button 
-                            onClick={() => openAssignModal(order._id)}
-                            className="flex-1 py-2.5 bg-white text-brand-600 border border-brand-100 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-brand-50 active:scale-95 transition-all text-center flex items-center justify-center gap-1"
+                            onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                            className="flex-1 py-2.5 bg-white text-gray-900 border border-gray-100 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-center"
                           >
-                            <User size={10} /> Assign
+                            Details
                           </button>
                         </div>
                       ) : order.status === 'Problem' ? (
@@ -456,8 +410,8 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
             )}
-            </div>
-          )}
+          </div>
+        )}
         </div>
       </div>
 
@@ -527,52 +481,7 @@ export default function AdminOrdersPage() {
         </div>
       </Modal>
 
-      <Modal
-        isOpen={assignModal.isOpen}
-        onClose={() => setAssignModal(prev => ({ ...prev, isOpen: false }))}
-        title="Manual Partner Assignment"
-        size="md"
-      >
-        <div className="space-y-6">
-          <p className="text-sm text-gray-500 font-medium">
-            Manually assigning a partner will override any ongoing broadcasts. The newly selected partner will receive an immediate SMS notification.
-          </p>
-          
-          {assignModal.loading ? (
-            <div className="flex justify-center py-10"><Loader size="md" /></div>
-          ) : assignModal.champs.length === 0 ? (
-            <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-bold text-center border border-red-100">
-              No active champions available to assign.
-            </div>
-          ) : (
-            <div className="space-y-4">
-                <CustomSelect 
-                  label="Select Champion"
-                  placeholder="-- Choose a partner --"
-                  searchable={true}
-                  searchPlaceholder="Search by name, phone or pincode..."
-                  options={assignModal.champs.map((c: any) => ({
-                    label: c.name,
-                    value: c._id,
-                    sublabel: `${c.mobileNumber} • ${c.serviceArea}`
-                  }))}
-                  value={assignModal.selectedChampId}
-                  onChange={(val: string) => setAssignModal(prev => ({ ...prev, selectedChampId: val }))}
-                />
-               
-               <Button 
-                 fullWidth 
-                 className="py-4 text-sm mt-4 rounded-2xl" 
-                 isLoading={assignModal.submitting}
-                 disabled={!assignModal.selectedChampId}
-                 onClick={handleManualAssign}
-               >
-                 Assign Order Now
-               </Button>
-            </div>
-          )}
-        </div>
-      </Modal>
+
 
     </ProtectedRoute>
   );

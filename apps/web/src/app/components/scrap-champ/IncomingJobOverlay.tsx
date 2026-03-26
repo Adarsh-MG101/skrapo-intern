@@ -49,8 +49,8 @@ export default function IncomingJobOverlay() {
       if (!id) return;
 
       if (data.targetPincode) {
-        const champArea = user.serviceArea || '';
-        if (!champArea.includes(data.targetPincode)) {
+        const champArea = String(user.serviceArea || '');
+        if (!champArea || !champArea.includes(data.targetPincode)) {
           console.log(`[IncomingJobOverlay] Job ${id} is for pincode ${data.targetPincode}. Skipping (Champ has ${champArea})`);
           return;
         }

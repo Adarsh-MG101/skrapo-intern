@@ -156,7 +156,7 @@ export default function AdminHistoryPage() {
              <div className="flex items-center justify-between px-1 mb-1">
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter Records</p>
                 <div className="flex items-center gap-2">
-                   <span className="px-2 py-0.5 bg-brand-50 text-brand-600 rounded-md text-[9px] font-black uppercase tracking-tighter">
+                   <span className="px-3.5 py-1.5 bg-brand-50 text-brand-600 rounded-xl text-[11px] font-black uppercase tracking-widest border border-brand-100 shadow-sm shadow-brand-500/5">
                       {filteredOrders.length} Records Found
                    </span>
                 </div>

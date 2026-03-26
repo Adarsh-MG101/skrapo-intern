@@ -74,6 +74,7 @@ export default function AdminOrderDetailsPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [loadingEngagement, setLoadingEngagement] = useState(false);
   const [isProblemSubmitting, setIsProblemSubmitting] = useState(false);
+  const [problemModal, setProblemModal] = useState(false);
   const [assignModal, setAssignModal] = useState({
     isOpen: false,
     loading: false,
@@ -152,6 +153,7 @@ export default function AdminOrderDetailsPage() {
       });
       if (res.ok) {
         showToast('Order marked as problem', 'success');
+        setProblemModal(false);
         fetchOrder();
       } else {
         showToast('Action failed', 'error');
@@ -227,7 +229,7 @@ export default function AdminOrderDetailsPage() {
                     <Button 
                       variant="danger" 
                       size="sm" 
-                      onClick={handleMarkAsProblem} 
+                      onClick={() => setProblemModal(true)} 
                       isLoading={isProblemSubmitting}
                       className="px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-xl border border-red-500/20 shadow-lg shadow-red-500/5 hover:scale-[1.02]"
                     >
@@ -626,6 +628,37 @@ export default function AdminOrderDetailsPage() {
           >
             Assign Champion Now
           </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={problemModal}
+        onClose={() => setProblemModal(false)}
+        title="Confirm Problem Status"
+        size="md"
+        footer={
+          <div className="flex gap-3 w-full">
+            <Button variant="ghost" fullWidth onClick={() => setProblemModal(false)}>Cancel</Button>
+            <Button 
+              variant="danger" 
+              fullWidth 
+              onClick={handleMarkAsProblem} 
+              isLoading={isProblemSubmitting}
+            >
+              Confirm Problem
+            </Button>
+          </div>
+        }
+      >
+        <div className="text-center py-4">
+          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-4 border border-red-100">
+            <AlertCircle size={32} />
+          </div>
+          <h3 className="text-xl font-black text-gray-900 mb-2">Mark as Problem?</h3>
+          <p className="text-sm text-gray-500 px-4">
+            This will halt the current broadcast and status of the order. 
+            The customer will be notified that there is a problem with their pickup.
+          </p>
         </div>
       </Modal>
     </ProtectedRoute>

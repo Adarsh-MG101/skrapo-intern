@@ -4,22 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '../../../../context/AuthContext';
 import ProtectedRoute from '../../../../components/common/ProtectedRoute';
-import { Button, Input, Loader, CustomSelect } from '../../../../components/common';
+import { Button, Input, Loader } from '../../../../components/common';
 import { validatePhone, validateEmail, validatePincode } from '../../../../utils/validators';
 import { AlertCircle, CheckCircle2, Eye, EyeOff, UserCircle, ArrowLeft, Save } from 'lucide-react';
 
-const CITIES = [
-  { label: 'Select City', value: '' },
-  { label: 'Noida', value: 'Noida' },
-  { label: 'Delhi', value: 'Delhi' },
-  { label: 'Gurugram', value: 'Gurugram' },
-  { label: 'Bangalore', value: 'Bangalore' },
-  { label: 'Mumbai', value: 'Mumbai' },
-  { label: 'Hyderabad', value: 'Hyderabad' },
-  { label: 'Pune', value: 'Pune' },
-  { label: 'Chennai', value: 'Chennai' },
-  { label: 'Jaipur', value: 'Jaipur' },
-];
+
 
 function EditChampContent() {
   const { id } = useParams();
@@ -433,13 +422,12 @@ function EditChampContent() {
               />
 
               <div className="grid grid-cols-2 gap-6">
-                <CustomSelect 
+                <Input 
                   label="City"
                   required
-                  options={CITIES}
-                  value={formData.city}
-                  error={fieldErrors.city}
-                  onChange={(val: string) => setFormData({...formData, city: val})}
+                  value={formData.city || 'Bangalore'}
+                  disabled
+                  className="bg-gray-50 font-black text-gray-400"
                 />
                 <Input 
                   label="Pincode"

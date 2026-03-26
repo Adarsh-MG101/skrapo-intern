@@ -2,23 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
-import { Button, Input, CustomSelect } from '../common';
+import { Button, Input } from '../common';
 import { validatePhone, validateEmail, validatePincode } from '../../utils/validators';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
-const CITIES = [
-  { label: 'Select City', value: '' },
-  { label: 'Noida', value: 'Noida' },
-  { label: 'Delhi', value: 'Delhi' },
-  { label: 'Gurugram', value: 'Gurugram' },
-  { label: 'Bangalore', value: 'Bangalore' },
-  { label: 'Mumbai', value: 'Mumbai' },
-  { label: 'Hyderabad', value: 'Hyderabad' },
-  { label: 'Pune', value: 'Pune' },
-  { label: 'Chennai', value: 'Chennai' },
-  { label: 'Jaipur', value: 'Jaipur' },
-];
+
 
 interface CreateChampModalProps {
   isOpen: boolean;
@@ -34,7 +23,7 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
     countryCode: '+91',
     password: '',
     serviceArea: '',
-    city: '',
+    city: 'Bangalore',
     pincode: '',
     serviceRadiusKm: '10',
     panNumber: '',
@@ -61,7 +50,7 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
         countryCode: '+91',
         password: '',
         serviceArea: '',
-        city: '',
+        city: 'Bangalore',
         pincode: '',
         serviceRadiusKm: '10',
         panNumber: '',
@@ -368,13 +357,12 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
               />
 
               <div className="grid grid-cols-2 gap-6">
-                <CustomSelect 
+                <Input 
                   label="City"
                   required
-                  options={CITIES}
                   value={formData.city}
-                  error={fieldErrors.city}
-                  onChange={(val: string) => setFormData({...formData, city: val})}
+                  disabled
+                  className="bg-gray-50 font-black text-gray-400"
                 />
                 <Input 
                   label="Pincode"

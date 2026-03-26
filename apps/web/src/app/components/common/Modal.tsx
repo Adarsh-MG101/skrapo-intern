@@ -42,9 +42,9 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
       />
       
       {/* Content */}
-      <div className={`${sizes[size]} w-full bg-white rounded-[2.5rem] shadow-2xl relative z-[101] animate-scale-in border border-gray-100`}>
+      <div className={`${sizes[size]} w-full bg-white rounded-[2.5rem] shadow-2xl relative z-[101] animate-scale-in border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col`}>
         {/* Header */}
-        <div className="px-8 py-6 flex items-center justify-between border-b border-gray-50">
+        <div className="px-8 py-6 flex items-center justify-between border-b border-gray-50 flex-shrink-0">
           <h3 className="text-xl font-black text-gray-900 tracking-tight">{title}</h3>
           <button 
             onClick={onClose}
@@ -57,13 +57,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         </div>
 
         {/* Body */}
-        <div className={`px-8 py-8 overflow-visible ${bodyClassName}`}>
+        <div className={`px-8 py-8 overflow-y-auto custom-scrollbar flex-1 ${bodyClassName}`}>
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-8 py-6 border-t border-gray-50 flex justify-end gap-3 bg-gray-50/50">
+          <div className="px-8 py-6 border-t border-gray-50 flex justify-end gap-3 bg-gray-50/50 flex-shrink-0">
             {footer}
           </div>
         )}

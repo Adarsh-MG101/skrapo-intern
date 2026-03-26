@@ -461,11 +461,14 @@ router.get('/admin', authenticate, authorize('admin'), async (req: Authenticated
             localField: 'assignedScrapChampId',
             foreignField: '_id',
             as: 'champDetails',
+            pipeline: [
+               { $project: { name: 1, mobileNumber: 1 } }
+            ]
           }
         },
-        { $unwind: { path: '$champDetails', preserveNullAndEmptyArrays: true } }
+        { $unwind: { path: '$champDetails', preserveNullAndEmptyArrays: true } },
+        { $sort: { updatedAt: -1 } }
       ])
-      .sort({ updatedAt: -1 })
       .toArray();
 
     // Fetch active champs to dynamically recount
@@ -479,19 +482,21 @@ router.get('/admin', authenticate, authorize('admin'), async (req: Authenticated
         o.maskReason = 'Customer cancelled pickup';
       }
       
-      const pincodeMatch = (o.exactAddress || '').match(/(\d{6})/);
+      const pincodeMatch = (String(o.exactAddress || '')).match(/(\d{6})/);
       const orderPincode = pincodeMatch ? pincodeMatch[1] : null;
       
       if (orderPincode) {
-         o.notifiedChampsCount = activeChamps.filter(c => c.serviceArea?.includes(orderPincode)).length;
+         o.notifiedChampsCount = activeChamps.filter(c => String(c.serviceArea || '').includes(orderPincode)).length;
       } else {
          o.notifiedChampsCount = 0;
       }
 
       if (o.declinedChampIds && Array.isArray(o.declinedChampIds)) {
          o.declinedChampIds = o.declinedChampIds.filter((id: any) => 
-            activeChamps.some(c => c._id.toString() === id.toString())
+            activeChamps.some(c => c._id && id && c._id.toString() === id.toString())
          );
+      } else {
+         o.declinedChampIds = [];
       }
 
       return o;
@@ -1324,7 +1329,40 @@ router.post('/scrap-champ/:orderId/complete', authenticate, authorize('scrapCham
 });
 
 /**
- * POST /scrap-champ/orders/:orderId/decision
+ * GET /scrap-champ/:orderId
+ * Fetch specific order details for the incoming job overlay
+ */
+router.get('/scrap-champ/:orderId', authenticate, authorize('scrapChamp'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    if (!ObjectId.isValid(orderId)) {
+      return res.status(400).json({ error: 'Invalid Order ID' });
+    }
+
+    const db = getDb();
+    const ordersCol = db.collection('orders');
+    const order = await ordersCol.findOne({ _id: new ObjectId(orderId) });
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Basic security: only show if Requested (broadcast) or specifically Assigned to this champ
+    const isBroadcast = order.status === 'Requested';
+    const isAssignedToMe = order.assignedScrapChampId?.toString() === req.user!.userId;
+
+    if (!isBroadcast && !isAssignedToMe) {
+      return res.status(403).json({ error: 'Unauthorized access to this order' });
+    }
+
+    return res.json(order);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch order details' });
+  }
+});
+
+/**
+ * POST /scrap-champ/:orderId/decision
  */
 router.post('/scrap-champ/:orderId/decision', authenticate, authorize('scrapChamp'), async (req: AuthenticatedRequest, res: Response) => {
   try {

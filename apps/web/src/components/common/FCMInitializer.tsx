@@ -18,16 +18,26 @@ export const FCMInitializer = () => {
         if (fcmInitialized.current) return;
         fcmInitialized.current = true;
 
-        // Register for FCM
-        setupFCM(apiFetch).then(token => {
-            if (token) {
-                console.log('✅ FCM Ready for user:', user.id);
-            } else {
-                // Reset so it can retry on next auth change
-                fcmInitialized.current = false;
+        // Force permission request via a native browser confirm (valid user gesture for mobile)
+        const triggerPermission = async () => {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+                const wantsNotifs = window.confirm("Allow Skrapo to send you real-time updates on your pickups?");
+                if (wantsNotifs) {
+                     await Notification.requestPermission();
+                }
             }
-        }).catch(() => {
-            fcmInitialized.current = false;
+        };
+
+        triggerPermission().then(() => {
+            setupFCM(apiFetch).then(token => {
+                if (token) {
+                    console.log('✅ FCM Ready for user:', user.id);
+                } else {
+                    fcmInitialized.current = false;
+                }
+            }).catch(() => {
+                fcmInitialized.current = false;
+            });
         });
 
         // Foreground listener — shows in-app toast when push arrives while app is open.

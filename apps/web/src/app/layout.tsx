@@ -5,7 +5,6 @@ import { SocketProvider } from './context/SocketContext';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 
 import { FCMInitializer } from '../components/common/FCMInitializer';
-import { NotificationPrompt } from './components/common/NotificationPrompt';
 
 // IMPORTANT: Replace this with your actual Google Client ID from the Google Cloud Console
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
@@ -40,7 +39,6 @@ export default function RootLayout({
           <ToastProvider>
             <AuthProvider>
               <SocketProvider>
-                <NotificationPrompt />
                 <FCMInitializer />
                 {children}
               </SocketProvider>

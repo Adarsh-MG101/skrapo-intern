@@ -28,6 +28,8 @@ interface FormData {
   email: string;
   pickupAddress: string;
   serviceArea: string;
+  city: string;
+  pincode: string;
   serviceRadiusKm: number;
   panNumber: string;
   aadharNumber: string;
@@ -49,6 +51,8 @@ function ScrapChampProfileContent() {
     email: user?.email || '',
     pickupAddress: user?.pickupAddress || '',
     serviceArea: user?.serviceArea || '',
+    city: 'Bangalore',
+    pincode: '',
     serviceRadiusKm: user?.serviceRadiusKm || 5,
     panNumber: user?.panNumber || '',
     aadharNumber: user?.aadharNumber || '',
@@ -62,11 +66,28 @@ function ScrapChampProfileContent() {
 
   useEffect(() => {
     if (user) {
+      // Parse service area: "Preferred Local Area, City - Pincode"
+      let area = user.serviceArea || '';
+      let city = 'Bangalore';
+      let pincode = '';
+      
+      if (area.includes(' - ')) {
+        const parts = area.split(' - ');
+        pincode = parts[1];
+        const areaParts = parts[0].split(', ');
+        if (areaParts.length > 1) {
+          city = areaParts[areaParts.length - 1];
+          area = areaParts.slice(0, -1).join(', ');
+        }
+      }
+
       setFormData({
         name: user.name || '',
         email: user.email || '',
         pickupAddress: user.pickupAddress || '',
-        serviceArea: user.serviceArea || '',
+        serviceArea: area,
+        city: city || 'Bangalore',
+        pincode: pincode,
         serviceRadiusKm: user.serviceRadiusKm || 5,
         panNumber: user.panNumber || '',
         aadharNumber: user.aadharNumber || '',
@@ -147,9 +168,15 @@ function ScrapChampProfileContent() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const combinedServiceArea = `${formData.serviceArea}, ${formData.city} - ${formData.pincode}`;
+      const payload = {
+        ...formData,
+        serviceArea: combinedServiceArea
+      };
+      
       const res = await apiFetch('/auth/profile', {
         method: 'PATCH',
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -354,10 +381,28 @@ function ScrapChampProfileContent() {
                 <Input 
                   label="Specific Service Area" 
                   name="serviceArea"
-                  placeholder="e.g. Indiranagar, 560038"
+                  placeholder="e.g. Indiranagar"
                   value={formData.serviceArea}
                   onChange={handleInputChange}
                   leftIcon={<Building size={18} />}
+                  className="bg-white border-gray-100 px-5 rounded-2xl shadow-sm"
+                />
+                <Input 
+                  label="City" 
+                  name="city"
+                  value={formData.city}
+                  disabled
+                  leftIcon={<Building size={18} />}
+                  className="bg-gray-50 border-gray-100 px-5 rounded-2xl shadow-sm font-black text-gray-400"
+                />
+                <Input 
+                  label="Pincode" 
+                  name="pincode"
+                  maxLength={6}
+                  placeholder="560038"
+                  value={formData.pincode}
+                  onChange={handleInputChange}
+                  leftIcon={<MapPin size={18} />}
                   className="bg-white border-gray-100 px-5 rounded-2xl shadow-sm"
                 />
                 <Input 
