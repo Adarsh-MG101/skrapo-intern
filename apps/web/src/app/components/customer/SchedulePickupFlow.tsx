@@ -20,7 +20,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Clock,
-  Trash2,
   Check,
   ChevronRight,
   ChevronLeft,
@@ -66,7 +65,7 @@ export const SchedulePickupFlow: React.FC = () => {
   const router = useRouter();
   const { user, apiFetch } = useAuth();
   const [step, setStep] = useState(1);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const initializedRef = useRef(false);
@@ -98,7 +97,7 @@ export const SchedulePickupFlow: React.FC = () => {
   
   const handleReset = () => {
     setStep(1);
-    setCapturedImage(null);
+    setCapturedImages([]);
     setSelectedCategories([]);
     setCustomScrapTypes('');
     setFormData(prev => ({
@@ -186,24 +185,28 @@ export const SchedulePickupFlow: React.FC = () => {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
       setLoading(true);
       try {
-        if (file.type.startsWith('image/')) {
-          const compressed = await compressImage(file);
-          setCapturedImage(compressed);
-          showToast('Photo optimized and added!', 'success');
-        } else {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setCapturedImage(reader.result as string);
-            showToast('File added successfully!', 'success');
-          };
-          reader.readAsDataURL(file);
-        }
+        const processedImages = await Promise.all(
+          files.map(async (file) => {
+            if (file.type.startsWith('image/')) {
+              return await compressImage(file);
+            } else {
+              return new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+              });
+            }
+          })
+        );
+        setCapturedImages(prev => [...prev, ...processedImages]);
+        showToast(`${processedImages.length} photo(s) added!`, 'success');
       } catch (err) {
-        showToast('Failed to process image', 'error');
+        showToast('Failed to process one or more images', 'error');
       } finally {
         setLoading(false);
       }
@@ -229,17 +232,19 @@ export const SchedulePickupFlow: React.FC = () => {
       const timeMap: Record<string, string> = {
         'any': '09:00',
         '08-10': '08:00',
-        '10-13': '10:00',
+        '10-12': '10:00',
+        '12-14': '12:00',
         '14-16': '14:00',
-        '16-19': '16:00'
+        '16-18': '16:00'
       };
       
       const endTimeMap: Record<string, string> = {
         'any': '19:00',
         '08-10': '10:00',
-        '10-13': '13:00',
+        '10-12': '12:00',
+        '12-14': '14:00',
         '14-16': '16:00',
-        '16-19': '19:00'
+        '16-18': '18:00'
       };
       
       const timeValue = timeMap[formData.time] || formData.time;
@@ -288,7 +293,7 @@ export const SchedulePickupFlow: React.FC = () => {
       const payload = {
         scrapTypes: uniqueTypes,
         estimatedWeight: { items: parsedWeights, total: totalWeight },
-        photoUrl: capturedImage,
+        photoUrls: capturedImages,
         scheduledAt: scheduledAt.toISOString(),
         timeSlot: formData.time,
         exactAddress: formData.address,
@@ -383,7 +388,7 @@ export const SchedulePickupFlow: React.FC = () => {
           {step === 1 && (
             <div className="animate-fade-in text-center flex flex-col items-center">
               
-              {!capturedImage ? (
+              {capturedImages.length === 0 ? (
                 <>
                   <h2 className="text-3xl font-black text-gray-900 mb-8 tracking-tight">Upload a photo of your recyclables!</h2>
                   
@@ -391,7 +396,7 @@ export const SchedulePickupFlow: React.FC = () => {
                     <div className="w-full max-w-md mx-auto animate-scale-in">
                       <CameraCapture 
                         onCapture={(imageSrc) => {
-                          setCapturedImage(imageSrc);
+                          setCapturedImages(prev => [...prev, imageSrc]);
                           setShowCamera(false);
                           showToast('Photo captured successfully!', 'success');
                         }}
@@ -429,27 +434,65 @@ export const SchedulePickupFlow: React.FC = () => {
                       </Button>
                     </div>
                   )}
-                  <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                  <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
                 </>
               ) : (
-                <div className="w-full max-w-md animate-scale-in">
-                  <h2 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Does this look correct?</h2>
-                  <div className="relative aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white mb-8 group bg-gray-100">
-                    <img src={capturedImage} alt="Captured Scrap" className="w-full h-full object-cover" />
-                    <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/60 to-transparent">
-                       <span className="text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                          <Check size={14} className="text-emerald-400" strokeWidth={3} /> Photo Verified
-                       </span>
+                <div className="w-full max-w-2xl animate-scale-in">
+                  <h2 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Photos Captured ({capturedImages.length})</h2>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
+                    {capturedImages.map((img, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-[1.5rem] overflow-hidden group border-2 border-gray-100 shadow-sm transition-all hover:border-brand-200">
+                        <img src={img} alt={`Scrap ${idx}`} className="w-full h-full object-cover" />
+                        <button 
+                          onClick={() => setCapturedImages(prev => prev.filter((_, i) => i !== idx))}
+                          className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-red-500 transition-colors backdrop-blur-md opacity-0 group-hover:opacity-100"
+                        >
+                          <X size={16} strokeWidth={3} />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    {/* Add More Button inside grid */}
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="aspect-square bg-gray-50 rounded-[1.5rem] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center hover:bg-brand-50 hover:border-brand-200 transition-all text-gray-400 hover:text-brand-500 group"
+                    >
+                       <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform mb-2">
+                          <Camera size={20} />
+                       </div>
+                       <span className="text-[10px] font-black uppercase tracking-widest">Add More</span>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowCamera(true)}
+                      className="flex-1 py-4 bg-gray-100 text-gray-900 font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:bg-gray-200 transition-all border border-gray-200"
+                    >
+                      <Video size={18} /> Use Live Camera
+                    </button>
+                    <Button variant="primary" fullWidth onClick={() => setStep(2)} className="rounded-2xl shadow-xl shadow-brand-500/20 py-4" rightIcon={<ArrowRight size={20} />}>
+                      Next: Select Items
+                    </Button>
+                  </div>
+
+                  {showCamera && (
+                    <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4">
+                       <div className="w-full max-w-md">
+                        <CameraCapture 
+                          onCapture={(imageSrc) => {
+                            setCapturedImages(prev => [...prev, imageSrc]);
+                            setShowCamera(false);
+                            showToast('Photo added!', 'success');
+                          }}
+                          onCancel={() => setShowCamera(false)}
+                        />
+                       </div>
                     </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <Button variant="ghost" fullWidth onClick={() => { setCapturedImage(null); showToast('Photo deleted', 'info'); }} className="rounded-xl flex gap-2">
-                      <Trash2 size={18} /> Delete
-                    </Button>
-                    <Button variant="primary" fullWidth onClick={() => setStep(2)} className="rounded-xl shadow-lg shadow-brand-500/20" rightIcon={<ArrowRight size={20} />}>
-                      Looks Good
-                    </Button>
-                  </div>
+                  )}
+                  <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
                 </div>
               )}
             </div>
@@ -579,18 +622,25 @@ export const SchedulePickupFlow: React.FC = () => {
                 </div>
               )}
 
-              <div className={`flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50/50 p-6 rounded-3xl border border-gray-100 ${selectedCategories.length > 0 ? 'mt-12' : 'mt-4'}`}>
-                <div className="flex gap-3 w-full sm:w-auto">
-                   <Button variant="secondary" onClick={() => setStep(1)} fullWidth className="sm:w-auto rounded-xl flex gap-2 border-2 border-brand-100/50 py-4">
-                      <ArrowLeft size={18} /> Back
+              <div className="flex flex-col gap-4 mt-12 bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100">
+                <Button 
+                   onClick={() => setStep(3)} 
+                   disabled={selectedCategories.length === 0} 
+                   size="lg" fullWidth 
+                   className="rounded-2xl shadow-xl shadow-brand-500/20 py-6" 
+                   rightIcon={<ChevronRight size={24} />}
+                >
+                   Next: Schedule Details
+                </Button>
+                
+                <div className="flex flex-col sm:flex-row gap-3">
+                   <Button variant="secondary" onClick={() => setStep(1)} fullWidth className="rounded-xl border-2 border-brand-100/50 py-4 gap-2">
+                      <ArrowLeft size={18} /> Back to Photo
                    </Button>
-                   <Button variant="ghost" onClick={handleReset} fullWidth className="sm:w-auto rounded-xl flex gap-2 border-2 border-red-50 text-red-500 hover:bg-red-50 py-4">
-                      <Trash2 size={18} /> Cancel
+                   <Button variant="ghost" onClick={handleReset} fullWidth className="rounded-xl border-2 border-red-50 text-red-400 hover:text-red-500 hover:bg-red-50 py-4 gap-2">
+                      <X size={18} /> Cancel & Restart
                    </Button>
                 </div>
-                <Button onClick={() => setStep(3)} disabled={selectedCategories.length === 0} size="lg" fullWidth className="sm:w-auto rounded-xl shadow-lg shadow-brand-500/20 py-4" rightIcon={<ChevronRight size={20} />}>
-                   Next Details
-                </Button>
               </div>
             </div>
           )}
@@ -695,37 +745,39 @@ export const SchedulePickupFlow: React.FC = () => {
                 <CustomerMap location={formData.location} addressQuery={formData.address} onChange={(loc, address) => setFormData(prev => ({ ...prev, location: loc, ...(address ? { address } : {}) }))} />
               </div>
 
-              <div className="flex flex-col md:flex-row gap-4 p-6 bg-gray-50/50 rounded-3xl border border-gray-100">
-                <div className="flex gap-3 w-full sm:w-auto flex-1">
-                   <Button type="button" variant="secondary" onClick={() => setStep(2)} className="flex-1 sm:flex-none rounded-xl border-2 border-brand-100/50 py-4 gap-2">
-                      <ChevronLeft size={20} /> Categories
-                   </Button>
-                   <Button type="button" variant="ghost" onClick={handleReset} className="flex-1 sm:flex-none rounded-xl border-2 border-red-50 text-red-500 hover:bg-red-50 py-4 gap-2">
-                       <Trash2 size={20} /> Cancel
-                   </Button>
-                </div>
+              <div className="flex flex-col gap-4 p-6 bg-gray-50/50 rounded-[2rem] border border-gray-100">
                 <Button 
-                  type="submit" fullWidth size="lg" variant="primary" disabled={loading || currentTotalWeight < 10}
-                  className="rounded-xl shadow-xl shadow-brand-500/20 md:w-auto"
+                  type="submit" 
+                  fullWidth 
+                  size="lg" 
+                  variant="primary" 
+                  disabled={loading || currentTotalWeight < 10}
+                  className="rounded-2xl shadow-xl shadow-brand-500/20 py-6"
                   leftIcon={loading ? <Loader size="sm" /> : <Clock size={20} />}
                 >
                   {currentTotalWeight < 10 ? `Need ${(10 - currentTotalWeight).toFixed(1)}kg more` : (loading ? 'Scheduling...' : 'Finalize Pickup Booking')}
                 </Button>
+                
+                <div className="flex flex-col sm:flex-row gap-3 font-semibold">
+                   <Button type="button" variant="secondary" onClick={() => setStep(2)} fullWidth className="rounded-xl border-2 border-brand-100/50 py-4 gap-2">
+                      <ChevronLeft size={20} /> Back to Categories
+                   </Button>
+                   <Button type="button" variant="ghost" onClick={handleReset} fullWidth className="rounded-xl border-2 border-red-50 text-red-400 hover:text-red-500 hover:bg-red-50 py-4 gap-2">
+                        <X size={20} /> Cancel & Restart
+                   </Button>
+                </div>
               </div>
             </form>
           )}
 
           {step === 4 && (
             <div className="animate-fade-in animate-scale-in flex flex-col items-center justify-center p-12 text-center bg-white rounded-[2.5rem]">
-              <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-3xl flex items-center justify-center mb-8 shadow-inner animate-bounce border-2 border-emerald-100 relative">
-                <PartyPopper size={48} />
-                <div className="absolute -top-3 -right-3 w-10 h-10 bg-brand-500 rounded-full flex items-center justify-center text-white border-4 border-white">
-                   <Check size={24} strokeWidth={3} />
-                </div>
-              </div>
-              <h1 className="text-4xl font-black text-gray-900 mb-6 tracking-tight">Order Received!</h1>
+              <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">Order Received!</h1>
+              <p className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-8">
+                For any assistance, please contact us at <a href="tel:+917975136270" className="text-brand-600">+917975136270</a>
+              </p>
               <p className="text-xl text-gray-500 font-medium mb-12 max-w-sm leading-relaxed">
-                Your request is being broadcasted to nearby Scrap Champs. Expect a confirmation in 30 minutes .
+                Your request is being broadcasted to nearby Scrap Champs. Expect a confirmation in 30 minutes.
               </p>
               <Button size="lg" onClick={() => router.push('/customer/pickups')} fullWidth className="max-w-xs shadow-xl shadow-brand-500/20 rounded-xl py-6 flex gap-3 text-lg">
                 View My History <ArrowRight />
@@ -733,12 +785,6 @@ export const SchedulePickupFlow: React.FC = () => {
             </div>
           )}
 
-          {/* Support Footer */}
-          <div className="mt-8 pt-6 border-t border-gray-100 text-center animate-fade-in">
-            <p className="text-gray-400 text-sm font-medium">
-              For any assistance, please contact us at   <a href="tel:+917975136270" className="text-brand-600 font-bold hover:underline">+917975136270</a>
-            </p>
-          </div>
         </div>
       </div>
 

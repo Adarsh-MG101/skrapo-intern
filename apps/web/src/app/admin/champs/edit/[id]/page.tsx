@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '../../../../context/AuthContext';
 import ProtectedRoute from '../../../../components/common/ProtectedRoute';
-import { Button, Input, Loader } from '../../../../components/common';
+import { Button, Input, Loader, CustomSelect } from '../../../../components/common';
 import { validatePhone, validateEmail, validatePincode } from '../../../../utils/validators';
 import { AlertCircle, CheckCircle2, Eye, EyeOff, UserCircle, ArrowLeft, Save } from 'lucide-react';
 
@@ -40,7 +40,6 @@ function EditChampContent() {
     gstNumber: '',
     gstCardPic: null as string | null,
     profilePhoto: null as string | null,
-    cardNumber: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -95,7 +94,6 @@ function EditChampContent() {
             gstNumber: data.gstNumber || '',
             gstCardPic: data.gstCardPic || null,
             profilePhoto: data.profilePhoto || null,
-            cardNumber: data.cardNumber || '',
           });
         } else {
           setError('Failed to load champion details');
@@ -195,7 +193,6 @@ function EditChampContent() {
         gstNumber: formData.gstNumber,
         gstCardPic: formData.gstCardPic,
         profilePhoto: formData.profilePhoto,
-        cardNumber: formData.cardNumber,
       };
 
       if (formData.password) {
@@ -235,18 +232,21 @@ function EditChampContent() {
   return (
     <div className="p-4 md:p-8 lg:p-10 bg-gray-50/20 min-h-screen">
       <div className="max-w-2xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-              <UserCircle className="text-brand-500" /> Edit Champion
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in group">
+          <div className="space-y-1">
+            <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
+              <div className="p-2 bg-brand-50 rounded-xl">
+                <UserCircle className="text-brand-500 w-6 h-6 md:w-8 md:h-8" />
+              </div>
+              Edit Champion
             </h1>
-            <p className="text-gray-500 mt-2 font-medium">Update partner details and service area</p>
+            <p className="text-gray-400 font-medium text-xs md:text-sm pl-0.5">Update partner details and service area</p>
           </div>
           <button 
             onClick={() => router.back()}
-            className="p-3 bg-white rounded-2xl border border-gray-100 text-gray-500 hover:text-brand-600 transition-all shadow-sm flex items-center gap-2 px-6 font-bold text-sm"
+            className="self-start sm:self-auto p-3 bg-white rounded-2xl border border-gray-100 text-gray-500 hover:text-brand-600 transition-all shadow-sm flex items-center gap-2 px-5 md:px-6 font-bold text-sm hover:shadow-md hover:border-brand-200 active:scale-95"
           >
-            <ArrowLeft size={18} /> Back
+            <ArrowLeft size={18} strokeWidth={3} /> <span className="uppercase tracking-widest text-[10px] md:text-xs">Back</span>
           </button>
         </div>
 
@@ -343,8 +343,7 @@ function EditChampContent() {
 
                <div className="grid md:grid-cols-2 gap-6 items-end">
                   <Input 
-                    label="Aadhar Card Number"
-                    required
+                    label="Aadhar Card Number (Optional)"
                     placeholder="12-digit Aadhar number"
                     maxLength={12}
                     value={formData.aadharNumber}
@@ -369,8 +368,7 @@ function EditChampContent() {
 
                <div className="grid md:grid-cols-2 gap-6 items-end">
                   <Input 
-                    label="PAN Card Number"
-                    required
+                    label="PAN Card Number (Optional)"
                     placeholder="PAN number (e.g. ABCDE1234F)"
                     maxLength={10}
                     className="uppercase"
@@ -396,8 +394,7 @@ function EditChampContent() {
 
                <div className="grid md:grid-cols-2 gap-6 items-end">
                   <Input 
-                    label="GST Number"
-                    required
+                    label="GST Number (Optional)"
                     placeholder="GSTIN"
                     maxLength={15}
                     className="uppercase"
@@ -420,16 +417,6 @@ function EditChampContent() {
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'gstCardPic')} />
                   </label>
                </div>
-               
-               {/* Card Number */}
-               <div className="grid md:grid-cols-2 gap-6 items-end">
-                  <Input 
-                    label="Worker ID / Card Number (Optional)"
-                    placeholder="Enter official Scrapo ID"
-                    value={formData.cardNumber}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, cardNumber: e.target.value})}
-                  />
-               </div>
             </div>
           </div>
 
@@ -446,20 +433,14 @@ function EditChampContent() {
               />
 
               <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">City *</label>
-                  <select
-                    className={`w-full bg-white border-2 rounded-2xl px-4 py-3.5 outline-none transition-all duration-200 cursor-pointer hover:border-brand-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-gray-900 font-bold ${fieldErrors.city ? 'border-red-500 focus:ring-red-500/10' : 'border-gray-100 shadow-sm'}`}
-                    value={formData.city}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({...formData, city: e.target.value})}
-                    required
-                  >
-                    {CITIES.map(city => (
-                      <option key={city.value} value={city.value}>{city.label}</option>
-                    ))}
-                  </select>
-                  {fieldErrors.city && <p className="mt-1.5 ml-1 text-sm font-semibold text-red-500">{fieldErrors.city}</p>}
-                </div>
+                <CustomSelect 
+                  label="City"
+                  required
+                  options={CITIES}
+                  value={formData.city}
+                  error={fieldErrors.city}
+                  onChange={(val: string) => setFormData({...formData, city: val})}
+                />
                 <Input 
                   label="Pincode"
                   required

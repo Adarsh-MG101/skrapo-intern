@@ -69,9 +69,29 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.log('⚡ [Socket.IO] Data Sync: auto_assign_failed', data);
     });
 
+    newSocket.on('order_needs_attention', (data) => {
+      console.log('⚡ [Socket.IO] Data Sync: order_needs_attention', data);
+    });
+
+    newSocket.on('order_critical', (data) => {
+      console.log('⚡ [Socket.IO] Data Sync: order_critical', data);
+    });
+
     // Champ Events
     newSocket.on('new_job_assigned', (data) => {
       console.log('⚡ [Socket.IO] Data Sync: new_job_assigned', data);
+    });
+
+    newSocket.on('new_available_job', (data) => {
+      console.log('⚡ [Socket.IO] Data Sync: new_available_job', data);
+    });
+
+    newSocket.on('new_job_assigned_manual', (data) => {
+      console.log('⚡ [Socket.IO] Data Sync: new_job_assigned_manual', data);
+    });
+
+    newSocket.on('orderAssigned', (data) => {
+      console.log('⚡ [Socket.IO] Data Sync: orderAssigned', data);
     });
 
     // Customer Events

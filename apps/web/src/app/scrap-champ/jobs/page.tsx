@@ -98,6 +98,11 @@ export default function ScrapChampJobsPage() {
 
   useEffect(() => {
     fetchJobs();
+
+    // Listen for refresh triggered by IncomingJobOverlay accept/decline
+    const handleOverlayRefresh = () => fetchJobs();
+    window.addEventListener('refresh_jobs', handleOverlayRefresh);
+    return () => window.removeEventListener('refresh_jobs', handleOverlayRefresh);
   }, [apiFetch]);
 
   useEffect(() => {

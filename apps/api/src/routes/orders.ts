@@ -11,13 +11,9 @@ const router = Router();
 
 /**
  * Broadcast order to all Scrap Champions in the same pincode.
- * Logic:
- *  1. Extract pincode from customer address
- *  2. Find all champs in that pincode
- *  3. Send SMS and Socket notifications to all of them
- *  4. Update order with the count of notified champs
+ * Sends SMS, socket notifications, and push alerts to matching champs.
  */
-async function broadcastToChamps(orderId: string, customerAddress: string, retryCount: number = 0) {
+async function broadcastToChamps(orderId: string, customerAddress: string) {
   try {
     const db = getDb();
     const usersCol = db.collection('users');
@@ -38,7 +34,7 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
     const matchingChamps = await usersCol.find({ 
       role: 'scrapChamp',
       serviceArea: { $regex: customerPincode },
-      isActive: { $ne: false } // Exclude deactivated champs
+      isActive: { $ne: false }
     }).toArray();
 
     if (matchingChamps.length === 0) {
@@ -63,32 +59,36 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
       }
     );
 
+    console.log(`[broadcast] Found ${matchingChamps.length} champs to notify for order ${orderId}`);
+    
     // Notify each champ
     const notifyTasks = matchingChamps.map(async (champ) => {
+      console.log(`[broadcast] Notifying champ ${champ._id} (${champ.mobileNumber}) for order ${orderId}`);
       try {
-        // SMS Notification
         const area = champ.serviceArea || 'Your Area';
         await smsService.sendAssignmentNotification(champ.mobileNumber, orderId, area);
 
-        // Tracker Event
         await db.collection('smsEvents').insertOne({
           orderId: new ObjectId(orderId),
           userId: champ._id,
           mobileNumber: champ.mobileNumber,
-          eventType: 'AutoAllocationAssigned', // Re-using type for legacy reasons
+          eventType: 'AutoAllocationAssigned',
           status: 'Sent',
           meta: { method: 'broadcast', pincode: customerPincode },
           createdAt: new Date(),
         });
 
-        // Real-time notification
-        notificationService.notifyUser(
+        await notificationService.notifyUser(
           champ._id.toString(),
           'New Scrapo Job Available! ♻️',
           'A new pickup is available in your area! First to accept gets it.',
           'new_available_job',
           { orderId }
         );
+
+        try {
+          emitAndLog(`user_${champ._id.toString()}`, 'new_available_job', { orderId });
+        } catch (_) {}
       } catch (err) {
         console.error(`[broadcast] Failed to notify champ ${champ._id}:`, err);
       }
@@ -96,7 +96,10 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
 
     await Promise.all(notifyTasks);
 
-    // Notify admin
+    try {
+      emitAndLog('champ_room', 'new_available_job', { orderId, targetPincode: customerPincode });
+    } catch (_) {}
+
     notificationService.notifyAdmins(
       'Broadcast Success',
       `Pickup broadcasted to ${matchingChamps.length} champions in pincode ${customerPincode}.`,
@@ -104,67 +107,123 @@ async function broadcastToChamps(orderId: string, customerAddress: string, retry
       { orderId, notifiedCount: matchingChamps.length }
     );
 
-    const maxRetries = parseInt(process.env.BROADCAST_MAX_RETRIES || '3', 10);
-    const timeoutMin = parseInt(process.env.BROADCAST_TIMEOUT_MINUTES || '10', 10);
-
-    // Schedule re-broadcast check
-    setTimeout(async () => {
-      try {
-        const freshDb = getDb();
-        const currentOrder = await freshDb.collection('orders').findOne({ _id: new ObjectId(orderId) });
-        
-        if (currentOrder && currentOrder.status === 'Requested') {
-          if (retryCount < maxRetries) {
-            console.log(`[broadcast-timer] Order ${orderId} still requested. Retrying broadcast (Attempt ${retryCount + 1}/${maxRetries})...`);
-            
-            // Notify admin about the retry
-            notificationService.notifyAdmins(
-              'Pickup Re-broadcast 🔄',
-              `No champ accepted Order #${orderId.slice(-6).toUpperCase()} within ${timeoutMin}m. Re-sending broadcast (Attempt ${retryCount + 1}/${maxRetries}).`,
-              'broadcast_retry',
-              { orderId, attempt: retryCount + 1, maxRetries }
-            );
-            
-            await broadcastToChamps(orderId, customerAddress, retryCount + 1);
-          } else {
-            console.log(`[broadcast-timer] Order ${orderId} reached max retries (${maxRetries}). Expiring...`);
-            
-            // Mark as Expired
-            await freshDb.collection('orders').updateOne(
-              { _id: new ObjectId(orderId) },
-              { $set: { status: 'Expired', adminNotifiedOfDelay: true, updatedAt: new Date() } }
-            );
-
-            // Notify admin
-            notificationService.notifyAdmins(
-              'Order Expired ⚠️',
-              `Order #${orderId.slice(-6).toUpperCase()} expired. No champ accepted within ${maxRetries * timeoutMin}m.`,
-              'broadcast_exhausted',
-              { orderId }
-            );
-
-            // Notify customer
-            if (currentOrder.customerId) {
-              notificationService.notifyUser(
-                currentOrder.customerId.toString(),
-                'Pickup Status Update ♻️',
-                'Sorry, Scrap Champions are unavailable at the moment. Please try again later!',
-                'order_expired',
-                { orderId, status: 'Expired' }
-              );
-            }
-          }
-        } else {
-           console.log(`[broadcast-timer] Order ${orderId} is no longer Requested (status: ${currentOrder?.status}). Stopping timer.`);
-        }
-      } catch (err) {
-        console.error('[broadcast-timer] Check failed:', err);
-      }
-    }, timeoutMin * 60 * 1000);
-
   } catch (error) {
     console.error('[broadcast] Fatal error:', error);
   }
+}
+
+/**
+ * Multi-stage escalation timers.
+ * Called once when an order is first created. Schedules independent checks at:
+ *   10 min  → Auto re-broadcast if still Requested
+ *   20 min  → Auto re-broadcast + mark needsAttention
+ *   21 min  → Admin critical notification
+ *   30 min  → Mark as Expired + notify admin & customer
+ */
+function scheduleEscalationTimers(orderId: string, customerAddress: string) {
+  const TAG = `[escalation:${orderId.slice(-6).toUpperCase()}]`;
+
+  // Helper to check if order is still in Requested state
+  const isStillRequested = async () => {
+    const db = getDb();
+    const order = await db.collection('orders').findOne({ _id: new ObjectId(orderId) });
+    return order && order.status === 'Requested' ? order : null;
+  };
+
+  // ── STAGE 1: 10 minutes ─ Auto Re-broadcast ──────────────────────
+  setTimeout(async () => {
+    try {
+      const order = await isStillRequested();
+      if (!order) { console.log(`${TAG} Stage 1 (10m): Order no longer Requested. Skipping.`); return; }
+
+      console.log(`${TAG} Stage 1 (10m): No acceptance. Re-broadcasting...`);
+      notificationService.notifyAdmins(
+        'Pickup Re-broadcast 🔄',
+        `Order #${orderId.slice(-6).toUpperCase()} not accepted in 10 minutes. Auto re-broadcasting.`,
+        'broadcast_retry',
+        { orderId, stage: 1 }
+      );
+      await broadcastToChamps(orderId, customerAddress);
+    } catch (err) { console.error(`${TAG} Stage 1 error:`, err); }
+  }, 10 * 60 * 1000);
+
+  // ── STAGE 2: 20 minutes ─ Re-broadcast + Needs Attention ─────────
+  setTimeout(async () => {
+    try {
+      const order = await isStillRequested();
+      if (!order) { console.log(`${TAG} Stage 2 (20m): Order no longer Requested. Skipping.`); return; }
+
+      console.log(`${TAG} Stage 2 (20m): Still not accepted. Re-broadcasting + flagging attention...`);
+
+      // Flag as needs attention in DB
+      const db = getDb();
+      await db.collection('orders').updateOne(
+        { _id: new ObjectId(orderId) },
+        { $set: { needsAttention: true, updatedAt: new Date() } }
+      );
+
+      // Emit real-time event so admin UI can blink
+      try { emitAndLog('admin_room', 'order_needs_attention', { orderId }); } catch (_) {}
+
+      notificationService.notifyAdmins(
+        'Pickup Re-broadcast 🔄',
+        `Order #${orderId.slice(-6).toUpperCase()} not accepted in 20 minutes. Final re-broadcast sent. 10 minutes remaining.`,
+        'broadcast_retry',
+        { orderId, stage: 2 }
+      );
+      await broadcastToChamps(orderId, customerAddress);
+    } catch (err) { console.error(`${TAG} Stage 2 error:`, err); }
+  }, 20 * 60 * 1000);
+
+  // ── STAGE 2.5: 21 minutes ─ Critical Admin Alert ─────────────────
+  setTimeout(async () => {
+    try {
+      const order = await isStillRequested();
+      if (!order) { console.log(`${TAG} Stage 2.5 (21m): Order no longer Requested. Skipping.`); return; }
+
+      console.log(`${TAG} Stage 2.5 (21m): Sending critical alert to admin...`);
+      const criticalMsg = `order id #${orderId.slice(-6).toUpperCase()} in critical state!`;
+      notificationService.notifyAdmins(
+        '🚨 Critical Order Alert',
+        criticalMsg,
+        'order_critical',
+        { orderId, message: criticalMsg }
+      );
+    } catch (err) { console.error(`${TAG} Stage 2.5 error:`, err); }
+  }, 21 * 60 * 1000);
+
+  // ── STAGE 3: 30 minutes ─ Expire ────────────────────────────────
+  setTimeout(async () => {
+    try {
+      const order = await isStillRequested();
+      if (!order) { console.log(`${TAG} Stage 3 (30m): Order no longer Requested. Skipping.`); return; }
+
+      console.log(`${TAG} Stage 3 (30m): Expiring order...`);
+      const db = getDb();
+      await db.collection('orders').updateOne(
+        { _id: new ObjectId(orderId) },
+        { $set: { status: 'Expired', needsAttention: false, adminNotifiedOfDelay: true, updatedAt: new Date() } }
+      );
+
+      const expireMsg = `request id #${orderId.slice(-6).toUpperCase()} expired!`;
+      notificationService.notifyAdmins(
+        'Order Expired ⚠️',
+        expireMsg,
+        'broadcast_exhausted',
+        { orderId, message: expireMsg }
+      );
+
+      if (order.customerId) {
+        notificationService.notifyUser(
+          order.customerId.toString(),
+          'Pickup Status Update ♻️',
+          'Sorry, Scrap Champions are unavailable at the moment. Please try again later!',
+          'order_expired',
+          { orderId, status: 'Expired' }
+        );
+      }
+    } catch (err) { console.error(`${TAG} Stage 3 error:`, err); }
+  }, 30 * 60 * 1000);
 }
 
 // --- CUSTOMER ENDPOINTS ---
@@ -178,7 +237,8 @@ router.post('/', authenticate, authorize('customer'), async (req: AuthenticatedR
     const { 
       scrapTypes, 
       estimatedWeight, 
-      photoUrl, 
+      photoUrl,
+      photoUrls,
       scheduledAt, 
       generalArea, 
       exactAddress,
@@ -198,7 +258,8 @@ router.post('/', authenticate, authorize('customer'), async (req: AuthenticatedR
       customerId: new ObjectId(req.user!.userId),
       scrapTypes: Array.isArray(scrapTypes) ? scrapTypes : [scrapTypes],
       estimatedWeight: estimatedWeight || {},
-      photoUrl: photoUrl || null,
+      photoUrl: photoUrl || (Array.isArray(photoUrls) && photoUrls.length > 0 ? photoUrls[0] : null),
+      photoUrls: Array.isArray(photoUrls) ? photoUrls : (photoUrl ? [photoUrl] : []),
       scheduledAt: new Date(scheduledAt),
       timeSlot: timeSlot || 'any',
       scheduledSlotDuration: 1,
@@ -250,6 +311,8 @@ router.post('/', authenticate, authorize('customer'), async (req: AuthenticatedR
     broadcastToChamps(result.insertedId.toString(), addressForMatching).catch(err => {
       console.error('[broadcast] Background failure:', err);
     });
+    // Start multi-stage escalation timers (10m/20m/21m/30m)
+    scheduleEscalationTimers(result.insertedId.toString(), addressForMatching);
 
     res.status(201).json({
       message: 'Order created successfully',
@@ -323,10 +386,11 @@ router.get('/customer/stats', authenticate, authorize('customer'), async (req: A
     const feedbackCol = db.collection('feedback');
     const customerId = new ObjectId(req.user!.userId);
 
-    const [total, pending, completed, feedback] = await Promise.all([
+    const [total, pending, completed, cancelled, feedback] = await Promise.all([
       ordersCol.countDocuments({ customerId }),
-      ordersCol.countDocuments({ customerId, status: { $in: ['Requested', 'Assigned', 'Accepted'] } }),
+      ordersCol.countDocuments({ customerId, status: { $in: ['Requested', 'Accepted'] } }),
       ordersCol.countDocuments({ customerId, status: 'Completed' }),
+      ordersCol.countDocuments({ customerId, status: { $in: ['Cancelled', 'Expired'] } }),
       feedbackCol.find({ customerId }).project({ rating: 1 }).toArray()
     ]);
 
@@ -334,7 +398,7 @@ router.get('/customer/stats', authenticate, authorize('customer'), async (req: A
       ? (feedback.reduce((sum, f) => sum + (f.rating || 0), 0) / feedback.length).toFixed(1)
       : '--';
 
-    res.json({ total, pending, completed, avgRating });
+    res.json({ total, pending, completed, cancelled, avgRating });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch customer stats' });
   }
@@ -728,9 +792,9 @@ router.post('/admin/:orderId/assign', authenticate, authorize('admin'), async (r
             }).catch(e => console.error('[orders] SMS Event log failed:', e));
         }
 
-        // Real-time socket notification to the champ
         try {
-            emitAndLog(`user_${champ._id}`, 'orderAssigned', { orderId: order._id, assignedBy: 'Admin' });
+            emitAndLog(`user_${champ._id.toString()}`, 'orderAssigned', { orderId: order._id, assignedBy: 'Admin' });
+            emitAndLog(`user_${champ._id.toString()}`, 'new_job_assigned_manual', { orderId: order._id });
             notificationService.notifyUser(
               champ._id.toString(),
               'New Assignment Received! ♻️',
@@ -1448,13 +1512,19 @@ router.patch('/admin/:orderId/status', authenticate, authorize('admin'), async (
     );
 
     // Notify customer
-    const statusMsg = status === 'Accepted' 
-      ? 'Your pickup request has been accepted! A Scrap Champion will be assigned shortly.' 
-      : `Your pickup request status has been updated to: ${status}`;
+    let statusMsg = `Your pickup request status has been updated to: ${status}`;
+    let statusTitle = 'Pickup Update ♻️';
+
+    if (status === 'Accepted') {
+      statusMsg = 'Your pickup request has been accepted! A Scrap Champion will be assigned shortly.';
+    } else if (status === 'Problem') {
+      statusTitle = 'Order Issue ⚠️';
+      statusMsg = 'There has been an issue with your order, please wait until we find a suitable fix.';
+    }
 
     notificationService.notifyUser(
       order.customerId.toString(),
-      'Pickup Update ♻️',
+      statusTitle,
       statusMsg,
       'order_status_update',
       { orderId, status }
@@ -1475,6 +1545,49 @@ router.patch('/admin/:orderId/status', authenticate, authorize('admin'), async (
   } catch (error) {
     console.error('[admin-status-update] Error:', error);
     return res.status(500).json({ error: 'Failed to update status' });
+  }
+});
+
+/**
+ * POST /orders/admin/:orderId/broadcast
+ * Manually trigger or re-trigger a broadcast for an order by Admin
+ */
+router.post('/admin/:orderId/broadcast', authenticate, authorize('admin'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const db = getDb();
+    const ordersCol = db.collection('orders');
+
+    const order = await ordersCol.findOne({ _id: new ObjectId(orderId) });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    // Force status to Requested and clear specific assignment to allow broadcast
+    await ordersCol.updateOne(
+      { _id: new ObjectId(orderId) },
+      { 
+        $set: { 
+          status: 'Requested', 
+          assignedScrapChampId: null,
+          declinedChampIds: [],
+          updatedAt: new Date() 
+        } 
+      }
+    );
+
+    const usersCol = db.collection('users');
+    const customer = await usersCol.findOne({ _id: order.customerId });
+    const addressForMatching = customer?.pickupAddress || order.exactAddress;
+
+    broadcastToChamps(orderId, addressForMatching).catch(err => {
+      console.error('[broadcast] Admin trigger failure:', err);
+    });
+    // Restart escalation timers from scratch
+    scheduleEscalationTimers(orderId, addressForMatching);
+
+    return res.json({ message: 'Broadcast initiated successfully' });
+  } catch (error) {
+    console.error('[admin-broadcast] Error:', error);
+    return res.status(500).json({ error: 'Failed to initiate broadcast' });
   }
 });
 
@@ -1532,6 +1645,8 @@ router.post('/:orderId/retry', authenticate, authorize('customer'), async (req: 
     broadcastToChamps(orderId.toString(), addressForMatching).catch(err => {
       console.error('[broadcast] Background failure during retry:', err);
     });
+    // Start escalation timers for the retried order
+    scheduleEscalationTimers(orderId.toString(), addressForMatching);
 
     // Notify Customer
     notificationService.notifyUser(
@@ -1561,6 +1676,77 @@ router.post('/:orderId/retry', authenticate, authorize('customer'), async (req: 
  * DELETE /orders/:orderId
  * Delete an order (Before acceptance)
  */
+/**
+ * PATCH /orders/:orderId/reschedule
+ * Reschedule a pickup for the customer
+ */
+router.patch('/:orderId/reschedule', authenticate, authorize('customer'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const { scheduledAt, timeSlot } = req.body;
+    const userId = req.user!.userId;
+
+    if (!scheduledAt) {
+      res.status(400).json({ error: 'Missing scheduledAt' });
+      return;
+    }
+
+    const db = getDb();
+    const ordersCol = db.collection('orders');
+    const order = await ordersCol.findOne({ _id: new ObjectId(orderId) });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found' });
+      return;
+    }
+
+    if (order.customerId.toString() !== userId) {
+      res.status(403).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    if (!['Requested', 'Accepted', 'Assigned'].includes(order.status)) {
+      res.status(400).json({ error: 'Only active orders can be rescheduled' });
+      return;
+    }
+
+    await ordersCol.updateOne(
+      { _id: new ObjectId(orderId) },
+      { 
+        $set: { 
+          scheduledAt: new Date(scheduledAt),
+          timeSlot: timeSlot || order.timeSlot,
+          updatedAt: new Date() 
+        } 
+      }
+    );
+
+    // Notify Champ if assigned
+    if (order.assignedScrapChampId) {
+       notificationService.notifyUser(
+         order.assignedScrapChampId.toString(),
+         'Pickup Rescheduled ⏰',
+         `Order #${orderId.slice(-6).toUpperCase()} has been rescheduled to ${new Date(scheduledAt).toLocaleDateString()}.`,
+         'pickup_rescheduled',
+         { orderId }
+       );
+    }
+
+    // Notify Admin
+    notificationService.notifyAdmins(
+      'Pickup Rescheduled',
+      `Customer has rescheduled pickup #${orderId.slice(-6).toUpperCase()} to ${new Date(scheduledAt).toLocaleDateString()}.`,
+      'order_rescheduled_admin',
+      { orderId }
+    );
+
+    res.json({ message: 'Order rescheduled successfully' });
+  } catch (error) {
+    console.error('[orders] Reschedule error:', error);
+    res.status(500).json({ error: 'Failed to reschedule order' });
+  }
+});
+
 router.delete('/:orderId', authenticate, authorize('customer'), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { orderId } = req.params;
@@ -1598,8 +1784,8 @@ router.delete('/:orderId', authenticate, authorize('customer'), async (req: Auth
       return;
     }
 
-    if (['Accepted', 'Completed'].includes(order.status)) {
-      res.status(400).json({ error: 'Cannot cancel order after it has been accepted' });
+    if (order.status === 'Completed') {
+      res.status(400).json({ error: 'Cannot cancel an order that has already been completed' });
       return;
     }
 

@@ -61,7 +61,7 @@ function AdminDashboardContent() {
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">
             Control Center <LayoutDashboard className="inline-block text-brand-500 ml-1" size={28} strokeWidth={3} />
           </h1>
-          <p className="text-gray-400 mt-1 text-base font-medium">Monitoring Skrapo operations and ecosystem.</p>
+          <p className="text-gray-400 mt-1 text-base font-medium">Monitoring Recyclemybin operations and ecosystem.</p>
         </div>
 
         {/* Stats Grid */}

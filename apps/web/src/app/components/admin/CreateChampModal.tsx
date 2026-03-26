@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
-import { Button, Input } from '../common';
+import { Button, Input, CustomSelect } from '../common';
 import { validatePhone, validateEmail, validatePincode } from '../../utils/validators';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -368,18 +368,14 @@ export const CreateChampModal: React.FC<CreateChampModalProps> = ({ isOpen, onCl
               />
 
               <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">City <span className="text-red-500">*</span></label>
-                  <select
-                    className="w-full bg-white border-2 border-gray-100 rounded-2xl px-4 py-3.5 outline-none transition-all duration-200 cursor-pointer hover:border-brand-200 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10 text-gray-900 font-bold shadow-sm"
-                    value={formData.city}
-                    onChange={(e) => setFormData({...formData, city: e.target.value})}
-                  >
-                    {CITIES.map(city => (
-                      <option key={city.value} value={city.value}>{city.label}</option>
-                    ))}
-                  </select>
-                </div>
+                <CustomSelect 
+                  label="City"
+                  required
+                  options={CITIES}
+                  value={formData.city}
+                  error={fieldErrors.city}
+                  onChange={(val: string) => setFormData({...formData, city: val})}
+                />
                 <Input 
                   label="Pincode"
                   required

@@ -228,8 +228,10 @@ const NotificationBell = () => {
                           <p className="text-[11px] text-gray-500 font-medium leading-relaxed mb-1.5 line-clamp-2">
                             {notification.message}
                           </p>
-                          <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest leading-none">
-                             {formatDistanceToNowCustom(notification.createdAt)}
+                          <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest leading-none flex items-center gap-2">
+                             <span>{new Date(notification.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                             <span className="text-gray-300">&bull;</span>
+                             <span>{formatDistanceToNowCustom(notification.createdAt)}</span>
                           </p>
                         </div>
                       </div>

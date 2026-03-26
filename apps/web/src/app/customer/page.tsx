@@ -14,7 +14,8 @@ import {
   Sprout, 
   Globe, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Ban
 } from 'lucide-react';
 import { Button } from '../components/common';
 
@@ -22,12 +23,13 @@ interface Stats {
   total: number;
   pending: number;
   completed: number;
+  cancelled: number;
 }
 
 function CustomerDashboardContent() {
   const { user, token } = useAuth();
   const { socket } = useSocket();
-  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, completed: 0 });
+  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, completed: 0, cancelled: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -91,11 +93,12 @@ function CustomerDashboardContent() {
       {loading ? (
         <div className="flex justify-center py-10"><Loader size="lg" /></div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mb-10 sm:mb-16 animate-fade-in">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 mb-10 sm:mb-16 animate-fade-in">
           {[
             { label: 'Total Scraps', value: stats.total, Icon: Package, color: 'text-brand-600', bg: 'bg-brand-50', border: 'border-brand-100' },
             { label: 'Pending', value: stats.pending, Icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
             { label: 'Completed', value: stats.completed, Icon: ShieldCheck, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+            { label: 'Cancelled', value: stats.cancelled, Icon: Ban, color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-100' },
           ].map((stat, index) => (
             <div key={stat.label} className="bg-white rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-8 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 group overflow-hidden" style={{ animationDelay: `${index * 100}ms` }}>
               <div className={`w-10 h-10 sm:w-14 sm:h-14 ${stat.bg} ${stat.color} rounded-xl sm:rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-neutral-100 shadow-inner border ${stat.border} group-hover:scale-110 transition-transform`}>

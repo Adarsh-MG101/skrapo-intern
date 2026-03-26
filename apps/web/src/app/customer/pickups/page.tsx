@@ -9,7 +9,7 @@ import { Modal } from '../../components/common/Modal';
 import { useToast } from '../../components/common/Toast';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
-import { Recycle, Trash2, MapPin, ListTodo, X, ShieldCheck, Search, RefreshCw, ArrowRight, Inbox } from 'lucide-react';
+import { Recycle, Trash2, MapPin, ListTodo, X, ShieldCheck, Search, RefreshCw, ArrowRight, Inbox, Phone } from 'lucide-react';
 
 const statuses = ['All', 'Active', 'Completed', 'Cancelled', 'Expired'];
 
@@ -32,6 +32,7 @@ export default function CustomerPickupsPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelModal, setCancelModal] = useState<{isOpen: boolean, orderId: string | null}>({ isOpen: false, orderId: null });
+  const [rescheduleModal, setRescheduleModal] = useState<{isOpen: boolean, orderId: string | null, date: string, time: string}>({ isOpen: false, orderId: null, date: '', time: 'any' });
   const [processing, setProcessing] = useState(false);
 
   const [status, setStatus] = useState('All');
@@ -88,7 +89,6 @@ export default function CustomerPickupsPage() {
 
       if (res.ok) {
         showToast('Pickup re-broadcasted successfully!', 'success');
-        // Refresh local state to 'Requested'
         setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: 'Requested' } : o));
       } else {
         const data = await res.json();
@@ -301,14 +301,7 @@ export default function CustomerPickupsPage() {
             <>
               <div className="grid gap-2">
                 {currentItems.map((order) => (
-                <div key={order._id} className={`bg-white rounded-xl px-4 py-3 sm:px-6 shadow-sm border ${order.status === 'Expired' ? 'border-amber-200 bg-amber-50/10' : 'border-gray-100'} hover:shadow-md hover:border-brand-100 transition-all animate-fade-in group flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0 relative overflow-hidden`}>
-                  {/* Expired Flag Indicator */}
-                  {order.status === 'Expired' && (
-                    <div className="absolute top-0 right-0 bg-brand-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-lg shadow-sm z-10 animate-pulse">
-                      Needs Attention
-                    </div>
-                  )}
-
+                <div key={order._id} className={`bg-white rounded-xl px-4 py-3 sm:px-6 shadow-sm border border-gray-100 hover:shadow-md hover:border-brand-100 transition-all animate-fade-in group flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0 relative overflow-hidden`}>
                   {/* Left: Info */}
                   <div className="flex-1 min-w-0 flex items-center gap-4">
                      <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center text-brand-600 flex-shrink-0">
@@ -370,15 +363,25 @@ export default function CustomerPickupsPage() {
                              Details
                            </Button>
                         </Link>
-                        {!['Accepted', 'Completed', 'Cancelled', 'Expired'].includes(order.status) && (
-                           <Button 
-                             variant="ghost" 
-                             size="sm" 
-                             onClick={() => triggerCancel(order._id, order.status)}
-                             className="rounded-xl px-4 py-1.5 h-auto text-[10px] uppercase tracking-widest leading-none text-gray-400 hover:text-red-500 hover:bg-red-50"
-                           >
-                             Cancel
-                           </Button>
+                        {['Requested', 'Accepted', 'Assigned'].includes(order.status) && (
+                           <>
+                             <Button 
+                               variant="ghost" 
+                               size="sm" 
+                               onClick={() => setRescheduleModal({ isOpen: true, orderId: order._id, date: order.scheduledAt?.split('T')[0] || '', time: order.timeSlot || 'any' })}
+                               className="rounded-xl px-4 py-1.5 h-auto text-[10px] sm:text-[11px] font-black uppercase tracking-[0.1em] leading-none text-brand-600 hover:bg-brand-50"
+                             >
+                               Reschedule
+                             </Button>
+                             <Button 
+                               variant="ghost" 
+                               size="sm" 
+                               onClick={() => triggerCancel(order._id, order.status)}
+                               className="rounded-xl px-4 py-1.5 h-auto text-[10px] sm:text-[11px] font-black uppercase tracking-[0.1em] leading-none text-gray-400 hover:text-red-500 hover:bg-red-50"
+                             >
+                               Cancel
+                             </Button>
+                           </>
                         )}
                      </div>
                   </div>
@@ -465,6 +468,35 @@ export default function CustomerPickupsPage() {
             <h3 className="text-2xl font-black text-gray-900 mb-2 tracking-tight">Cancel this pickup?</h3>
             <p className="text-gray-500 font-medium px-4">
               Are you sure you want to stop this recycling request? A Scrap Champ might already be on their way.
+            </p>
+          </div>
+        </Modal>
+
+        {/* Reschedule Modal */}
+        <Modal
+          isOpen={rescheduleModal.isOpen}
+          onClose={() => setRescheduleModal({ ...rescheduleModal, isOpen: false })}
+          title="Reschedule Pickup"
+          footer={
+            <Button 
+                variant="primary" 
+                fullWidth 
+                onClick={() => setRescheduleModal({ ...rescheduleModal, isOpen: false })} 
+                className="rounded-2xl shadow-lg shadow-brand-500/20 py-4 font-black uppercase tracking-widest text-sm bg-brand-600 hover:bg-brand-700 h-auto"
+              >
+                 Got it
+              </Button>
+          }
+        >
+          <div className="flex flex-col items-center text-center py-8 px-4">
+            <div className="w-20 h-20 bg-brand-50/50 rounded-3xl flex items-center justify-center text-brand-600 border border-brand-100/50 mb-8 shadow-inner relative group">
+               <Phone size={36} strokeWidth={2.5} className="group-hover:scale-110 transition-transform" />
+            </div>
+
+            <p className="text-gray-600 font-medium text-xl leading-relaxed max-w-sm">
+               Please reach out to us at <br/>
+               <a href="tel:+917975136270" className="text-brand-600 font-black decoration-brand-300 underline underline-offset-8 decoration-2 hover:text-brand-700 transition-all tracking-tight text-2xl inline-block mt-1 mb-1">+917975136270</a> <br/>
+               if the order needs to be rescheduled for a suitable time!
             </p>
           </div>
         </Modal>

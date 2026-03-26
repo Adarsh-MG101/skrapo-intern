@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
-import { StatusBadge, Loader, Button } from '../../components/common';
+import { StatusBadge, Loader, Button, CustomSelect } from '../../components/common';
 import { useToast } from '../../components/common/Toast';
 import { User, Inbox, Zap, Ban, Phone, FileText, Layers, Droplets, Cpu, Package, Recycle, ArrowRight, Timer } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
@@ -38,12 +38,24 @@ const ExpiryTimer = ({ createdAt }: { createdAt: string }) => {
 
   const mins = Math.floor(timeLeft / 60000);
   const secs = Math.floor((timeLeft % 60000) / 1000);
+  const isUrgent = timeLeft <= 10 * 60 * 1000;
 
   return (
-    <span className="flex items-center gap-1 text-red-500 font-black bg-red-50 px-1.5 py-0.5 rounded-md border border-red-100/50 text-[9px] tracking-tight">
-      <Timer size={10} />
-      {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
-    </span>
+    <div className="flex items-center gap-1">
+      {isUrgent && (
+        <span className="text-[7px] font-black text-red-600 bg-red-100 px-1.5 py-0.5 rounded-md uppercase tracking-widest animate-pulse">
+          Needs Attention
+        </span>
+      )}
+      <span className={`flex items-center gap-1 font-black px-1.5 py-0.5 rounded-md border text-[9px] tracking-tight ${
+        isUrgent 
+          ? 'text-red-600 bg-red-50 border-red-200' 
+          : 'text-red-500 bg-red-50 border-red-100/50'
+      }`}>
+        <Timer size={10} />
+        {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+      </span>
+    </div>
   );
 };
 
@@ -148,6 +160,21 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleBroadcast = async (orderId: string) => {
+    try {
+      const res = await apiFetch(`/orders/admin/${orderId}/broadcast`, { method: 'POST' });
+      if (res.ok) {
+        showToast('Broadcast initiated successfully', 'success');
+        fetchData();
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Broadcast failed', 'error');
+      }
+    } catch (err) {
+      showToast('Error triggering broadcast', 'error');
+    }
+  };
+
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -219,6 +246,8 @@ export default function AdminOrdersPage() {
     socket.on('order_declined', handleRefresh);
     socket.on('order_completed', handleRefresh);
     socket.on('broadcast_exhausted', handleRefresh);
+    socket.on('order_needs_attention', handleRefresh);
+    socket.on('order_critical', handleRefresh);
 
     return () => {
       socket.off('new_pickup_request', handleRefresh);
@@ -227,6 +256,8 @@ export default function AdminOrdersPage() {
       socket.off('order_declined', handleRefresh);
       socket.off('order_completed', handleRefresh);
       socket.off('broadcast_exhausted', handleRefresh);
+      socket.off('order_needs_attention', handleRefresh);
+      socket.off('order_critical', handleRefresh);
     };
   }, [socket]);
 
@@ -291,11 +322,19 @@ export default function AdminOrdersPage() {
 
                   const displayStatus = isExpired ? 'Expired' : order.status;
 
+                  // Needs Attention: 20+ mins old and still Requested
+                  const ageMs = Date.now() - new Date(order.createdAt).getTime();
+                  const needsAttention = order.status === 'Requested' && !isExpired && ageMs >= 20 * 60 * 1000;
+
                   return (
                     <div 
                       key={order._id} 
                       onClick={() => window.location.href = `/admin/orders/${order._id}`}
-                      className="bg-white rounded-3xl p-3.5 border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-brand-500/5 transition-all group relative overflow-hidden flex flex-col cursor-pointer"
+                      className={`bg-white rounded-3xl p-3.5 border shadow-sm hover:shadow-xl hover:shadow-brand-500/5 transition-all group relative overflow-hidden flex flex-col cursor-pointer ${
+                        needsAttention 
+                          ? 'border-red-400 animate-pulse ring-2 ring-red-300/50' 
+                          : 'border-gray-100'
+                      }`}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -336,12 +375,20 @@ export default function AdminOrdersPage() {
 
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         {order.status === 'Requested' ? (
-                          <button 
-                            onClick={() => openAssignModal(order._id)}
-                            className="flex-1 py-2.5 bg-[#6b8e61] text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-[#6b8e61]/20 hover:scale-105 active:scale-95 transition-all"
-                          >
-                            Assign
-                          </button>
+                          <div className="flex gap-2 w-full">
+                            <button 
+                              onClick={() => handleBroadcast(order._id)}
+                              className="flex-1 py-2.5 bg-brand-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1"
+                            >
+                              <Zap size={10} className="fill-white" /> Broadcast
+                            </button>
+                            <button 
+                              onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                              className="flex-1 py-2.5 bg-white text-gray-900 border border-gray-100 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-center"
+                            >
+                              Details
+                            </button>
+                          </div>
                         ) : order.status === 'Problem' ? (
                           <button 
                              onClick={() => window.location.href = `/admin/orders/${order._id}`}
@@ -350,12 +397,20 @@ export default function AdminOrdersPage() {
                             Fix
                           </button>
                         ) : (
-                          <button 
-                            onClick={() => fetchEngagement(order._id)}
-                            className="flex-1 py-2.5 bg-white text-brand-600 border border-brand-500/20 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-brand-50 active:scale-95 transition-all"
-                          >
-                            Track
-                          </button>
+                          <div className="flex gap-2 w-full">
+                            <button 
+                              onClick={() => fetchEngagement(order._id)}
+                              className="flex-1 py-2.5 bg-white text-brand-600 border border-brand-500/20 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-brand-50 active:scale-95 transition-all flex items-center justify-center"
+                            >
+                              Track
+                            </button>
+                            <button 
+                              onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                              className="flex-1 py-2.5 bg-white text-gray-900 border border-gray-100 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-center"
+                            >
+                              Details
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -491,21 +546,19 @@ export default function AdminOrdersPage() {
             </div>
           ) : (
             <div className="space-y-4">
-               <div>
-                  <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Select Champion</label>
-                  <select 
-                    value={assignModal.selectedChampId}
-                    onChange={(e) => setAssignModal(prev => ({ ...prev, selectedChampId: e.target.value }))}
-                    className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-800 focus:ring-4 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all cursor-pointer"
-                  >
-                    <option value="" disabled>-- Choose a partner --</option>
-                    {assignModal.champs.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name} - {c.serviceArea} ({c.mobileNumber})
-                      </option>
-                    ))}
-                  </select>
-               </div>
+                <CustomSelect 
+                  label="Select Champion"
+                  placeholder="-- Choose a partner --"
+                  searchable={true}
+                  searchPlaceholder="Search by name, phone or pincode..."
+                  options={assignModal.champs.map((c: any) => ({
+                    label: c.name,
+                    value: c._id,
+                    sublabel: `${c.mobileNumber} • ${c.serviceArea}`
+                  }))}
+                  value={assignModal.selectedChampId}
+                  onChange={(val: string) => setAssignModal(prev => ({ ...prev, selectedChampId: val }))}
+                />
                
                <Button 
                  fullWidth 

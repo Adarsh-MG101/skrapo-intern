@@ -28,7 +28,17 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   };
 
   const theme = getTheme(status);
-  const low = status.toLowerCase(); // Define low here to be used in the JSX
+  const low = status.toLowerCase();
+
+  // Hide badge for expired orders in customer view as it's redundant/cluttering
+  // But keep it visible for admins
+  if (low === 'expired') {
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/admin')) {
+       // Proceed to render Expired for admin
+    } else {
+       return null;
+    }
+  }
 
   return (
     <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black border ${theme.bg} uppercase tracking-[0.1em] flex-shrink-0 whitespace-nowrap`}>

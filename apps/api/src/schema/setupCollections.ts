@@ -272,7 +272,7 @@ async function setupNotificationsCollection(db: Db): Promise<void> {
         userId:    { bsonType: 'objectId', description: 'Ref -> users._id (recipient)' },
         title:     { bsonType: 'string' },
         message:   { bsonType: 'string' },
-        type:      { bsonType: 'string', enum: ['Info', 'Success', 'Warning', 'Error'] },
+        type:      { bsonType: 'string', description: 'Notification event type (e.g. broadcast_success, new_available_job)' },
         metadata:  { bsonType: 'object', description: 'Generic metadata (e.g. orderId)' },
         isRead:    { bsonType: 'bool' },
         createdAt: { bsonType: 'date' },

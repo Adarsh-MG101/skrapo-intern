@@ -3,10 +3,12 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { NotificationBell } from './index';
-import { UserCircle, ChevronDown, LogOut } from 'lucide-react';
+import { UserCircle, ChevronDown, LogOut, User, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const Header = () => {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [showUserMenu, setShowUserMenu] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
 
@@ -53,36 +55,49 @@ const Header = () => {
               <ChevronDown size={14} className={`text-gray-300 transition-transform hidden sm:block ${showUserMenu ? 'rotate-180 text-brand-500' : ''}`} />
             </div>
 
-            {/* Floating User Identity Popover */}
+            {/* Premium Floating User Profile Identity Popover */}
             {showUserMenu && (
               <div 
-                className="absolute right-[-10px] sm:right-0 mt-4 w-44 bg-white/95 backdrop-blur-xl rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-brand-100/30 p-5 animate-float-in z-50 text-center"
+                className="absolute right-[-10px] sm:right-0 mt-4 w-60 bg-white shadow-[0_30px_90px_rgba(0,0,0,0.18)] border border-gray-100 p-2 animate-float-in z-50 rounded-[2rem] overflow-hidden"
               >
-                {/* Visual Arrow */}
-                <div className="absolute -top-1.5 right-6 w-3 h-3 bg-white border-t border-l border-brand-100/30 rotate-45" />
-                
-                <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mx-auto mb-3 shadow-sm border border-brand-100/50">
-                    <UserCircle size={24} strokeWidth={2.5} />
-                </div>
-                
-                <p className="text-[10px] font-black text-brand-500 uppercase tracking-[0.2em] mb-1">Identity</p>
-                <p className="text-xs font-black text-gray-900 uppercase tracking-tight truncate mb-1">{user.name}</p>
-                <div className="inline-block px-3 py-1 bg-gray-50 rounded-full border border-gray-100">
-                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
-                    {user.role === 'scrapChamp' ? 'Scrap Champ' : user.role === 'admin' ? 'Administrator' : 'Customer'}
-                    </p>
+                {/* Visual Identity Section */}
+                <div className="bg-gray-50/50 p-6 rounded-[1.8rem] mb-2 flex flex-col items-center text-center">
+                   <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-brand-600 mb-4 shadow-sm border border-brand-50 relative group">
+                      <UserCircle size={28} strokeWidth={2.5} />
+                      <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full" title="Online" />
+                   </div>
+                   
+                   <p className="text-sm font-black text-gray-900 uppercase tracking-tight truncate max-w-full leading-none mb-1">{user.name}</p>
+                   <p className="text-[10px] font-bold text-gray-400 lowercase italic opacity-80">{user.email || user.mobileNumber}</p>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <button
-                    onClick={() => {
-                      setShowUserMenu(false);
-                      logout();
-                    }}
-                    className="w-full py-2.5 flex items-center justify-center gap-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all font-black text-[10px] uppercase tracking-widest"
-                  >
-                    <LogOut size={16} strokeWidth={2.5} /> Sign Out
-                  </button>
+                {/* Account Navigation List */}
+                <div className="space-y-1 p-1">
+                   <button
+                     onClick={() => {
+                       const path = user.role === 'scrapChamp' ? '/scrap-champ/profile' : `/${user.role}/profile`;
+                       router.push(path);
+                       setShowUserMenu(false);
+                     }}
+                     className="w-full h-11 px-6 rounded-xl flex items-center justify-center gap-2.5 text-gray-600 hover:bg-brand-50 hover:text-brand-600 transition-all group relative"
+                   >
+                     <User size={16} strokeWidth={2.5} />
+                     <span className="text-[11px] font-black uppercase tracking-widest">My Account</span>
+                     <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 absolute right-6 -translate-x-2 group-hover:translate-x-0 transition-all" />
+                   </button>
+                   
+                   <div className="mx-4 h-px bg-gray-50 my-2" />
+
+                   <button
+                     onClick={() => {
+                       setShowUserMenu(false);
+                       logout();
+                     }}
+                     className="w-full h-11 px-6 rounded-xl flex items-center justify-center gap-2.5 text-red-400 hover:bg-red-50 hover:text-red-500 transition-all group"
+                   >
+                     <LogOut size={16} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
+                     <span className="text-[11px] font-black uppercase tracking-widest">Sign Out</span>
+                   </button>
                 </div>
               </div>
             )}

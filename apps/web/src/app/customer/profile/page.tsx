@@ -1,21 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { ProtectedRoute, Button, Input } from '../../components/common';
-import { User, Mail, MapPin, Phone, LogOut, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { ProtectedRoute, Input } from '../../components/common';
+import { User, Mail, MapPin, Phone, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export default function CustomerProfilePage() {
-  const { user, logout } = useAuth();
-  const [showLogoutPrompt, setShowLogoutPrompt] = useState(false);
-
-  const confirmLogout = () => {
-    logout();
-  };
-
-  const cancelLogout = () => {
-    setShowLogoutPrompt(false);
-  };
+  const { user } = useAuth();
 
   return (
     <ProtectedRoute allowedRoles={['customer']}>
@@ -78,60 +69,14 @@ export default function CustomerProfilePage() {
               </div>
 
               <div className="mt-8 pt-8 border-t border-gray-100">
-                 <div className="flex items-center gap-2 text-emerald-500 mb-8 bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
+                 <div className="flex items-center gap-2 text-emerald-500 bg-emerald-50 p-4 rounded-2xl border border-emerald-100">
                     <CheckCircle2 size={20} strokeWidth={2.5} />
                     <span className="text-xs font-black uppercase tracking-widest text-emerald-700">Account Verified</span>
                  </div>
-
-                 <Button 
-                   variant="ghost" 
-                   onClick={() => setShowLogoutPrompt(true)}
-                   fullWidth
-                   className="py-5 rounded-2xl text-red-500 hover:text-white hover:bg-red-500 hover:border-red-500 border-2 border-red-100 font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all"
-                 >
-                   <LogOut size={20} strokeWidth={2.5} /> Sign Out of App
-                 </Button>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Logout Confirmation Modal */}
-        {showLogoutPrompt && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-            <div
-              className="bg-white rounded-[32px] shadow-2xl max-w-sm w-full p-8 animate-zoom-in border border-gray-100"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-red-500 shadow-inner">
-                <LogOut size={40} strokeWidth={2.5} />
-              </div>
-
-              <h3 className="text-2xl font-black text-gray-900 text-center mb-2 tracking-tight">
-                Sign Out?
-              </h3>
-              <p className="text-gray-500 text-center mb-8 leading-relaxed font-medium">
-                Are you sure you want to log out? You will need to verify your number again to access your account.
-              </p>
-
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={confirmLogout}
-                  className="w-full py-4 bg-red-500 text-white font-black rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/25 active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <LogOut size={20} strokeWidth={3} />
-                  Yes, Sign Out
-                </button>
-                <button
-                  onClick={cancelLogout}
-                  className="w-full py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl hover:bg-gray-100 transition-all active:scale-95 text-sm uppercase tracking-widest"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </ProtectedRoute>
   );

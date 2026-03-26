@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
-import { StatusBadge, Loader, DateTimePicker } from '../../components/common';
+import { StatusBadge, Loader, DateTimePicker, CustomSelect } from '../../components/common';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
 import { Search, Printer, RefreshCw, User, Phone, Calendar, Clock, Inbox, ArrowRight, History as HistoryIcon } from 'lucide-react';
@@ -40,7 +40,7 @@ export default function AdminHistoryPage() {
   const [endDate, setEndDate] = useState('');
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 10;
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -152,7 +152,15 @@ export default function AdminHistoryPage() {
           </div>
 
           {/* Ultra-Compact Filter Bar */}
-          <div className="bg-white rounded-2xl p-2.5 mb-8 border border-gray-100 shadow-lg shadow-brand-500/5 flex flex-col gap-2.5 max-w-6xl mx-auto w-full overflow-hidden">
+          <div className="bg-white rounded-2xl p-2.5 mb-8 border border-gray-100 shadow-lg shadow-brand-500/5 flex flex-col gap-2.5 max-w-6xl mx-auto w-full relative">
+             <div className="flex items-center justify-between px-1 mb-1">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Filter Records</p>
+                <div className="flex items-center gap-2">
+                   <span className="px-2 py-0.5 bg-brand-50 text-brand-600 rounded-md text-[9px] font-black uppercase tracking-tighter">
+                      {filteredOrders.length} Records Found
+                   </span>
+                </div>
+             </div>
              {/* Row 1: Search & Status */}
              <div className="flex flex-col sm:flex-row gap-2.5 w-full">
                 <div className="relative flex-1 w-full text-left">
@@ -169,13 +177,13 @@ export default function AdminHistoryPage() {
                 </div>
                 
                 <div className="w-full sm:w-48">
-                  <select 
-                    className="w-full px-4 py-2 bg-gray-50/50 border border-gray-100 rounded-xl text-[11px] font-black uppercase tracking-widest focus:bg-white focus:border-brand-500/20 transition-all outline-none cursor-pointer"
+                  <CustomSelect 
+                    size="sm"
+                    options={statuses.map(s => ({ label: s, value: s }))}
                     value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                  >
-                    {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                    onChange={(val: string) => setStatus(val)}
+                    placeholder="All Status"
+                  />
                 </div>
              </div>
 
@@ -214,148 +222,102 @@ export default function AdminHistoryPage() {
           ) : (
             <div className="space-y-6">
               
-              {/* Desktop Table View */}
-              <div className="hidden md:block bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+              {/* Unified Table View */}
+              <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
+                <div className="overflow-x-auto custom-scrollbar">
+                  <table className="w-full text-left border-collapse min-w-[1000px]">
                     <thead>
                       <tr className="bg-gray-50/50 border-b border-gray-100">
-                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Customer & Address</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Pickup Time</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Assigned Champ</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Actions</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                        <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Order Information</th>
+                        <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Customer & Contact</th>
+                        <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Location</th>
+                        <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Scheduled Time</th>
+                        <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Assigned Champ</th>
+                        <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                        <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                      {currentItems.map((order) => (
-                        <tr key={order._id} className="hover:bg-gray-50/30 transition-all group border-b border-gray-50 last:border-0">
-                          <td className="px-4 py-4 min-w-[200px] text-left">
-                            <div className="flex items-center gap-3">
-                               <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 shadow-inner border border-white flex-shrink-0">
-                                  <User size={20} />
+                      {currentItems.map((order) => {
+                        const isExpired = order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now());
+                        const displayStatus = isExpired ? 'Expired' : order.status;
+
+                        return (
+                          <tr key={order._id} className="hover:bg-gray-50/30 transition-all group border-b border-gray-50 last:border-0">
+                            <td className="px-6 py-5 whitespace-nowrap">
+                               <div className="flex flex-col">
+                                  <span className="text-[10px] font-black text-brand-600 uppercase tracking-wider mb-1">ID: {order._id.slice(-6).toUpperCase()}</span>
+                                  <span className="text-xs font-black text-gray-900 truncate max-w-[120px]">{order.scrapTypes.join(', ')}</span>
+                                  <span className="text-[9px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">Placed: {new Date(order.createdAt).toLocaleDateString()}</span>
                                </div>
-                               <div className="min-w-0">
-                                  <p className="font-black text-gray-900 mb-0.5 text-base truncate">{order.customerDetails?.name || 'Deleted User'}</p>
-                                  <p className="text-[10px] text-brand-600 font-bold uppercase tracking-wider flex items-center gap-1.5 truncate">
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                               <div className="flex flex-col">
+                                  <p className="font-black text-gray-900 mb-0.5 text-sm">{order.customerDetails?.name || 'User'}</p>
+                                  <p className="text-[10px] text-brand-600 font-bold uppercase tracking-wider flex items-center gap-1.5">
                                      <Phone size={10} className="text-brand-500 shrink-0" /> {order.customerDetails?.mobileNumber || 'N/A'}
                                   </p>
-                                   <p className="text-[10px] text-gray-400 font-bold leading-tight max-w-[200px] truncate group-hover:text-gray-600 transition-colors" title={order.exactAddress}>
-                                      {order.exactAddress}
+                               </div>
+                            </td>
+                            <td className="px-6 py-5 max-w-[200px]">
+                               <p className="text-[10px] text-gray-500 font-bold leading-tight line-clamp-2" title={order.exactAddress}>
+                                  {order.exactAddress}
+                               </p>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                               <div className="flex flex-col">
+                                  <p className="text-[10px] font-black text-gray-900 flex items-center gap-2 mb-1">
+                                     <Calendar size={12} className="text-gray-400" />
+                                     {new Date(order.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                  </p>
+                                   <p className="text-[9px] text-brand-600 font-black uppercase tracking-widest flex items-center gap-2">
+                                      <Clock size={12} className="text-brand-500" />
+                                      {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : 'N/A'}
                                    </p>
-                                   <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1 opacity-60">
-                                      <Clock size={10} /> Placed: {new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                   </p>
+                               </div>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              {order.champDetails ? (
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-8 h-8 bg-brand-50 rounded-xl flex items-center justify-center text-brand-700 font-black text-[10px] ring-4 ring-brand-50 ring-inset shadow-inner border border-white flex-shrink-0">
+                                    {order.champDetails.name.charAt(0)}
+                                  </div>
+                                  <div className="min-w-0">
+                                     <p className="text-[11px] font-black text-gray-900 truncate">{order.champDetails.name}</p>
+                                     <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Partner</p>
+                                  </div>
                                 </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap text-left">
-                             <div className="space-y-1 p-3 bg-gray-50/50 rounded-xl border border-gray-50 group-hover:bg-white group-hover:border-gray-100 transition-all">
-                                <p className="text-[10px] font-black text-gray-900 flex items-center gap-2">
-                                   <Calendar size={12} className="text-gray-400" />
-                                   {new Date(order.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </p>
-                                 <p className="text-[9px] text-brand-600 font-black uppercase tracking-widest flex items-center gap-2">
-                                    <Clock size={12} className="text-brand-500" />
-                                    {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : new Date(order.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                 </p>
+                              ) : (
+                                <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest italic opacity-60">Unassigned</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-5 text-center">
+                              <div className="inline-block transform scale-90">
+                                <StatusBadge status={displayStatus} />
                               </div>
-                          </td>
-                          <td className="px-4 py-4 text-left min-w-[160px]">
-                            {order.champDetails ? (
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center text-brand-700 font-black text-xs ring-4 ring-brand-50 ring-inset shadow-inner border border-white flex-shrink-0">
-                                  {order.champDetails.name.charAt(0)}
-                                </div>
-                                <div className="min-w-0">
-                                   <p className="text-xs font-black text-gray-900 truncate">{order.champDetails.name}</p>
-                                   <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Partner</p>
-                                </div>
-                              </div>
-                            ) : order.assignedScrapChampId ? (
-                              <div className="flex items-center gap-2.5 opacity-60">
-                                <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 font-bold text-xs flex-shrink-0">?</div>
-                                <p className="text-[10px] font-bold text-gray-400 italic">No Ref</p>
-                              </div>
-                            ) : (
-                              <div className="inline-flex items-center px-3 py-1.5 bg-gray-50 rounded-lg text-[9px] text-gray-400 font-black uppercase tracking-widest italic border border-dashed border-gray-200">
-                                Unassigned
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 text-center">
-                             <Link href={`/admin/history/${order._id}`}>
-                                <button className="px-4 py-2 bg-gray-900 text-white hover:bg-black text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-gray-200 transition-all active:scale-95 whitespace-nowrap flex items-center gap-2 mx-auto">
-                                   Inspect <ArrowRight size={10} />
-                                </button>
-                             </Link>
-                          </td>
-                          <td className="px-4 py-4 text-center">
-                            <div className="transform scale-90">
-                              <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-6 py-5">
+                               <div className="flex items-center justify-center gap-2">
+                                  <Link href={`/admin/history/${order._id}`}>
+                                     <button className="px-4 py-2 bg-gray-900 text-white hover:bg-black text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-gray-200 transition-all active:scale-95 whitespace-nowrap flex items-center gap-2">
+                                        Details
+                                     </button>
+                                  </Link>
+                                  {displayStatus === 'Assigned' || displayStatus === 'Accepted' || displayStatus === 'Arriving' || displayStatus === 'Arrived' || displayStatus === 'Picking' ? (
+                                    <Link href={`/admin/orders/track?id=${order._id}`}>
+                                      <button className="px-4 py-2 border-2 border-brand-500 text-brand-600 hover:bg-brand-50 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 whitespace-nowrap">
+                                        Track
+                                      </button>
+                                    </Link>
+                                  ) : null}
+                               </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              </div>
-
-              {/* Mobile Card View (Styled like table) */}
-              <div className="grid grid-cols-1 gap-4 md:hidden">
-                {currentItems.map((order) => (
-                  <div key={order._id} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-lg shadow-brand-500/5 space-y-4">
-                    <div className="flex justify-between items-start gap-4">
-                       <div className="min-w-0">
-                          <p className="text-[9px] text-brand-600 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5 leading-none">
-                             <span className="w-1.5 h-1.5 bg-brand-500 rounded-full shrink-0" />
-                             ORDER #{order._id.slice(-6).toUpperCase()}
-                          </p>
-                          <h3 className="font-black text-gray-900 text-base tracking-tight leading-tight truncate">{order.scrapTypes.join(', ')}</h3>
-                       </div>
-                       <div className="shrink-0">
-                          <StatusBadge status={(order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now())) ? 'Expired' : order.status} />
-                       </div>
-                    </div>
-
-                    <div className="p-4 bg-gray-50/50 rounded-xl border border-gray-50 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-gray-400 border border-gray-100 shadow-sm shrink-0">
-                           <User size={16} />
-                        </div>
-                        <div className="min-w-0">
-                           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 leading-none">Customer</p>
-                           <p className="text-sm font-black text-gray-900 truncate leading-none">{order.customerDetails?.name || 'User'}</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-                          <div>
-                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Schedule</p>
-                             <p className="text-[11px] font-black text-gray-900 leading-none">
-                                {new Date(order.scheduledAt).toLocaleDateString()}
-                             </p>
-                          </div>
-                          <div className="text-right">
-                             <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Window</p>
-                             <p className="text-[11px] font-black text-brand-600 leading-none">
-                                {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : 'N/A'}
-                             </p>
-                          </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-1">
-                       <Link 
-                          href={`/admin/history/${order._id}`}
-                          className="flex items-center justify-center gap-2 w-full py-3 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-gray-200 active:scale-95 transition-all hover:bg-brand-600"
-                       >
-                          View Details <ArrowRight size={12} />
-                       </Link>
-                    </div>
-                  </div>
-                ))}
               </div>
 
               {/* Pagination Controls */}

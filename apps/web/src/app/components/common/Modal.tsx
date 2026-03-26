@@ -9,9 +9,10 @@ interface ModalProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  bodyClassName?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, size = 'md', bodyClassName = '' }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -41,7 +42,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
       />
       
       {/* Content */}
-      <div className={`${sizes[size]} w-full bg-white rounded-[2.5rem] shadow-2xl relative z-[101] animate-scale-in overflow-hidden border border-gray-100`}>
+      <div className={`${sizes[size]} w-full bg-white rounded-[2.5rem] shadow-2xl relative z-[101] animate-scale-in border border-gray-100`}>
         {/* Header */}
         <div className="px-8 py-6 flex items-center justify-between border-b border-gray-50">
           <h3 className="text-xl font-black text-gray-900 tracking-tight">{title}</h3>
@@ -56,7 +57,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         </div>
 
         {/* Body */}
-        <div className="px-8 py-8 max-h-[70vh] overflow-y-auto">
+        <div className={`px-8 py-8 overflow-visible ${bodyClassName}`}>
           {children}
         </div>
 

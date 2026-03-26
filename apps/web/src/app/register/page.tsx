@@ -22,6 +22,7 @@ import {
   AlertCircle,
   LogOut
 } from 'lucide-react';
+import { CustomSelect } from '../components/common';
 
 
 
@@ -460,32 +461,17 @@ function RegisterContent() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="city" className="block text-sm font-semibold text-gray-700 mb-2">
-                        City <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        id="city"
+                      <CustomSelect 
+                        label="City"
+                        required
+                        options={CITIES}
                         value={city}
-                        onChange={(e) => {
-                          setCity(e.target.value);
+                        error={fieldErrors.city}
+                        onChange={(val: string) => {
+                          setCity(val);
                           if (fieldErrors.city) setFieldErrors(prev => ({ ...prev, city: '' }));
                         }}
-                        onBlur={() => {
-                          if (!city) setFieldErrors(prev => ({ ...prev, city: 'This field is required!' }));
-                        }}
-                        className={`w-full px-4 py-3 border-2 rounded-xl outline-none transition-all ${
-                          fieldErrors.city 
-                            ? 'border-red-500 bg-red-50 text-red-900 focus:ring-2 focus:ring-red-100' 
-                            : 'border-gray-200 bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-100 text-gray-900'
-                        }`}
-                      >
-                        {CITIES.map((c) => (
-                          <option key={c.value} value={c.value}>
-                            {c.label}
-                          </option>
-                        ))}
-                      </select>
-                      {fieldErrors.city && <p className="text-red-500 text-xs mt-1">{fieldErrors.city}</p>}
+                      />
                     </div>
 
                     <div>

@@ -3,10 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '../../components/common/ProtectedRoute';
 import { useAuth } from '../../context/AuthContext';
-import { Loader, Button } from '../../components/common';
+import { Loader, Button, CustomSelect } from '../../components/common';
 import { useToast } from '../../components/common/Toast';
 import Link from 'next/link';
-import { Plus, User, ArrowRight, Phone, Mail, CreditCard, Search, RefreshCw, Inbox } from 'lucide-react';
+import { Plus, User, ArrowRight, Phone, Mail, Search, RefreshCw, Inbox } from 'lucide-react';
 import { CreateChampModal } from '../../components/admin/CreateChampModal';
 import { Modal } from '../../components/common/Modal';
 
@@ -162,15 +162,17 @@ export default function AdminChampsPage() {
                 </div>
                 
                 <div className="w-full sm:w-48 flex gap-2">
-                  <select 
-                    className="w-full px-4 py-2 bg-gray-50/50 border border-gray-100 rounded-xl text-[11px] font-black uppercase tracking-widest focus:bg-white focus:border-brand-500/20 transition-all outline-none cursor-pointer"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                  >
-                    <option value="All">All Status</option>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
+                    <CustomSelect 
+                      size="sm"
+                      options={[
+                        { label: 'All Status', value: 'All' },
+                        { label: 'Active', value: 'Active' },
+                        { label: 'Inactive', value: 'Inactive' }
+                      ]}
+                      value={status}
+                      onChange={(val: string) => setStatus(val)}
+                      placeholder="Status"
+                    />
                   <button 
                     onClick={resetFilters}
                     className="w-9 h-9 flex-shrink-0 bg-gray-50 text-gray-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center border border-gray-100 active:scale-95"
@@ -406,12 +408,6 @@ export default function AdminChampsPage() {
                       <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-2xl border border-gray-100/50">
                         <Mail size={16} className="text-gray-400" />
                         <p className="text-sm font-bold text-gray-800">{selectedChamp.email}</p>
-                      </div>
-                    )}
-                    {selectedChamp.cardNumber && (
-                      <div className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-2xl border border-gray-100/50">
-                        <CreditCard size={16} className="text-gray-400" />
-                        <p className="text-sm font-bold text-gray-800">{selectedChamp.cardNumber}</p>
                       </div>
                     )}
                   </div>

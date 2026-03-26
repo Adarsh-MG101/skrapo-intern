@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProtectedRoute from '../../../components/common/ProtectedRoute';
 import { useAuth } from '../../../context/AuthContext';
-import { StatusBadge, Loader, Button } from '../../../components/common';
+import { StatusBadge, Loader, Button, CustomSelect } from '../../../components/common';
 import { useToast } from '../../../components/common/Toast';
 import { getTimeSlotLabel } from '../../../utils/dateTime';
 import { useParams, useRouter } from 'next/navigation';
@@ -24,7 +24,8 @@ import {
   Scale,
   Phone,
   Ban,
-  Inbox
+  Inbox,
+  AlertCircle
 } from 'lucide-react';
 import { Modal } from '../../../components/common/Modal';
 
@@ -72,6 +73,14 @@ export default function AdminOrderDetailsPage() {
   });
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [loadingEngagement, setLoadingEngagement] = useState(false);
+  const [isProblemSubmitting, setIsProblemSubmitting] = useState(false);
+  const [assignModal, setAssignModal] = useState({
+    isOpen: false,
+    loading: false,
+    champs: [] as any[],
+    selectedChampId: '',
+    submitting: false
+  });
 
   const { apiFetch } = useAuth();
 
@@ -115,6 +124,86 @@ export default function AdminOrderDetailsPage() {
     if (token && id) fetchOrder();
   }, [token, id]);
 
+  const fetchOrder = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch(`/orders/admin/${id}`);
+      const data = await res.json();
+      if (res.ok) {
+        setOrder(data);
+      } else {
+        showToast(data.error || 'Failed to fetch order', 'error');
+      }
+    } catch (err) {
+      showToast('Connection failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkAsProblem = async () => {
+    if (!order) return;
+    setIsProblemSubmitting(true);
+    try {
+      const res = await apiFetch(`/orders/admin/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Problem' })
+      });
+      if (res.ok) {
+        showToast('Order marked as problem', 'success');
+        fetchOrder();
+      } else {
+        showToast('Action failed', 'error');
+      }
+    } catch (err) {
+      showToast('Error updating order', 'error');
+    } finally {
+      setIsProblemSubmitting(false);
+    }
+  };
+
+  const openAssignModal = async () => {
+    setAssignModal(prev => ({ ...prev, isOpen: true, loading: true }));
+    try {
+      const res = await apiFetch('/orders/admin/scrap-champs');
+      if (res.ok) {
+        const champs = await res.json();
+        const activeChamps = champs.filter((c: any) => c.isActive !== false);
+        setAssignModal(prev => ({ ...prev, champs: activeChamps, loading: false }));
+      }
+    } catch (err) {
+      showToast('Failed to fetch champs', 'error');
+      setAssignModal(prev => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  const handleManualAssign = async () => {
+    if (!assignModal.selectedChampId || !id) return;
+    setAssignModal(prev => ({ ...prev, submitting: true }));
+    try {
+      const res = await apiFetch(`/orders/admin/${id}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ champId: assignModal.selectedChampId })
+      });
+      if (res.ok) {
+        showToast('Champion assigned successfully!', 'success');
+        setAssignModal(prev => ({ ...prev, isOpen: false, submitting: false, selectedChampId: '' }));
+        fetchOrder();
+      } else {
+        const data = await res.json();
+        showToast(data.error || 'Assignment failed', 'error');
+        setAssignModal(prev => ({ ...prev, submitting: false }));
+      }
+    } catch (err) {
+      showToast('Assignment error', 'error');
+      setAssignModal(prev => ({ ...prev, submitting: false }));
+    }
+  };
+
   if (loading) return <div className="flex justify-center items-center min-h-screen"><Loader size="lg" /></div>;
   if (!order) return <div className="p-10 text-center"><p className="text-gray-400">Order not found.</p><Link href="/admin/orders"><Button variant="ghost">Back to Orders</Button></Link></div>;
 
@@ -124,14 +213,42 @@ export default function AdminOrderDetailsPage() {
         <div className="max-w-6xl mx-auto">
           
           <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 md:mb-10">
-            <button 
-              onClick={() => router.back()} 
-              className="text-sm font-black text-gray-400 hover:text-gray-900 flex items-center gap-2 transition-all group"
-            >
-              <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-              Go Back
-            </button>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={() => router.back()} 
+                className="text-sm font-black text-gray-400 hover:text-gray-900 flex items-center gap-2 transition-all group"
+              >
+                <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
+                Go Back
+              </button>
+              
+              <div className="flex gap-2">
+                 {order.status !== 'Completed' && order.status !== 'Cancelled' && order.status !== 'Problem' && (
+                    <Button 
+                      variant="danger" 
+                      size="sm" 
+                      onClick={handleMarkAsProblem} 
+                      isLoading={isProblemSubmitting}
+                      className="px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-xl border border-red-500/20 shadow-lg shadow-red-500/5 hover:scale-[1.02]"
+                    >
+                      <AlertCircle size={14} className="mr-1.5" /> Mark As Problem
+                    </Button>
+                 )}
+                 {(order.status === 'Requested' || order.status === 'Problem') && (
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      onClick={openAssignModal} 
+                      disabled={assignModal.loading}
+                      className="px-3 py-2 text-[10px] uppercase tracking-widest font-black rounded-xl border border-brand-500/20 shadow-lg shadow-brand-500/5 hover:scale-[1.02]"
+                    >
+                      <User size={14} className="mr-1.5" /> Manual Assign
+                    </Button>
+                 )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-3 sm:gap-4">
                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest bg-white/50 px-3 py-1.5 rounded-xl border border-gray-100 shadow-sm">ID: {order._id.slice(-6).toUpperCase()}</span>
                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest bg-blue-50/50 px-3 py-1.5 rounded-xl border border-blue-100/50 shadow-sm flex items-center gap-2">
                   <Clock size={12} /> Placed: {new Date(order.createdAt).toLocaleDateString()} @ {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -475,6 +592,40 @@ export default function AdminOrderDetailsPage() {
                  </Button>
                )}
             </div>
+        </div>
+      </Modal>
+
+      {/* Manual Assignment Modal */}
+      <Modal
+        isOpen={assignModal.isOpen}
+        onClose={() => setAssignModal(prev => ({ ...prev, isOpen: false }))}
+        title="Manual Partner Assignment"
+        size="md"
+        bodyClassName="pt-0"
+      >
+        <div className="flex flex-col gap-0">
+          <CustomSelect 
+            placeholder="Search for a partner..."
+            searchable={true}
+            searchPlaceholder="Name, number or pincode..."
+            options={assignModal.champs.map((c: any) => ({
+              label: c.name,
+              value: c._id,
+              sublabel: `${c.mobileNumber} • ${c.serviceArea}`
+            }))}
+            value={assignModal.selectedChampId}
+            onChange={(val: string) => setAssignModal(prev => ({ ...prev, selectedChampId: val }))}
+          />
+
+          <Button 
+            fullWidth 
+            className="py-4 text-sm mt-4 rounded-3xl" 
+            isLoading={assignModal.submitting}
+            disabled={!assignModal.selectedChampId}
+            onClick={handleManualAssign}
+          >
+            Assign Champion Now
+          </Button>
         </div>
       </Modal>
     </ProtectedRoute>
