@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { StatusBadge, Loader, DateTimePicker, CustomSelect } from '../../components/common';
 import { getTimeSlotLabel } from '../../utils/dateTime';
 import Link from 'next/link';
-import { Search, Printer, RefreshCw, User, Phone, Calendar, Clock, Inbox, ArrowRight, History as HistoryIcon } from 'lucide-react';
+import { Search, Printer, RefreshCw, Phone, Calendar, Clock, Inbox, ArrowRight, History as HistoryIcon } from 'lucide-react';
 
 interface Order {
   _id: string;
