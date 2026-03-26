@@ -373,23 +373,29 @@ export default function AdminOrdersPage() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        {order.status === 'Requested' ? (
-                          <div className="flex gap-2 w-full">
-                            <button 
-                              onClick={() => handleBroadcast(order._id)}
-                              className="flex-1 py-2.5 bg-brand-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1"
-                            >
-                              <Zap size={10} className="fill-white" /> Broadcast
-                            </button>
-                            <button 
-                              onClick={() => window.location.href = `/admin/orders/${order._id}`}
-                              className="flex-1 py-2.5 bg-white text-gray-900 border border-gray-100 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-center"
-                            >
-                              Details
-                            </button>
-                          </div>
-                        ) : order.status === 'Problem' ? (
+                    <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      {order.status === 'Requested' ? (
+                        <div className="flex gap-1.5 w-full">
+                          <button 
+                            onClick={() => handleBroadcast(order._id)}
+                            className="flex-1 py-2.5 bg-brand-600 text-white text-[8px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1"
+                          >
+                            <Zap size={10} className="fill-white" /> Broadcast
+                          </button>
+                          <button 
+                            onClick={() => openAssignModal(order._id)}
+                            className="flex-1 py-2.5 bg-white text-brand-600 border border-brand-100 text-[8px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-brand-50 active:scale-95 transition-all text-center flex items-center justify-center gap-1"
+                          >
+                            <User size={10} /> Assign
+                          </button>
+                          <button 
+                            onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                            className="flex-1 py-2.5 bg-white text-gray-500 border border-gray-100 text-[8px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-center"
+                          >
+                            Wait
+                          </button>
+                        </div>
+                      ) : order.status === 'Problem' ? (
                           <button 
                              onClick={() => window.location.href = `/admin/orders/${order._id}`}
                              className="flex-1 py-2.5 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-all"
