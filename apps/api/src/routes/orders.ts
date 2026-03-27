@@ -1510,15 +1510,20 @@ router.post('/scrap-champ/:orderId/decision', authenticate, authorize('scrapCham
       res.json({ message: 'Order accepted', status: 'Accepted' });
     } else {
       // Track this champ as having declined
-      // The order status remains 'Requested' so other champs can still see and accept it.
-      // We only update the declinedChampIds and updatedAt.
-      await ordersCol.updateOne(
-        { _id: new ObjectId(orderId) },
-        { 
-          $set: { updatedAt: now },
-          $addToSet: { declinedChampIds: new ObjectId(req.user!.userId) }
-        }
-      );
+      // If the order was explicitly ASSIGNED to this champ, reset it back to REQUESTED
+      // so it reappears in the general available-jobs pool for others.
+      const updateData: any = { 
+        $set: { updatedAt: now },
+        $addToSet: { declinedChampIds: new ObjectId(req.user!.userId) }
+      };
+
+      if (order.status === 'Assigned' && order.assignedScrapChampId?.toString() === req.user!.userId) {
+        updateData.$set.status = 'Requested';
+        updateData.$set.assignedScrapChampId = null;
+        console.log(`[decision] Order ${orderId} was Declined by assigned champ ${req.user!.userId}. Resetting to Requested pool.`);
+      }
+
+      await ordersCol.updateOne({ _id: new ObjectId(orderId) }, updateData);
 
       // NO AUTO-CASCADE: In a broadcast model, the order stays available for others.
       // We just log that this specific champ declined it.

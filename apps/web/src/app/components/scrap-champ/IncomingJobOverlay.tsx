@@ -61,6 +61,40 @@ export default function IncomingJobOverlay() {
       setPendingIds(prev => prev.includes(id) ? prev : [...prev, id]);
     };
 
+    // Load existing pending jobs on mount to persist across refresh
+    const initPending = async () => {
+       try {
+          const [myJobsRes, availJobsRes] = await Promise.all([
+             apiFetch('/orders/scrap-champ/my-jobs'),
+             apiFetch('/orders/scrap-champ/available-jobs')
+          ]);
+          
+          if (myJobsRes.ok && availJobsRes.ok) {
+             const myJobs = await myJobsRes.json();
+             const availableJobs = await availJobsRes.json();
+             
+             // Extract IDs of jobs that need a decision
+             const assignedIds = myJobs
+               .filter((j: any) => j.status === 'Assigned')
+               .map((j: any) => j._id);
+             
+             const poolIds = availableJobs
+               .filter((j: any) => j.status === 'Requested')
+               .map((j: any) => j._id);
+             
+             const initials = Array.from(new Set([...assignedIds, ...poolIds]));
+             if (initials.length > 0) {
+                console.log('[IncomingJobOverlay] Found pending jobs on mount:', initials);
+                setPendingIds(prev => Array.from(new Set([...prev, ...initials])));
+             }
+          }
+       } catch (error) {
+          console.error('[IncomingJobOverlay] Failed to load pending jobs:', error);
+       }
+    };
+
+    initPending();
+
     socket.on('new_available_job', (data) => enqueue(data, 'new_available_job'));
     socket.on('new_job_assigned', (data) => enqueue(data, 'new_job_assigned'));
     socket.on('new_job_assigned_manual', (data) => enqueue(data, 'new_job_assigned_manual'));
@@ -72,7 +106,7 @@ export default function IncomingJobOverlay() {
       socket.off('new_job_assigned_manual');
       socket.off('orderAssigned');
     };
-  }, [socket, user]);
+  }, [socket, user, apiFetch]);
 
   useEffect(() => {
     if (pendingIds.length === 0 || currentJob || fetching) return;
