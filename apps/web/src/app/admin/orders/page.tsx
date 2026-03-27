@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { StatusBadge, Loader } from '../../components/common';
 import { useToast } from '../../components/common/Toast';
-import { User, Inbox, Zap, Ban, Phone, FileText, Layers, Droplets, Cpu, Package, Recycle, ArrowRight, Timer, Users } from 'lucide-react';
+import { User, Inbox, Zap, Ban, Phone, FileText, Layers, Droplets, Cpu, Package, Recycle, ArrowRight, Timer } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
 
 const getTimeSlotLabel = (slot: string) => {
