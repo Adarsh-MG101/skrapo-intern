@@ -109,38 +109,42 @@ export default function AdminFeedbackPage() {
                 />
             </div>
           ) : (
-            <div className="space-y-3 animate-fade-in max-w-5xl mx-auto">
-              {/* Ultra-Compact Filter Bar (Mobile Optimized) */}
-              <div className="bg-white rounded-2xl p-2.5 border border-gray-100 shadow-lg shadow-brand-500/5 flex flex-col gap-2.5">
+            <div className="space-y-3 lg:space-y-6 animate-fade-in max-w-5xl lg:max-w-7xl mx-auto">
+              {/* Ultra-Compact Filter Bar (Mobile Optimized, Scaled for PC) */}
+              <div className="bg-white rounded-2xl lg:rounded-[2rem] p-2.5 lg:p-6 border border-gray-100 shadow-lg shadow-brand-500/5 flex flex-col lg:flex-row gap-2.5 lg:gap-6 lg:items-center">
                 {/* Search - Top Bar */}
-                <div className="relative">
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500 opacity-40">
-                    <Search size={14} />
+                <div className="relative flex-1">
+                  <div className="absolute left-3.5 lg:left-5 top-1/2 -translate-y-1/2 text-brand-500 opacity-40">
+                    <Search size={14} className="lg:scale-125" />
                   </div>
                   <input 
                     type="text" 
                     placeholder="Search customer records..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50/50 border border-gray-100 rounded-xl text-[11px] font-bold text-gray-700 outline-none focus:bg-white focus:border-brand-500/20 transition-all placeholder:text-gray-300"
+                    className="w-full pl-10 lg:pl-14 pr-4 py-2 lg:py-4 bg-gray-50/50 border border-gray-100 rounded-xl lg:rounded-2xl text-[11px] lg:text-sm font-bold text-gray-700 outline-none focus:bg-white focus:border-brand-500/20 transition-all placeholder:text-gray-300"
                   />
                 </div>
 
                 {/* Date Selection Grid */}
-                <div className="flex items-center gap-2">
-                  <div className="grid grid-cols-2 gap-2 flex-1">
-                    <DateTimePicker 
-                      label="From"
-                      allowPastDates={true}
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                    />
-                    <DateTimePicker 
-                      label="To" 
-                      allowPastDates={true}
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                    />
+                <div className="flex items-center gap-2 lg:gap-4 shrink-0">
+                  <div className="grid grid-cols-2 gap-2 lg:gap-4 flex-1">
+                    <div className="lg:w-48">
+                      <DateTimePicker 
+                        label="From"
+                        allowPastDates={true}
+                        value={fromDate}
+                        onChange={(e) => setFromDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="lg:w-48">
+                      <DateTimePicker 
+                        label="To" 
+                        allowPastDates={true}
+                        value={toDate}
+                        onChange={(e) => setToDate(e.target.value)}
+                      />
+                    </div>
                   </div>
 
                   {/* Reset - Clean integration */}
@@ -151,54 +155,54 @@ export default function AdminFeedbackPage() {
                       setSearchQuery('');
                       setCurrentPage(1);
                     }}
-                    className="w-9 h-9 flex-shrink-0 bg-gray-50 text-gray-400 rounded-xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center border border-gray-100 active:scale-95"
+                    className="w-9 h-9 lg:w-14 lg:h-14 flex-shrink-0 bg-gray-50 text-gray-400 rounded-xl lg:rounded-2xl hover:bg-brand-50 hover:text-brand-600 transition-all flex items-center justify-center border border-gray-100 active:scale-95"
                     title="Reset"
                   >
-                    <RefreshCw size={14} />
+                    <RefreshCw size={14} className="lg:scale-125" />
                   </button>
                 </div>
               </div>
 
               {currentItems.length === 0 ? (
-                <div className="py-20 text-center bg-white rounded-[2.5rem] border border-dashed border-gray-200 shadow-sm">
-                  <p className="text-gray-400 font-bold italic text-sm tracking-tight">No feedback reports match your filters.</p>
+                <div className="py-20 lg:py-32 text-center bg-white rounded-[2.5rem] border border-dashed border-gray-200 shadow-sm">
+                  <p className="text-gray-400 font-bold italic text-sm lg:text-lg tracking-tight">No feedback reports match your filters.</p>
                 </div>
               ) : (
-                <>
+                <div className="space-y-3 lg:space-y-4">
                   {currentItems.map((f) => (
-                    <div key={f._id} className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm flex items-center justify-between hover:border-brand-200 transition-all group active:scale-[0.99]">
-                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <div className={`w-1 h-6 rounded-full flex-shrink-0 ${f.rating >= 4 ? 'bg-emerald-500' : f.rating >= 2.5 ? 'bg-amber-500' : 'bg-red-500'}`} />
+                    <div key={f._id} className="bg-white rounded-xl lg:rounded-[1.5rem] p-3 lg:p-6 border border-gray-100 shadow-sm flex items-center justify-between hover:border-brand-200 lg:hover:border-brand-400 hover:shadow-xl hover:shadow-brand-500/5 transition-all group active:scale-[0.99] lg:active:scale-100">
+                       <div className="flex items-center gap-3 lg:gap-6 flex-1 min-w-0">
+                          <div className={`w-1 lg:w-2 h-6 lg:h-12 rounded-full flex-shrink-0 ${f.rating >= 4 ? 'bg-emerald-500' : f.rating >= 2.5 ? 'bg-amber-500' : 'bg-red-500'}`} />
                           <div className="min-w-0">
-                             <h4 className="text-xs font-black text-gray-900 tracking-tight flex items-center gap-2 truncate uppercase">
+                             <h4 className="text-xs lg:text-lg font-black text-gray-900 tracking-tight flex items-center gap-2 lg:gap-4 truncate uppercase">
                                 {f.customer?.name}
-                                <div className="flex gap-0.5 opacity-60">
+                                <div className="flex gap-0.5 lg:gap-1 opacity-60">
                                    {[...Array(5)].map((_, i) => (
                                      <Star 
                                         key={i} 
                                         size={7} 
-                                        className={`${i < f.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-100'}`}
+                                        className={`lg:scale-[2] ${i < f.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-100'}`}
                                         strokeWidth={3}
                                      />
                                    ))}
                                 </div>
                              </h4>
-                             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-                                {new Date(f.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}, {new Date(f.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                             <p className="text-[9px] lg:text-sm font-bold text-gray-400 uppercase tracking-widest mt-0.5 lg:mt-1">
+                                {new Date(f.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date(f.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                              </p>
                           </div>
                        </div>
 
-                       <div className="flex items-center gap-3">
+                       <div className="flex items-center gap-3 lg:gap-6">
                           <Link href={`/admin/orders/${f.orderId}`}>
-                            <button className="px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-[8px] font-black text-gray-400 uppercase tracking-widest hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all">
+                            <button className="px-3 lg:px-6 py-1.5 lg:py-3 bg-gray-50 border border-gray-100 rounded-lg lg:rounded-xl text-[8px] lg:text-[11px] font-black text-gray-400 uppercase tracking-widest lg:tracking-[0.2em] hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all shadow-sm">
                                Inspect
                             </button>
                           </Link>
                        </div>
                     </div>
                   ))}
-                </>
+                </div>
               )}
 
               {/* Pagination Controls */}

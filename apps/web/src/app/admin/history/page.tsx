@@ -132,7 +132,7 @@ export default function AdminHistoryPage() {
 
   return (
     <ProtectedRoute allowedRoles={['admin']}>
-      <div className="p-4 md:p-8 lg:p-10 bg-gray-50/30 min-h-screen overflow-x-hidden">
+      <div className="px-2 py-4 md:p-8 lg:p-10 bg-gray-50/30">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -222,15 +222,14 @@ export default function AdminHistoryPage() {
           ) : (
             <div className="space-y-6">
               
-              {/* Unified Table View */}
-              <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
+              {/* Desktop Table View */}
+              <div className="hidden md:block bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/50 overflow-hidden">
                 <div className="overflow-x-auto custom-scrollbar">
-                  <table className="w-full text-left border-collapse min-w-[1000px]">
+                  <table className="w-full text-left border-collapse min-w-[900px]">
                     <thead>
                       <tr className="bg-gray-50/50 border-b border-gray-100">
                         <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Order Information</th>
                         <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Customer & Contact</th>
-                        <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Location</th>
                         <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Scheduled Time</th>
                         <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-left">Assigned Champ</th>
                         <th className="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
@@ -258,11 +257,6 @@ export default function AdminHistoryPage() {
                                      <Phone size={10} className="text-brand-500 shrink-0" /> {order.customerDetails?.mobileNumber || 'N/A'}
                                   </p>
                                </div>
-                            </td>
-                            <td className="px-6 py-5 max-w-[200px]">
-                               <p className="text-[10px] text-gray-500 font-bold leading-tight line-clamp-2" title={order.exactAddress}>
-                                  {order.exactAddress}
-                               </p>
                             </td>
                             <td className="px-6 py-5 whitespace-nowrap">
                                <div className="flex flex-col">
@@ -320,9 +314,73 @@ export default function AdminHistoryPage() {
                 </div>
               </div>
 
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {currentItems.map((order) => {
+                  const isExpired = order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now());
+                  const displayStatus = isExpired ? 'Expired' : order.status;
+
+                  return (
+                    <div key={order._id} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col gap-4">
+                      <div className="flex items-start justify-between">
+                         <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-brand-600 uppercase tracking-widest mb-1">#{order._id.slice(-6).toUpperCase()}</span>
+                            <h4 className="text-xs font-black text-gray-900 uppercase leading-tight">{order.scrapTypes.join(', ')}</h4>
+                            <p className="text-[9px] font-bold text-gray-400 mt-1">{new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                         </div>
+                         <StatusBadge status={displayStatus} />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 py-3 border-y border-dashed border-gray-100">
+                         <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Customer</span>
+                            <p className="text-[10px] font-black text-gray-800">{order.customerDetails?.name || 'User'}</p>
+                            <p className="text-[9px] font-bold text-brand-600">{order.customerDetails?.mobileNumber || 'N/A'}</p>
+                         </div>
+                         <div className="flex flex-col gap-1">
+                            <span className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Scheduled</span>
+                            <p className="text-[10px] font-black text-gray-800">{new Date(order.scheduledAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</p>
+                            <p className="text-[9px] font-bold text-brand-600">{order.timeSlot ? getTimeSlotLabel(order.timeSlot) : 'N/A'}</p>
+                         </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           {order.champDetails ? (
+                             <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-brand-50 rounded-lg flex items-center justify-center text-brand-700 font-black text-[9px] border border-white">
+                                  {order.champDetails.name.charAt(0)}
+                                </div>
+                                <span className="text-[10px] font-black text-gray-700">{order.champDetails.name}</span>
+                             </div>
+                           ) : (
+                             <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest italic opacity-60">Unassigned</span>
+                           )}
+                         </div>
+
+                         <div className="flex gap-2">
+                            <Link href={`/admin/history/${order._id}`}>
+                               <button className="px-4 py-2 bg-gray-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-sm">
+                                  Details
+                               </button>
+                            </Link>
+                            {(displayStatus === 'Assigned' || displayStatus === 'Accepted' || displayStatus === 'Arriving' || displayStatus === 'Arrived' || displayStatus === 'Picking') && (
+                              <Link href={`/admin/orders/track?id=${order._id}`}>
+                                <button className="px-4 py-2 border border-brand-500 text-brand-600 text-[9px] font-black uppercase tracking-widest rounded-lg">
+                                  Track
+                                </button>
+                              </Link>
+                            )}
+                         </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               {/* Pagination Controls */}
               {totalPages > 1 && (
-                <div className="mt-12 pb-8 flex justify-center">
+                <div className="mt-12 pb-20 flex justify-center">
                   <div className="flex items-center justify-center gap-3 px-4">
                     <button
                       disabled={currentPage === 1}
@@ -339,7 +397,7 @@ export default function AdminHistoryPage() {
                           onClick={() => paginate(number)}
                           className={`w-10 h-10 flex-shrink-0 rounded-xl font-black text-xs transition-all tracking-tighter shadow-sm border ${
                             currentPage === number
-                              ? 'bg-brand-600 text-white border-brand-600 shadow-brand-500/20 scale-110 z-10'
+                              ? 'bg-brand-600 text-white border-brand-600 shadow-brand-500/20'
                               : 'bg-white text-gray-600 border-gray-100 hover:border-brand-200 hover:text-brand-600'
                           }`}
                         >

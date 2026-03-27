@@ -142,7 +142,7 @@ export default function BottomNav() {
   return (
     <>
       {/* Bottom Navigation Bar */}
-      <nav className="btm-nav">
+      <nav className="btm-nav lg:hidden">
         <div className="btm-nav-inner">
           {currentNavItems.map((item: any) => {
             const isBaseRoute =

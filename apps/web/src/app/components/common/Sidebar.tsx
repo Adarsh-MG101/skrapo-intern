@@ -4,26 +4,21 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { useRouter } from 'next/navigation';
 import { useSocket } from '../../context/SocketContext';
 import { 
   LayoutDashboard, 
   CalendarPlus, 
   ClipboardList, 
-  CreditCard, 
-  LifeBuoy, 
   Zap, 
   Users, 
   History, 
   MessageSquare, 
-  Settings, 
   TrendingUp, 
   Truck, 
   User,
   ChevronsLeft,
   ChevronsRight,
-  Menu,
-  LogOut
+  Menu
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,25 +27,24 @@ interface SidebarProps {
 
 const NAV_CONFIG = {
   customer: [
-    { name: 'Dashboard', href: '/customer', icon: <LayoutDashboard size={20} strokeWidth={2.5} /> },
-    { name: 'Schedule Pickup', href: '/customer/schedule', icon: <CalendarPlus size={20} strokeWidth={2.5} /> },
-    { name: 'My Pickups', href: '/customer/pickups', icon: <ClipboardList size={20} strokeWidth={2.5} /> },
-    { name: 'Payments', href: '/customer/payments', disabled: true, icon: <CreditCard size={20} strokeWidth={2.5} /> },
-    { name: 'Support', href: '/customer/support', disabled: true, icon: <LifeBuoy size={20} strokeWidth={2.5} /> },
+    { name: 'Home', href: '/customer', icon: <LayoutDashboard size={20} strokeWidth={2.5} /> },
+    { name: 'Schedule', href: '/customer/schedule', icon: <CalendarPlus size={20} strokeWidth={2.5} /> },
+    { name: 'Pickups', href: '/customer/pickups', icon: <ClipboardList size={20} strokeWidth={2.5} /> },
+    { name: 'Profile', href: '/customer/profile', icon: <User size={20} strokeWidth={2.5} /> },
   ],
   admin: [
-    { name: 'Admin Dashboard', href: '/admin', icon: <LayoutDashboard size={20} strokeWidth={2.5} /> },
-    { name: 'Allocation Center', href: '/admin/orders', icon: <Zap size={20} strokeWidth={2.5} /> },
-    { name: 'Manage Champs', href: '/admin/champs', icon: <Users size={20} strokeWidth={2.5} /> },
-    { name: 'Order History', href: '/admin/history', icon: <History size={20} strokeWidth={2.5} /> },
-    { name: 'Feedback Reports', href: '/admin/feedback', icon: <MessageSquare size={20} strokeWidth={2.5} /> },
-    { name: 'Settings', href: '/admin/settings', disabled: true, icon: <Settings size={20} strokeWidth={2.5} /> },
+    { name: 'Home', href: '/admin', icon: <LayoutDashboard size={20} strokeWidth={2.5} /> },
+    { name: 'Queue', href: '/admin/orders', icon: <Zap size={20} strokeWidth={2.5} /> },
+    { name: 'Feed', href: '/admin/feedback', icon: <MessageSquare size={20} strokeWidth={2.5} /> },
+    { name: 'Champs', href: '/admin/champs', icon: <Users size={20} strokeWidth={2.5} /> },
+    { name: 'Logs', href: '/admin/history', icon: <History size={20} strokeWidth={2.5} /> },
+    { name: 'Profile', href: '/admin/profile', icon: <User size={20} strokeWidth={2.5} /> },
   ],
   scrapChamp: [
     { name: 'Dashboard', href: '/scrap-champ', icon: <TrendingUp size={20} strokeWidth={2.5} /> },
-    { name: 'Active Jobs', href: '/scrap-champ/jobs', icon: <Truck size={20} strokeWidth={2.5} /> },
-    { name: 'Job History', href: '/scrap-champ/history', icon: <History size={20} strokeWidth={2.5} /> },
-    { name: 'My Profile/Earnings', href: '/scrap-champ/profile', icon: <User size={20} strokeWidth={2.5} /> },
+    { name: 'Jobs', href: '/scrap-champ/jobs', icon: <Truck size={20} strokeWidth={2.5} /> },
+    { name: 'History', href: '/scrap-champ/history', icon: <History size={20} strokeWidth={2.5} /> },
+    { name: 'Profile', href: '/scrap-champ/profile', icon: <User size={20} strokeWidth={2.5} /> },
   ],
 };
 
@@ -69,15 +63,13 @@ export function SidebarTrigger({ className = "" }: { className?: string }) {
 
 export default function Sidebar({ onCollapse }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout, apiFetch } = useAuth();
+  const { user, apiFetch } = useAuth();
   const { socket } = useSocket();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const [adminOrderCount, setAdminOrderCount] = useState(0);
   const [champJobCount, setChampJobCount] = useState(0);
-  const [showLogoutPrompt, setShowLogoutPrompt] = useState(false);
 
   // Get current nav items based on role, default to empty
   const currentNavItems = user?.role ? (NAV_CONFIG as any)[user.role] || [] : [];
@@ -154,19 +146,6 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
   }, [pathname]);
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
-
-  const handleLogout = () => {
-    setShowLogoutPrompt(true);
-  };
-
-  const confirmLogout = () => {
-    logout();
-    router.replace('/login');
-  };
-
-  const cancelLogout = () => {
-    setShowLogoutPrompt(false);
-  };
 
   return (
     <>
@@ -303,45 +282,6 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
               );
             })}
           </nav>
-
-          {/* User Profile Footer */}
-          <div className="p-6 mt-auto">
-            <div className={`bg-gray-50 rounded-2xl transition-all duration-300 ${isCollapsed ? 'p-1 bg-transparent' : 'p-4'}`}>
-              <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-4'}`}>
-                <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center text-brand-600 font-black shadow-sm ring-2 ring-white flex-shrink-0">
-                  {user?.name?.[0].toUpperCase() || 'U'}
-                </div>
-                {!isCollapsed && (
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <p className="text-sm font-bold text-gray-900 truncate tracking-tight">{user?.name || 'User'}</p>
-                    <p className="text-[10px] font-bold uppercase text-brand-600 tracking-wider">
-                      {user?.role === 'scrapChamp' ? 'Champion' : user?.role || 'User'}
-                    </p>
-                  </div>
-                )}
-              </div>
-              
-              {!isCollapsed && (
-                <button
-                  onClick={handleLogout}
-                  className="mt-4 flex items-center justify-center py-3 px-4 w-full rounded-xl text-red-500 hover:bg-red-100 hover:text-red-700 transition-all font-bold text-xs uppercase tracking-widest group"
-                >
-                  <LogOut size={16} className="mr-2 transition-transform group-hover:-translate-x-1" />
-                  Sign Out
-                </button>
-              )}
-
-              {isCollapsed && (
-                <button
-                   onClick={handleLogout}
-                   className="mt-4 p-2.5 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-600 transition-all flex items-center justify-center mx-auto"
-                   title="Sign Out"
-                >
-                   <LogOut size={20} />
-                </button>
-              )}
-            </div>
-          </div>
         </div>
       </aside>
 
@@ -382,43 +322,6 @@ export default function Sidebar({ onCollapse }: SidebarProps) {
           animation: zoom-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
       `}</style>
-
-      {/* Logout Confirmation Modal */}
-      {showLogoutPrompt && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div 
-            className="bg-white rounded-[32px] shadow-2xl max-w-sm w-full p-8 animate-zoom-in border border-gray-100"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6 text-red-500 shadow-inner">
-              <LogOut size={40} strokeWidth={2.5} />
-            </div>
-            
-            <h3 className="text-2xl font-black text-gray-900 text-center mb-2 tracking-tight">
-              Sign Out?
-            </h3>
-            <p className="text-gray-500 text-center mb-8 leading-relaxed font-medium">
-              Are you sure you want to sign out of your account? You will need to log in again to access your dashboard.
-            </p>
-            
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={confirmLogout}
-                className="w-full py-4 bg-red-500 text-white font-black rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/25 active:scale-95 flex items-center justify-center gap-2"
-              >
-                <LogOut size={20} strokeWidth={3} />
-                Yes, Sign Out
-              </button>
-              <button
-                onClick={cancelLogout}
-                className="w-full py-4 bg-gray-50 text-gray-600 font-bold rounded-2xl hover:bg-gray-100 transition-all active:scale-95 text-sm uppercase tracking-widest"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

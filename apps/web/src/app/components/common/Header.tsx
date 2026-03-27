@@ -23,8 +23,8 @@ const Header = () => {
   }, []);
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-[50]">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between lg:justify-end px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-[50]">
+      <div className="flex items-center gap-2 lg:hidden">
         <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center shadow-sm border border-gray-100 overflow-hidden">
           <img src="/skrapo-logo.png" alt="Logo" className="w-full h-full object-cover" />
         </div>

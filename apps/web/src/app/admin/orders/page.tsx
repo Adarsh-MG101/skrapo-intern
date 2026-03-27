@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { StatusBadge, Loader } from '../../components/common';
 import { useToast } from '../../components/common/Toast';
-import { User, Inbox, Zap, Ban, Phone, FileText, Layers, Droplets, Cpu, Package, Recycle, ArrowRight, Timer } from 'lucide-react';
+import { User, Inbox, Zap, Ban, Phone, FileText, Layers, Droplets, Cpu, Package, Recycle, ArrowRight, Timer, Users } from 'lucide-react';
 import { Modal } from '../../components/common/Modal';
 
 const getTimeSlotLabel = (slot: string) => {
@@ -77,6 +77,8 @@ interface Order {
   createdAt: string;
   champDetails?: {
     name: string;
+    mobileNumber: string;
+    profilePhoto?: string;
   };
 }
 
@@ -249,169 +251,292 @@ export default function AdminOrdersPage() {
                <Loader size="lg" />
              </div>
            ) : (
-             <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {currentItems.length === 0 ? (
-                <div className="col-span-full bg-white rounded-[2.5rem] py-24 text-center border border-gray-100 shadow-sm flex flex-col items-center">
-                  <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
-                    <Inbox size={40} />
-                  </div>
-                  <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Queue Clear</p>
-                </div>
-              ) : (
-                currentItems.map((order) => {
-                  const material = order.scrapTypes[0] || 'Scrap';
-                  const isExpired = order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now());
-                  
-                  // Icon Logic
-                  let Icon = Recycle;
-                  let iconBg = 'bg-gray-50';
-                  let iconColor = 'text-gray-500';
-                  
-                  if (material.toLowerCase().includes('paper')) { Icon = FileText; iconBg = 'bg-blue-50'; iconColor = 'text-blue-500'; }
-                  else if (material.toLowerCase().includes('metal')) { Icon = Layers; iconBg = 'bg-slate-50'; iconColor = 'text-slate-500'; }
-                  else if (material.toLowerCase().includes('plastic')) { Icon = Droplets; iconBg = 'bg-emerald-50'; iconColor = 'text-emerald-500'; }
-                  else if (material.toLowerCase().includes('electronic') || material.toLowerCase().includes('e-waste')) { Icon = Cpu; iconBg = 'bg-orange-50'; iconColor = 'text-orange-500'; }
-                  else if (material.toLowerCase().includes('cardboard')) { Icon = Package; iconBg = 'bg-amber-50'; iconColor = 'text-amber-500'; }
+             <>
+               {/* Desktop Table View (lg+) */}
+               <div className="hidden lg:block">
+                 <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl shadow-brand-500/5 overflow-hidden mb-8">
+                   {currentItems.length === 0 ? (
+                     <div className="py-24 text-center flex flex-col items-center">
+                       <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
+                         <Inbox size={40} />
+                       </div>
+                       <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Queue Clear</p>
+                     </div>
+                   ) : (
+                     <div className="overflow-x-auto">
+                       <table className="w-full text-left border-collapse">
+                       <thead>
+                         <tr className="bg-gray-50/50 border-b border-gray-100">
+                           <th className="px-6 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Order Ref</th>
+                           <th className="px-6 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Customer</th>
+                           <th className="px-6 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Accepted By</th>
+                           <th className="px-6 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Location</th>
+                           <th className="px-6 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+                           <th className="px-6 py-6 text-xs font-black text-gray-400 uppercase tracking-widest text-center">Actions</th>
+                         </tr>
+                       </thead>
+                       <tbody className="divide-y divide-gray-50">
+                         {currentItems.map((order) => {
+                           const isExpired = order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now());
+                           const displayStatus = isExpired ? 'Expired' : order.status;
+                           
+                           return (
+                             <tr key={order._id} className="hover:bg-gray-50 transition-colors group">
+                               <td className="px-6 py-6">
+                                 <div className="flex flex-col items-center gap-0.5">
+                                   <span className="text-sm font-black text-gray-900 font-mono tracking-tight">#{order._id.slice(-6).toUpperCase()}</span>
+                                   <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tighter">
+                                     {new Date(order.createdAt).toLocaleDateString([], { day: '2-digit', month: 'short' })} • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                   </span>
+                                 </div>
+                               </td>
+                               <td className="px-6 py-6">
+                                 <div className="flex items-center justify-center gap-4">
+                                   <div className="w-10 h-10 rounded-2xl bg-brand-50 flex items-center justify-center text-brand-600 font-black text-sm border border-brand-100 shadow-sm shrink-0">
+                                     {order.customerDetails?.name?.[0].toUpperCase() || 'U'}
+                                   </div>
+                                   <div className="flex flex-col items-start gap-0.5">
+                                     <span className="text-sm font-black text-gray-900 tracking-tight">{order.customerDetails?.name || 'User'}</span>
+                                     <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1.5 uppercase tracking-widest"><Phone size={10} className="text-blue-500" /> {order.customerDetails?.mobileNumber}</span>
+                                   </div>
+                                 </div>
+                               </td>
+                               <td className="px-6 py-6">
+                                 {order.assignedScrapChampId ? (
+                                   <div className="flex items-center justify-center gap-4">
+                                     <div className="w-10 h-10 rounded-2xl border border-gray-100 shadow-sm overflow-hidden bg-white flex items-center justify-center relative shrink-0">
+                                       {order.champDetails?.profilePhoto ? (
+                                         <img src={order.champDetails.profilePhoto} alt="" className="w-full h-full object-cover" />
+                                       ) : (
+                                         <User size={16} className="text-gray-400" />
+                                       )}
+                                     </div>
+                                     <div className="flex flex-col items-start gap-0.5">
+                                        <p className="text-sm font-black text-gray-900 tracking-tight">{order.champDetails?.name || 'Assigned'}</p>
+                                        <p className="text-[10px] font-bold text-gray-400 flex items-center gap-1 uppercase tracking-widest">
+                                          <Phone size={10} className="text-brand-500" /> {order.champDetails?.mobileNumber}
+                                        </p>
+                                     </div>
+                                   </div>
+                                 ) : (
+                                   <div className="flex flex-col items-center gap-2">
+                                     <span className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Timer size={12} /> Pending Acceptance
+                                     </span>
+                                     {order.status === 'Requested' && !isExpired && (
+                                       <div className="scale-110">
+                                          <ExpiryTimer createdAt={order.createdAt} />
+                                       </div>
+                                     )}
+                                   </div>
+                                 )}
+                               </td>
+                               <td className="px-6 py-6 max-w-[250px] text-center">
+                                 <p className="text-xs font-medium text-gray-500 line-clamp-2 italic leading-relaxed mx-auto" title={order.exactAddress}>
+                                   {order.exactAddress}
+                                 </p>
+                               </td>
+                               <td className="px-6 py-6 text-center">
+                                 <div className="scale-110 inline-block">
+                                   <StatusBadge status={displayStatus} />
+                                 </div>
+                               </td>
+                               <td className="px-6 py-6 text-center">
+                                   <div className="flex items-center justify-center gap-2">
+                                     <button 
+                                       onClick={() => handleBroadcast(order._id)}
+                                       disabled={order.status !== 'Requested'}
+                                       className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2 ${
+                                         order.status === 'Requested'
+                                           ? 'bg-brand-600 text-white shadow-brand-500/20 hover:scale-105 active:scale-95'
+                                           : 'bg-gray-100 text-gray-400 shadow-none cursor-not-allowed'
+                                       }`}
+                                     >
+                                       <Zap size={12} className={order.status === 'Requested' ? "fill-white" : "fill-gray-300"} /> Broadcast
+                                     </button>
+                                     <button 
+                                       onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                                       className="px-4 py-2 bg-white text-gray-500 border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:bg-gray-50 hover:text-gray-900 active:scale-95 transition-all text-center min-w-[80px]"
+                                     >
+                                       Details
+                                     </button>
+                                   </div>
+                               </td>
+                             </tr>
+                           );
+                         })}
+                       </tbody>
+                     </table>
+                     </div>
+                   )}
+                 </div>
+               </div>
 
-                  const displayStatus = isExpired ? 'Expired' : order.status;
+               {/* Mobile Card View (hidden on lg) */}
+               <div className="lg:hidden space-y-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   {currentItems.length === 0 ? (
+                     <div className="col-span-full bg-white rounded-[2.5rem] py-24 text-center border border-gray-100 shadow-sm flex flex-col items-center">
+                       <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center text-gray-200 mb-4 border border-gray-100">
+                         <Inbox size={40} />
+                       </div>
+                       <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Queue Clear</p>
+                     </div>
+                   ) : (
+                     currentItems.map((order) => {
+                       const material = order.scrapTypes[0] || 'Scrap';
+                       const isExpired = order.status === 'Requested' && (new Date(order.createdAt).getTime() + 30 * 60 * 1000 <= Date.now());
+                       
+                       // Icon Logic
+                       let Icon = Recycle;
+                       let iconBg = 'bg-gray-50';
+                       let iconColor = 'text-gray-500';
+                       
+                       if (material.toLowerCase().includes('paper')) { Icon = FileText; iconBg = 'bg-blue-50'; iconColor = 'text-blue-500'; }
+                       else if (material.toLowerCase().includes('metal')) { Icon = Layers; iconBg = 'bg-slate-50'; iconColor = 'text-slate-500'; }
+                       else if (material.toLowerCase().includes('plastic')) { Icon = Droplets; iconBg = 'bg-emerald-50'; iconColor = 'text-emerald-500'; }
+                       else if (material.toLowerCase().includes('electronic') || material.toLowerCase().includes('e-waste')) { Icon = Cpu; iconBg = 'bg-orange-50'; iconColor = 'text-orange-500'; }
+                       else if (material.toLowerCase().includes('cardboard')) { Icon = Package; iconBg = 'bg-amber-50'; iconColor = 'text-amber-500'; }
 
-                  // Needs Attention: 20+ mins old and still Requested
-                  const ageMs = Date.now() - new Date(order.createdAt).getTime();
-                  const needsAttention = order.status === 'Requested' && !isExpired && ageMs >= 20 * 60 * 1000;
+                       const displayStatus = isExpired ? 'Expired' : order.status;
 
-                  return (
-                    <div 
-                      key={order._id} 
-                      onClick={() => window.location.href = `/admin/orders/${order._id}`}
-                      className={`bg-white rounded-3xl p-3.5 border shadow-sm hover:shadow-xl hover:shadow-brand-500/5 transition-all group relative overflow-hidden flex flex-col cursor-pointer isolate transform-gpu ${
-                        needsAttention 
-                          ? 'border-red-500 bg-red-50/20 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.25)]' 
-                          : 'border-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 ${iconBg} rounded-xl flex items-center justify-center ${iconColor} shadow-sm border border-white group-hover:scale-110 transition-transform duration-300`}>
-                            <Icon size={18} />
-                          </div>
-                          <div className="min-w-0">
-                            <h3 className="font-black text-gray-900 text-[11px] uppercase truncate max-w-[100px] leading-tight mb-0.5">
-                              {order.scrapTypes.join(', ')}
-                            </h3>
-                            <p className="text-[8px] sm:text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[180px] sm:max-w-none flex items-center gap-1">
-                              {order.customerDetails?.name || 'User'} 
-                              <span className="text-blue-600 lowercase font-bold tracking-tighter px-1 py-0.5 bg-blue-50 rounded-md shrink-0">
-                                placed at {new Date(order.createdAt).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' })} • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
-                              </span>
-                            </p>
-                          </div>
-                        </div>
-                        <StatusBadge status={displayStatus} />
-                      </div>
+                       // Needs Attention: 20+ mins old and still Requested
+                       const ageMs = Date.now() - new Date(order.createdAt).getTime();
+                       const needsAttention = order.status === 'Requested' && !isExpired && ageMs >= 20 * 60 * 1000;
 
-                      <div className="mb-3 flex-1 px-2.5 py-2 bg-gray-50/30 rounded-2xl border border-gray-100/50">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Schedule</span>
-                          {order.status === 'Requested' && !isExpired && (
-                            <ExpiryTimer createdAt={order.createdAt} />
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-[11px] font-black text-gray-800 tracking-tight whitespace-nowrap">
-                            {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : 'Urgent'}
-                          </p>
-                          <p className="text-[8px] font-medium text-gray-400 truncate italic grow text-right" title={order.exactAddress}>
-                            {order.exactAddress}
-                          </p>
-                        </div>
-                      </div>
+                       return (
+                         <div 
+                           key={order._id} 
+                           onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                           className={`bg-white rounded-3xl p-3.5 border shadow-sm hover:shadow-xl hover:shadow-brand-500/5 transition-all group relative overflow-hidden flex flex-col cursor-pointer isolate transform-gpu ${
+                             needsAttention 
+                               ? 'border-red-500 bg-red-50/20 animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.25)]' 
+                               : 'border-gray-100'
+                           }`}
+                         >
+                           <div className="flex items-start justify-between mb-2">
+                             <div className="flex items-center gap-2">
+                               <div className={`w-8 h-8 ${iconBg} rounded-xl flex items-center justify-center ${iconColor} shadow-sm border border-white group-hover:scale-110 transition-transform duration-300`}>
+                                 <Icon size={18} />
+                               </div>
+                               <div className="min-w-0">
+                                 <h3 className="font-black text-gray-900 text-[11px] uppercase truncate max-w-[100px] leading-tight mb-0.5">
+                                   {order.scrapTypes.join(', ')}
+                                 </h3>
+                                 <p className="text-[8px] sm:text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate max-w-[180px] sm:max-w-none flex items-center gap-1">
+                                   {order.customerDetails?.name || 'User'} 
+                                   <span className="text-blue-600 lowercase font-bold tracking-tighter px-1 py-0.5 bg-blue-50 rounded-md shrink-0">
+                                     placed at {new Date(order.createdAt).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: '2-digit' })} • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}
+                                   </span>
+                                 </p>
+                               </div>
+                             </div>
+                             <StatusBadge status={displayStatus} />
+                           </div>
 
-                    <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      {order.status === 'Requested' ? (
-                        <div className="flex gap-2 w-full">
-                          <button 
-                            onClick={() => handleBroadcast(order._id)}
-                            className="flex-1 py-2.5 bg-brand-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1"
-                          >
-                            <Zap size={10} className="fill-white" /> Broadcast
-                          </button>
-                          <button 
-                            onClick={() => window.location.href = `/admin/orders/${order._id}`}
-                            className="flex-1 py-2.5 bg-white text-gray-900 border border-gray-100 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-center"
-                          >
-                            Details
-                          </button>
-                        </div>
-                      ) : order.status === 'Problem' ? (
-                          <button 
-                             onClick={() => window.location.href = `/admin/orders/${order._id}`}
-                             className="flex-1 py-2.5 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-all"
-                          >
-                            Fix
-                          </button>
-                        ) : (
-                          <div className="flex gap-2 w-full">
-                            <button 
-                              onClick={() => fetchEngagement(order._id)}
-                              className="flex-1 py-2.5 bg-white text-brand-600 border border-brand-500/20 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-brand-50 active:scale-95 transition-all flex items-center justify-center"
-                            >
-                              Track
-                            </button>
-                            <button 
-                              onClick={() => window.location.href = `/admin/orders/${order._id}`}
-                              className="flex-1 py-2.5 bg-white text-gray-900 border border-gray-100 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-center"
-                            >
-                              Details
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );                })
-              )}
-            </div>
+                           <div className="mb-3 flex-1 px-2.5 py-2 bg-gray-50/30 rounded-2xl border border-gray-100/50">
+                             <div className="flex items-center justify-between mb-1">
+                               <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Schedule</span>
+                               {order.status === 'Requested' && !isExpired && (
+                                 <ExpiryTimer createdAt={order.createdAt} />
+                               )}
+                             </div>
+                             <div className="flex items-center justify-between gap-2">
+                               <p className="text-[11px] font-black text-gray-800 tracking-tight whitespace-nowrap">
+                                 {order.timeSlot ? getTimeSlotLabel(order.timeSlot) : 'Urgent'}
+                               </p>
+                               <p className="text-[8px] font-medium text-gray-400 truncate italic grow text-right" title={order.exactAddress}>
+                                 {order.exactAddress}
+                               </p>
+                             </div>
+                           </div>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="mt-8 pb-4 flex justify-center">
-                <div className="flex items-center justify-center gap-3">
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() => paginate(currentPage - 1)}
-                    className="w-10 h-10 flex-shrink-0 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-brand-600 hover:border-brand-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm group"
-                  >
-                    <ArrowRight size={20} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
-                  </button>
-                  
-                  <div className="flex gap-2">
-                    {getPageNumbers().map((number) => (
+                         <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+                           {order.status === 'Requested' ? (
+                             <div className="flex gap-2 w-full">
+                               <button 
+                                 onClick={() => handleBroadcast(order._id)}
+                                 className="flex-1 py-2.5 bg-brand-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-brand-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-1"
+                               >
+                                 <Zap size={10} className="fill-white" /> Broadcast
+                               </button>
+                               <button 
+                                 onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                                 className="flex-1 py-2.5 bg-white text-gray-900 border border-gray-100 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-center"
+                               >
+                                 Details
+                               </button>
+                             </div>
+                           ) : order.status === 'Problem' ? (
+                               <button 
+                                  onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                                  className="flex-1 py-2.5 bg-red-600 text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-all"
+                               >
+                                 Fix
+                               </button>
+                             ) : (
+                               <div className="flex gap-2 w-full">
+                                 <button 
+                                   onClick={() => fetchEngagement(order._id)}
+                                   className="flex-1 py-2.5 bg-white text-brand-600 border border-brand-500/20 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-brand-50 active:scale-95 transition-all flex items-center justify-center"
+                                 >
+                                   Track
+                                 </button>
+                                 <button 
+                                   onClick={() => window.location.href = `/admin/orders/${order._id}`}
+                                   className="flex-1 py-2.5 bg-white text-gray-900 border border-gray-100 text-[9px] font-black uppercase tracking-widest rounded-xl shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-center"
+                                 >
+                                   Details
+                                 </button>
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                       );                })
+                   )}
+                 </div>
+               </div>
+
+                {/* Shared Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="mt-8 pb-4 flex justify-center">
+                    <div className="flex items-center justify-center gap-3">
                       <button
-                        key={number}
-                        onClick={() => paginate(number)}
-                        className={`w-10 h-10 flex-shrink-0 rounded-xl font-black text-xs transition-all tracking-tighter shadow-sm border ${
-                          currentPage === number
-                            ? 'bg-brand-600 text-white border-brand-600 shadow-brand-500/20'
-                            : 'bg-white text-gray-600 border-gray-100 hover:border-brand-200 hover:text-brand-600'
-                        }`}
+                        disabled={currentPage === 1}
+                        onClick={() => paginate(currentPage - 1)}
+                        className="w-10 h-10 flex-shrink-0 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-brand-600 hover:border-brand-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm group"
                       >
-                        {number}
+                        <ArrowRight size={20} className="rotate-180 group-hover:-translate-x-1 transition-transform" />
                       </button>
-                    ))}
-                  </div>
+                      
+                      <div className="flex gap-2">
+                        {getPageNumbers().map((number) => (
+                          <button
+                            key={number}
+                            onClick={() => paginate(number)}
+                            className={`w-10 h-10 flex-shrink-0 rounded-xl font-black text-xs transition-all tracking-tighter shadow-sm border ${
+                              currentPage === number
+                                ? 'bg-brand-600 text-white border-brand-600 shadow-brand-500/20'
+                                : 'bg-white text-gray-600 border-gray-100 hover:border-brand-200 hover:text-brand-600'
+                            }`}
+                          >
+                            {number}
+                          </button>
+                        ))}
+                      </div>
 
-                  <button
-                    disabled={currentPage === totalPages}
-                    onClick={() => paginate(currentPage + 1)}
-                    className="w-10 h-10 flex-shrink-0 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-brand-600 hover:border-brand-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm group"
-                  >
-                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+                      <button
+                        disabled={currentPage === totalPages}
+                        onClick={() => paginate(currentPage + 1)}
+                        className="w-10 h-10 flex-shrink-0 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-brand-600 hover:border-brand-200 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm group"
+                      >
+                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+             </>
+           )}
         </div>
       </div>
 
