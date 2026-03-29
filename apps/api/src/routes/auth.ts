@@ -6,6 +6,8 @@ import { OAuth2Client } from 'google-auth-library';
 import { getDb } from '../config/db';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { smsService } from '../services/smsService';
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from '../services/emailService';
 
 const router = Router();
 
@@ -328,6 +330,99 @@ router.post('/register', async (req: Request, res: Response) => {
 });
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// POST /auth/password/forgot
+router.post('/password/forgot', async (req: Request, res: Response) => {
+  try {
+    const { contact } = req.body;
+    if (!contact) {
+      res.status(400).json({ error: 'Email or mobile number is required' });
+      return;
+    }
+
+    const db = getDb();
+    const user = await db.collection('users').findOne({ 
+      $or: [
+        { email: contact.trim().toLowerCase() }, 
+        { mobileNumber: contact.trim() }
+      ] 
+    });
+
+    if (!user) {
+      // For security, do not reveal if the account exists, but we can be helpful for UX
+      res.status(404).json({ error: 'No account found with this contact information' });
+      return;
+    }
+
+    if (!user.email) {
+      res.status(400).json({ error: 'This user does not have an email address associated with their account.' });
+      return;
+    }
+
+    // Generate secure reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    await db.collection('users').updateOne(
+      { _id: user._id },
+      { $set: { resetToken, resetTokenExpires } }
+    );
+
+    // Get the base URL (for development, default to localhost:4200)
+    const webUrl = process.env.WEB_URL || 'http://localhost:4200';
+    const resetLink = `${webUrl}/reset-password?token=${resetToken}`;
+
+    const emailResult = await sendPasswordResetEmail(user.email, resetLink);
+
+    if (emailResult.success) {
+      res.json({ message: `Password reset link sent to ${user.email}` });
+    } else {
+      res.status(500).json({ error: 'Failed to send reset email. Please try again later.' });
+    }
+  } catch (error) {
+    console.error('[auth/password/forgot] Error:', error);
+    res.status(500).json({ error: 'Failed to request password reset' });
+  }
+});
+
+// POST /auth/password/reset
+router.post('/password/reset', async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      res.status(400).json({ error: 'Token and new password are required' });
+      return;
+    }
+
+    const db = getDb();
+    const user = await db.collection('users').findOne({ 
+      resetToken: token,
+      resetTokenExpires: { $gt: new Date() } // Must not be expired
+    });
+
+    if (!user) {
+      res.status(400).json({ error: 'Invalid or expired password reset token' });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Update password and clear the reset token
+    await db.collection('users').updateOne(
+      { _id: user._id },
+      { 
+        $set: { passwordHash, updatedAt: new Date() },
+        $unset: { resetToken: "", resetTokenExpires: "" }
+      }
+    );
+
+    res.json({ message: 'Password has been reset successfully. You can now login.' });
+  } catch (error) {
+    console.error('[auth/password/reset] Error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
 
 // POST /auth/google/login
 router.post('/google/login', async (req: Request, res: Response) => {

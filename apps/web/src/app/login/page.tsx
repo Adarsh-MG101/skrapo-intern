@@ -359,9 +359,17 @@ function LoginContent() {
                   </div>
 
                   <div>
-                    <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
-                      Password <span className="text-red-500">*</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
+                        Password <span className="text-red-500">*</span>
+                      </label>
+                      <Link 
+                        href="/forgot-password" 
+                        className="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline transition-all"
+                      >
+                        Forgot Password?
+                      </Link>
+                    </div>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

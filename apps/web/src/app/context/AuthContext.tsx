@@ -43,6 +43,8 @@ interface AuthContextType {
   requestOTP: (mobileNumber: string) => Promise<{ success: boolean; error?: string }>;
   verifyOTP: (mobileNumber: string, otp: string) => Promise<{ success: boolean; error?: string; defaultRoute?: string; isNewUser?: boolean }>;
   googleLogin: (credential: string) => Promise<{ success: boolean; error?: string; defaultRoute?: string; needsPhone?: boolean; googleData?: { googleId: string; email: string; name: string; picture?: string } }>;
+  forgotPassword: (contact: string) => Promise<{ success: boolean; error?: string }>;
+  resetPasswordWithToken: (token: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response>;
   refreshUser: () => Promise<void>;
@@ -238,6 +240,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const forgotPassword = useCallback(async (contact: string) => {
+    try {
+      const res = await fetch(`${API_URL}/auth/password/forgot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      return res.ok ? { success: true } : { success: false, error: data.error };
+    } catch {
+      return { success: false, error: 'Failed to request password reset' };
+    }
+  }, []);
+
+  const resetPasswordWithToken = useCallback(async (token: string, newPassword: string) => {
+    try {
+      const res = await fetch(`${API_URL}/auth/password/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      return res.ok ? { success: true } : { success: false, error: data.error };
+    } catch {
+      return { success: false, error: 'Failed to reset password' };
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await fetch(`${API_URL}/auth/logout`, { 
@@ -308,6 +340,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         requestOTP,
         verifyOTP,
         googleLogin,
+        forgotPassword,
+        resetPasswordWithToken,
         logout,
         apiFetch,
         refreshUser,
